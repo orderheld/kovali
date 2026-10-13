@@ -14,7 +14,6 @@ import { Section, SectionHeader } from "@/components/ui/section";
 import { competencies, reasons } from "@/content/company";
 import { home } from "@/content/home";
 import { articles } from "@/content/insights";
-import { partner } from "@/content/partner";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata = pageMetadata({
@@ -134,23 +133,41 @@ export default function HomePage() {
         </div>
       </Section>
 
-      <section aria-labelledby="partner-title" className="on-dark relative overflow-hidden bg-navy-800 text-white">
+      <section aria-labelledby="wege-title" className="on-dark relative overflow-hidden bg-navy-800 text-white">
         <DiagonalAccent tone="dark" className="absolute -left-24 top-0 hidden h-full -scale-x-100 opacity-70 lg:block" />
-        <div className="relative mx-auto grid w-full max-w-site gap-12 px-5 py-20 sm:px-8 md:py-28 lg:grid-cols-12 lg:gap-8">
-          <div className="lg:col-span-6">
-            <SectionHeader id="partner-title" eyebrow={home.partner.eyebrow} title={home.partner.title} text={home.partner.text} />
-            <ButtonLink href={home.partner.cta.href} variant="inverse" arrow className="mt-9">
-              {home.partner.cta.label}
-            </ButtonLink>
-          </div>
-          <ul className="grid content-start gap-x-8 gap-y-4 sm:grid-cols-2 lg:col-span-5 lg:col-start-8">
-            {partner.roles.map((role) => (
-              <li key={role.title} className="flex gap-3 border-b border-white/10 pb-4 text-white/85">
-                <Check aria-hidden className="mt-0.5 size-4 shrink-0 text-electric" />
-                {role.title}
-              </li>
+        <div className="relative mx-auto w-full max-w-site px-5 py-20 sm:px-8 md:py-28">
+          <SectionHeader id="wege-title" eyebrow={home.entries.eyebrow} title={home.entries.title} text={home.entries.text} />
+          <div className="mt-14 grid gap-6 lg:grid-cols-2">
+            {[home.entries.companies, home.entries.specialists].map((entry) => (
+              <article
+                key={entry.id}
+                aria-labelledby={entry.id}
+                className="flex flex-col rounded-xl border border-white/10 bg-navy p-8 md:p-10"
+              >
+                <p className="font-mono text-xs uppercase tracking-[0.12em] text-electric">{entry.eyebrow}</p>
+                <h3 id={entry.id} className="mt-4 text-2xl font-semibold tracking-tight">
+                  {entry.title}
+                </h3>
+                <p className="mt-4 leading-relaxed text-white/75">{entry.text}</p>
+                <ul className="mt-7 grid gap-x-6 gap-y-3 sm:grid-cols-2">
+                  {entry.points.map((point) => (
+                    <li key={point} className="flex gap-3 text-white/85">
+                      <Check aria-hidden className="mt-1 size-4 shrink-0 text-electric" />
+                      {point}
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-auto flex flex-wrap items-center gap-x-6 gap-y-4 pt-9">
+                  <ButtonLink href={entry.primary.href} variant="inverse" arrow>
+                    {entry.primary.label}
+                  </ButtonLink>
+                  <Link href={entry.secondary.href} className="font-medium text-white/85 underline-offset-4 hover:text-white hover:underline">
+                    {entry.secondary.label}
+                  </Link>
+                </div>
+              </article>
             ))}
-          </ul>
+          </div>
         </div>
       </section>
 

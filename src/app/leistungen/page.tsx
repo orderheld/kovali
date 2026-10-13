@@ -4,20 +4,19 @@ import { CtaBand } from "@/components/sections/cta-band";
 import { PageHero } from "@/components/sections/page-hero";
 import { ButtonLink } from "@/components/ui/button";
 import { Section, SectionHeader } from "@/components/ui/section";
-import { partner } from "@/content/partner";
+import { business } from "@/content/business";
 import { services, serviceHref } from "@/content/services";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata = pageMetadata({
   title: "Leistungen – Business Analysis Dienstleistungen",
   description:
-    "Business Analysis Dienstleistungen, Requirements Engineering, Application Management, Test Management und Test Engineering für IT-Projekte in der Schweiz.",
+    "Business Analysis Dienstleistungen und Requirements Engineering, Application Management, Test Management und Test Engineering für IT-Projekte in der Schweiz.",
   path: "/leistungen",
 });
 
 const phases = [
-  { phase: "Verstehen", slugs: ["business-analysis"] },
-  { phase: "Spezifizieren", slugs: ["requirements-engineering"] },
+  { phase: "Verstehen und spezifizieren", slugs: ["business-analysis"] },
   { phase: "Prüfen und abnehmen", slugs: ["test-management", "test-engineering"] },
   { phase: "Betreiben und weiterentwickeln", slugs: ["application-management"] },
 ] as const;
@@ -35,13 +34,13 @@ export default function LeistungenPage() {
         lead="Von der ersten Anforderung bis zur abgenommenen Lösung: KOVALI unterstützt Fachbereiche, IT-Abteilungen und Projektteams dort, wo Anforderungen entstehen, umgesetzt und geprüft werden."
       >
         <ButtonLink href="/kontakt" arrow>
-          Projekt anfragen
+          Zusammenarbeit anfragen
         </ButtonLink>
       </PageHero>
 
       <Section labelledBy="uebersicht-title">
         <h2 id="uebersicht-title" className="sr-only">
-          Die fünf Leistungen
+          Die vier Leistungen
         </h2>
         <ul className="grid gap-5 lg:grid-cols-2">
           {services.map((s) => (
@@ -65,16 +64,16 @@ export default function LeistungenPage() {
               </ul>
             </li>
           ))}
-          <li className="flex flex-col justify-between rounded-xl bg-navy p-8 text-white md:p-10">
+          <li className="flex flex-col justify-between gap-8 rounded-xl bg-navy p-8 text-white md:p-10 lg:col-span-2 lg:flex-row lg:items-end">
             <div>
-              <p className="font-mono text-sm text-electric">01–05</p>
+              <p className="font-mono text-sm text-electric">01–04</p>
               <h3 className="mt-6 text-2xl font-semibold tracking-tight">Mehrere Leistungen kombinieren</h3>
               <p className="mt-3 leading-relaxed text-white/75">
                 Viele Vorhaben brauchen Analyse und Test aus einer Hand. Die Leistungen lassen sich kombinieren, damit
                 Anforderungen und Testfälle nahtlos zusammenpassen.
               </p>
             </div>
-            <ButtonLink href="/kontakt" variant="inverse" arrow className="mt-8 self-start">
+            <ButtonLink href="/kontakt" variant="inverse" arrow className="shrink-0 self-start lg:self-end">
               Vorhaben besprechen
             </ButtonLink>
           </li>
@@ -88,7 +87,7 @@ export default function LeistungenPage() {
           title="Eine durchgängige Strecke statt einzelner Übergaben"
           text="Wer die Anforderungen kennt, testet gezielter. Wer die Tests kennt, formuliert prüfbare Anforderungen. Die Leistungen folgen dem Lebenszyklus einer Lösung."
         />
-        <ol className="mt-14 grid gap-px overflow-hidden rounded-xl border border-line bg-line sm:grid-cols-2 lg:grid-cols-4">
+        <ol className="mt-14 grid gap-px overflow-hidden rounded-xl border border-line bg-line md:grid-cols-3">
           {phases.map((p, i) => (
             <li key={p.phase} className="bg-white p-7">
               <span className="font-mono text-xs text-slate">Phase {i + 1}</span>
@@ -118,7 +117,7 @@ export default function LeistungenPage() {
           text="KOVALI arbeitet direkt für Unternehmen und öffentliche Organisationen oder als Subunternehmen für IT-Dienstleister."
         />
         <ul className="mt-12 grid gap-5 md:grid-cols-3">
-          {partner.models.map((m) => (
+          {business.models.map((m) => (
             <li key={m.title} className="rounded-xl border border-line p-7">
               <h3 className="text-h3 font-semibold">{m.title}</h3>
               <p className="mt-3 leading-relaxed text-slate">{m.text}</p>
@@ -126,9 +125,9 @@ export default function LeistungenPage() {
           ))}
         </ul>
         <p className="mt-8 text-slate">
-          Mehr zur Zusammenarbeit mit IT-Dienstleistern:{" "}
-          <Link href="/partner" className="text-blue underline underline-offset-[3px]">
-            Für Partner
+          Mehr zur Zusammenarbeit mit Beratungen und IT-Dienstleistern:{" "}
+          <Link href="/unternehmen" className="text-blue underline underline-offset-[3px]">
+            Für Unternehmen
           </Link>
         </p>
       </Section>

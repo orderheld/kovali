@@ -55,7 +55,7 @@ Beim Wechsel zur GmbH: `legal.form` auf `"gmbh"` setzen, Firmenname, UID und Han
 
 5. **Deploy** auslösen. Die Funktionsregion ist in `vercel.json` auf Frankfurt (`fra1`) gesetzt.
 6. Suchmaschinen indexieren nur die Produktion auf der eigenen Domain. Preview-Deployments und die Adresse `*.vercel.app` tragen ein `noindex`-Tag, bis eine eigene Domain verbunden und neu deployt ist.
-7. Solange `RESEND_API_KEY`, `CONTACT_TO_EMAIL` und `CONTACT_FROM_EMAIL` fehlen, zeigt die Kontaktseite statt des Formulars die E-Mail-Adresse. Das Formular erscheint nach dem nächsten Deployment mit diesen Variablen.
+7. Solange `RESEND_API_KEY`, `CONTACT_TO_EMAIL` und `CONTACT_FROM_EMAIL` fehlen, zeigen die Kontaktseite und die Seite für Fachleute statt der Formulare die E-Mail-Adresse. Die Formulare erscheinen nach dem nächsten Deployment mit diesen Variablen.
 
 ## 3. Domain bei cyon verbinden
 
@@ -136,6 +136,8 @@ Das Formular sendet jede Anfrage über [Resend](https://resend.com) an `info@kov
 - [ ] Alle Seiten in der Hauptnavigation und im Footer öffnen, auch auf dem Smartphone.
 - [ ] Kontaktformular: leer absenden (Fehlermeldungen erscheinen), dann vollständig ausfüllen. Die E-Mail kommt bei `info@kovali.ch` an, «Antworten» geht an die eingegebene Adresse, Spam-Ordner prüfen.
 - [ ] Link von einer Leistungsseite («… anfragen») öffnet das Formular mit vorausgewählter Leistung.
+- [ ] Profilformular auf `/fachleute`: mit einem PDF-Lebenslauf absenden. Die E-Mail mit dem PDF im Anhang kommt an. Eine Word-Datei oder ein PDF über 4 MB wird abgelehnt.
+- [ ] `/partner` leitet auf `/unternehmen` um.
 - [ ] `https://www.kovali.ch/sitemap.xml` und `/robots.txt` sind erreichbar.
 - [ ] Vorschau beim Teilen prüfen, z. B. mit dem [LinkedIn Post Inspector](https://www.linkedin.com/post-inspector/).
 - [ ] Sicherheits-Header prüfen, z. B. mit [securityheaders.com](https://securityheaders.com).

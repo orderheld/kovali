@@ -1,20 +1,18 @@
 import type { ServiceSlug } from "@/content/types";
 
-/** Options of the contact form. Shared by the client form and the server validation. */
+// Options of the contact form. Shared by the client form and the server validation.
+
+/** How a company wants to work with KOVALI. What it needs is asked separately (serviceOptions). */
 export const requestTypes = [
-  { value: "it-consulting-mandat", label: "IT-Consulting-Mandat" },
-  { value: "business-analysis", label: "Business Analysis" },
-  { value: "requirements-engineering", label: "Requirements Engineering" },
-  { value: "application-management", label: "Application Management" },
-  { value: "test-management-engineering", label: "Test Management / Test Engineering" },
-  { value: "b2b-kooperation", label: "B2B-Kooperation" },
+  { value: "contracting", label: "Contracting: Rolle im Kundenmandat" },
+  { value: "projekt", label: "Projekt oder abgegrenztes Teilmandat" },
+  { value: "kooperation", label: "Kooperation" },
   { value: "allgemeine-anfrage", label: "Allgemeine Anfrage" },
 ] as const;
 
 // Service names are repeated here (instead of importing all service content) to keep the client bundle small.
 const serviceNames = [
-  { value: "business-analysis", label: "Business Analysis" },
-  { value: "requirements-engineering", label: "Requirements Engineering" },
+  { value: "business-analysis", label: "Business Analysis & Requirements Engineering" },
   { value: "application-management", label: "Application Management" },
   { value: "test-management", label: "Test Management" },
   { value: "test-engineering", label: "Test Engineering" },
@@ -49,19 +47,4 @@ export const values = <T extends readonly { value: string }[]>(list: T) =>
 
 export function labelOf(list: readonly { value: string; label: string }[], value: string | undefined): string {
   return list.find((o) => o.value === value)?.label ?? "–";
-}
-
-/** Maps ?leistung= to the matching request type, so one link preselects both fields. */
-export function requestTypeForService(service: string): RequestType | undefined {
-  switch (service) {
-    case "business-analysis":
-    case "requirements-engineering":
-    case "application-management":
-      return service;
-    case "test-management":
-    case "test-engineering":
-      return "test-management-engineering";
-    default:
-      return undefined;
-  }
 }

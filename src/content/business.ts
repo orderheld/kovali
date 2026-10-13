@@ -1,9 +1,9 @@
 import type { FaqItem, TitledText } from "./types";
 
-/** Content for /partner: IT service providers, consultancies and contracting partners. */
-export const partner = {
+/** Content for /unternehmen: consultancies, IT service providers and companies with a need for specialists. */
+export const business = {
   intro:
-    "Sie betreuen ein Kundenmandat und suchen einen erfahrenen Business Analyst, Requirements Engineer oder Test Manager? KOVALI unterstützt IT-Dienstleister, Beratungsunternehmen und Contracting-Partner als Subunternehmen im Mandat Ihres Kunden.",
+    "Sie betreuen ein Kundenmandat oder planen ein IT-Projekt und suchen einen erfahrenen Business Analyst, Requirements Engineer, Application Manager oder Test Manager? KOVALI arbeitet als Subunternehmen im Mandat Ihres Kunden oder direkt in Ihrem Projekt.",
 
   roles: [
     { title: "Business Analyst", text: "Geschäftsprozesse analysieren, Anforderungen erheben und fachliche Lösungen definieren." },
@@ -40,7 +40,7 @@ export const partner = {
     },
     {
       title: "Passung klären",
-      text: "Sie erhalten eine persönliche Rückmeldung zu Passung, Verfügbarkeit und offenen Fragen zum Mandat.",
+      text: "Wir prüfen die Anfrage persönlich und melden uns mit einer ersten Einschätzung zu Passung und Verfügbarkeit.",
     },
     {
       title: "Rahmen vereinbaren",
@@ -51,12 +51,6 @@ export const partner = {
       text: "Strukturierter Einstieg mit Übergabe, Stakeholder-Übersicht und klaren ersten Ergebnissen.",
     },
   ] satisfies TitledText[],
-
-  specialists: {
-    title: "Für Spezialistinnen und Spezialisten",
-    text: "KOVALI baut ein Netzwerk erfahrener Fachleute in Business Analysis, Requirements Engineering und Test auf, um künftig auch grössere Mandate gemeinsam abdecken zu können. Wenn Sie als selbständige Fachperson an einer späteren Zusammenarbeit interessiert sind, freut sich KOVALI über eine kurze Nachricht mit Ihrem Profil.",
-    note: "Aktuell sind keine Stellen ausgeschrieben.",
-  },
 
   faq: [
     {

@@ -12,7 +12,7 @@ export const article: Article = {
   readingMinutes: 5,
   excerpt:
     "Ein Business Analyst klärt, welches Problem ein Vorhaben lösen soll und welche Lösung dem Unternehmen tatsächlich nützt. Der Beitrag beschreibt Aufgaben, Ergebnisse und Abgrenzungen aus der Praxis.",
-  relatedServices: ["business-analysis", "requirements-engineering"],
+  relatedServices: ["business-analysis", "test-management"],
   blocks: [
     { type: "h2", id: "rolle-im-kern", text: "Die Rolle im Kern" },
     {
@@ -124,7 +124,7 @@ export const article: Article = {
     { type: "h2", id: "unterstuetzung", text: "Business Analysis mit KOVALI" },
     {
       type: "p",
-      text: "KOVALI unterstützt Unternehmen in der Schweiz bei der Business Analysis: von der Klärung der Ausgangslage über die Prozessanalyse bis zu Anforderungen, mit denen Entwicklung und Test arbeiten können. Mehr zum Vorgehen finden Sie unter [Business Analysis](/leistungen/business-analysis) und [Requirements Engineering](/leistungen/requirements-engineering). Für ein erstes Gespräch über Ihr Vorhaben erreichen Sie uns über die [Kontaktseite](/kontakt).",
+      text: "KOVALI unterstützt Unternehmen in der Schweiz bei der Business Analysis: von der Klärung der Ausgangslage über die Prozessanalyse bis zu Anforderungen, mit denen Entwicklung und Test arbeiten können. Mehr zum Vorgehen finden Sie unter [Business Analysis & Requirements Engineering](/leistungen/business-analysis). Für ein erstes Gespräch über Ihr Vorhaben erreichen Sie uns über die [Kontaktseite](/kontakt).",
     },
   ],
 };

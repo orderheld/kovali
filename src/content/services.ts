@@ -1,23 +1,24 @@
 import type { Service, ServiceSlug } from "./types";
 
 /**
- * The five core services, ordered along the chain from requirement to acceptance.
+ * The four core services, ordered along the chain from requirement to acceptance.
+ * Business Analysis and Requirements Engineering form one service (Ferhat Demir, 13.10.2026).
  * Each entry feeds the overview, its own page (/leistungen/[slug]), metadata and JSON-LD.
  */
 export const services: Service[] = [
   {
     slug: "business-analysis",
     code: "01",
-    name: "Business Analysis",
+    name: "Business Analysis & Requirements Engineering",
     summary:
-      "Geschäftsanforderungen verstehen, Prozesse analysieren und fachliche Lösungen so definieren, dass Business und IT dasselbe meinen.",
-    h1: "Business Analyst für IT-Projekte in der Schweiz",
-    metaTitle: "Business Analyst Schweiz – Business Analysis extern",
+      "Geschäftsprozesse analysieren und Anforderungen nach IREB-Standard erheben, spezifizieren und verwalten, damit Business und IT dasselbe meinen.",
+    h1: "Business Analyst und Requirements Engineer für IT-Projekte in der Schweiz",
+    metaTitle: "Business Analyst & Requirements Engineer Schweiz",
     metaDescription:
-      "Externer Business Analyst für IT-Projekte in der Schweiz: Anforderungen erheben, Prozesse analysieren, Fachkonzepte und User Stories erstellen.",
+      "Externer Business Analyst und Requirements Engineer für IT-Projekte in der Schweiz: Prozesse analysieren, Anforderungen nach IREB erheben und spezifizieren.",
     keyword: "Business Analyst Schweiz",
     intro:
-      "Viele IT-Projekte scheitern nicht an der Technik, sondern an unklaren Anforderungen. KOVALI analysiert Ihre Geschäftsprozesse, bringt Fachbereiche und IT an einen Tisch und übersetzt Bedürfnisse in präzise, umsetzbare Anforderungen, von der Ist-Analyse bis zur fachlichen Lösungsdefinition.",
+      "Viele IT-Projekte scheitern nicht an der Technik, sondern an unklaren Anforderungen. KOVALI analysiert Ihre Geschäftsprozesse, bringt Fachbereiche und IT an einen Tisch und hält die Anforderungen nach IREB-Standard vollständig, eindeutig und prüfbar fest. Business Analysis und Requirements Engineering greifen dabei ineinander: von der Ist-Analyse über die fachliche Lösung bis zur abgestimmten, verwalteten Anforderungsbasis.",
     tasks: [
       "Analyse geschäftlicher Anforderungen",
       "Stakeholder Management",
@@ -25,20 +26,26 @@ export const services: Service[] = [
       "Geschäftsprozessanalyse",
       "Business Process Modeling (BPMN)",
       "Ist-/Soll-Analysen",
-      "Business Requirements",
-      "Fachkonzepte",
-      "User Stories und Epics",
-      "Akzeptanzkriterien",
+      "Fachkonzepte und fachliche Lösungsdefinition",
+      "User Stories, Epics und Akzeptanzkriterien",
+      "Funktionale und nichtfunktionale Anforderungen",
+      "UML Use Cases und Use-Case-Spezifikationen",
+      "Schnittstellenanforderungen",
+      "Datenflüsse und Feld-Mappings",
+      "Requirements Validation und Requirements Management",
+      "Anforderungspriorisierung",
       "Change Requests",
-      "Fachliche Lösungsdefinition",
     ],
     deliverables: [
       "Ist-/Soll-Analyse mit Handlungsbedarf",
       "Prozessmodelle in BPMN",
       "Fachkonzept mit Lösungsvarianten und Empfehlung",
+      "Anforderungsspezifikation mit funktionalen und nichtfunktionalen Anforderungen",
       "Epics und umsetzungsreife User Stories mit Akzeptanzkriterien",
+      "Use-Case-Diagramme (UML) und Use-Case-Spezifikationen",
+      "Schnittstellenspezifikationen mit Datenflüssen, Feld-Mappings und Fehlerfällen",
+      "Priorisierter, nachvollziehbarer Anforderungsbestand",
       "Bewertete Change Requests",
-      "Stakeholder-Übersicht und Workshop-Ergebnisse",
     ],
     benefits: [
       {
@@ -46,16 +53,16 @@ export const services: Service[] = [
         text: "Fachbereich, IT und Entwicklung arbeiten mit denselben, eindeutig formulierten Anforderungen.",
       },
       {
+        title: "Prüfbare Anforderungen",
+        text: "Jede Anforderung hat Akzeptanzkriterien und lässt sich im Test eindeutig nachweisen.",
+      },
+      {
         title: "Weniger Nacharbeit",
         text: "Lücken und Widersprüche werden vor der Umsetzung sichtbar, nicht erst im Test oder im Betrieb.",
       },
       {
-        title: "Entscheidungen auf Fakten",
-        text: "Ist-/Soll-Analysen und Variantenvergleiche machen Nutzen, Aufwand und Risiken transparent.",
-      },
-      {
-        title: "Rasch wirksam",
-        text: "Erfahrung in grossen Organisationen und in Scrum- wie SAFe-Umgebungen verkürzt die Einarbeitung.",
+        title: "Beherrschte Änderungen",
+        text: "Versionierung und Priorisierung halten den Umfang kontrollierbar, auch wenn sich Anforderungen ändern.",
       },
     ],
     scenarios: [
@@ -64,16 +71,16 @@ export const services: Service[] = [
         text: "Anforderungen vieler Anspruchsgruppen zusammenführen, Zielkonflikte klären und Prioritäten festlegen.",
       },
       {
-        title: "Ablösung oder Erweiterung eines Systems",
-        text: "Auswirkungen auf Prozesse, Schnittstellen und Datenflüsse analysieren, bevor entschieden wird.",
+        title: "Systemintegration",
+        text: "Schnittstellen zu Umsystemen, zentralen Diensten oder externen Partnern fachlich spezifizieren.",
       },
       {
         title: "Agiles Produktteam braucht Verstärkung",
         text: "Backlog schärfen, umsetzungsreife User Stories liefern und Refinements strukturiert vorbereiten.",
       },
       {
-        title: "Regulatorische Vorgaben umsetzen",
-        text: "Datenschutz-, Sicherheits- und Compliance-Vorgaben in prüfbare fachliche Anforderungen übersetzen.",
+        title: "Ausschreibung oder Offertvergleich",
+        text: "Anforderungen so beschreiben, dass Anbieter vergleichbar offerieren und Lösungen bewertet werden können.",
       },
     ],
     industries: [
@@ -83,12 +90,34 @@ export const services: Service[] = [
       "finanzdienstleistungen",
       "versicherungen",
     ],
-    methods: ["BPMN", "UML", "Use Cases", "User Stories", "Scrum", "SAFe", "Kanban", "Jira", "Confluence"],
+    methods: [
+      "IREB CPRE",
+      "BPMN",
+      "UML",
+      "Use Cases",
+      "User Stories",
+      "Schnittstellenspezifikation",
+      "Scrum",
+      "SAFe",
+      "Kanban",
+      "Jira",
+      "Confluence",
+    ],
     faq: [
       {
         question: "Was macht ein Business Analyst in einem IT-Projekt?",
         answer:
           "Ein Business Analyst erhebt und analysiert die Anforderungen der Fachbereiche, modelliert die Geschäftsprozesse und beschreibt die fachliche Lösung so, dass Entwicklung, Test und Betrieb damit arbeiten können. Bis zur Abnahme bleibt er Ansprechpartner für fachliche Fragen. Mehr dazu im Artikel [Was macht ein Business Analyst?](/insights/was-macht-ein-business-analyst)",
+      },
+      {
+        question: "Ist Business Analysis dasselbe wie Requirements Engineering?",
+        answer:
+          "Nicht ganz. Business Analysis klärt, welches geschäftliche Problem gelöst werden soll und welche Lösung den grössten Nutzen bringt. Requirements Engineering beschreibt die gewählte Lösung in Anforderungen, die vollständig, eindeutig und prüfbar sind, und verwaltet sie über das Projekt. In der Praxis greifen beide ineinander, deshalb bietet KOVALI sie als eine Leistung an. Ausführlich im Artikel [Business Analysis vs. Requirements Engineering](/insights/business-analysis-vs-requirements-engineering).",
+      },
+      {
+        question: "Was bedeutet IREB CPRE?",
+        answer:
+          "Certified Professional for Requirements Engineering des International Requirements Engineering Board. Das Foundation Level bescheinigt die Grundlagen der Erhebung, Dokumentation, Validierung und Verwaltung von Anforderungen.",
       },
       {
         question: "Wann lohnt sich ein externer Business Analyst?",
@@ -101,123 +130,16 @@ export const services: Service[] = [
           "Beides. KOVALI arbeitet in Scrum-, Kanban- und SAFe-Umgebungen ebenso wie in klassischen Projekten mit Fachkonzept. Das Vorgehen richtet sich nach Ihrer Organisation.",
       },
       {
-        question: "Sind Einsätze vor Ort möglich?",
-        answer:
-          "Ja. Einsätze sind vor Ort, remote oder hybrid in der ganzen Schweiz möglich. Projektsprachen sind Deutsch, Französisch und Englisch.",
-      },
-      {
         question: "Kann KOVALI auch über einen IT-Dienstleister beauftragt werden?",
         answer:
-          "Ja. Neben Direktmandaten arbeitet KOVALI als Subunternehmen für Consulting- und Contracting-Firmen. Details zur Zusammenarbeit finden Sie unter [Für Partner](/partner).",
+          "Ja. Neben Direktmandaten arbeitet KOVALI als Subunternehmen für Consulting- und Contracting-Firmen. Details zur Zusammenarbeit finden Sie unter [Für Unternehmen](/unternehmen).",
       },
     ],
     cta: "Business Analysis anfragen",
   },
   {
-    slug: "requirements-engineering",
-    code: "02",
-    name: "Requirements Engineering",
-    summary:
-      "Anforderungen systematisch erheben, dokumentieren, validieren und verwalten, nach IREB-Standard und passend zu Ihrem Vorgehen.",
-    h1: "Requirements Engineer für IT-Projekte in der Schweiz",
-    metaTitle: "Requirements Engineer Schweiz – RE Consulting",
-    metaDescription:
-      "Requirements Engineering nach IREB: Anforderungen erheben, dokumentieren, validieren und verwalten, inklusive Schnittstellen, Datenflüssen und Use Cases.",
-    keyword: "Requirements Engineer Schweiz",
-    intro:
-      "Gute Anforderungen sind vollständig, eindeutig, prüfbar und abgestimmt. KOVALI erhebt und dokumentiert funktionale und nichtfunktionale Anforderungen nach IREB-Standard, spezifiziert Schnittstellen und Datenflüsse und hält die Anforderungsbasis über den ganzen Projektverlauf konsistent.",
-    tasks: [
-      "Requirements Elicitation",
-      "Requirements Documentation",
-      "Requirements Validation",
-      "Requirements Management",
-      "Funktionale und nichtfunktionale Anforderungen",
-      "UML Use Cases",
-      "Use-Case-Spezifikationen",
-      "Schnittstellenanforderungen",
-      "Datenflüsse und Feld-Mappings",
-      "Anforderungspriorisierung",
-      "Abstimmung zwischen Business und IT",
-    ],
-    deliverables: [
-      "Anforderungsspezifikation mit funktionalen und nichtfunktionalen Anforderungen",
-      "Use-Case-Diagramme (UML) und Use-Case-Spezifikationen",
-      "Schnittstellenspezifikationen mit Fehlerfällen",
-      "Datenflussbeschreibungen und Feld-Mappings",
-      "Priorisierter, nachvollziehbarer Anforderungsbestand",
-      "Glossar der fachlichen Begriffe",
-    ],
-    benefits: [
-      {
-        title: "Prüfbare Anforderungen",
-        text: "Jede Anforderung hat Akzeptanzkriterien und lässt sich im Test eindeutig nachweisen.",
-      },
-      {
-        title: "Saubere Schnittstellen",
-        text: "Datenflüsse, Feld-Mappings und Fehlerfälle sind beschrieben, bevor Systeme gekoppelt werden.",
-      },
-      {
-        title: "Beherrschte Änderungen",
-        text: "Versionierung und Priorisierung halten den Umfang kontrollierbar, auch wenn sich Anforderungen ändern.",
-      },
-      {
-        title: "Zertifizierte Methode",
-        text: "Arbeit nach IREB CPRE, dem verbreiteten Standard für Requirements Engineering.",
-      },
-    ],
-    scenarios: [
-      {
-        title: "Systemintegration",
-        text: "Schnittstellen zu Umsystemen, zentralen Diensten oder externen Partnern fachlich spezifizieren.",
-      },
-      {
-        title: "Ausschreibung oder Offertvergleich",
-        text: "Anforderungen so beschreiben, dass Anbieter vergleichbar offerieren und Lösungen bewertet werden können.",
-      },
-      {
-        title: "Nichtfunktionale Anforderungen",
-        text: "Performance, Sicherheit, Datenschutz und Berechtigungen strukturiert und messbar erfassen.",
-      },
-      {
-        title: "Gewachsene Anforderungsbasis",
-        text: "Bestehende Dokumentation konsolidieren, Widersprüche auflösen und den Backlog bereinigen.",
-      },
-    ],
-    industries: [
-      "oeffentliche-verwaltung",
-      "detailhandel-zahlungsverkehr",
-      "logistik-transport",
-      "finanzdienstleistungen",
-      "versicherungen",
-    ],
-    methods: ["IREB CPRE", "UML", "Use Cases", "BPMN", "User Stories", "Schnittstellenspezifikation", "Jira", "Confluence"],
-    faq: [
-      {
-        question: "Was ist der Unterschied zwischen Business Analysis und Requirements Engineering?",
-        answer:
-          "Business Analysis klärt, welches geschäftliche Problem gelöst werden soll und welche Lösung den grössten Nutzen bringt. Requirements Engineering beschreibt die gewählte Lösung in Anforderungen, die vollständig, eindeutig und prüfbar sind, und verwaltet sie über das Projekt. Ausführlich im Artikel [Business Analysis vs. Requirements Engineering](/insights/business-analysis-vs-requirements-engineering).",
-      },
-      {
-        question: "Was bedeutet IREB CPRE?",
-        answer:
-          "Certified Professional for Requirements Engineering des International Requirements Engineering Board. Das Foundation Level bescheinigt die Grundlagen der Erhebung, Dokumentation, Validierung und Verwaltung von Anforderungen.",
-      },
-      {
-        question: "Wie werden nichtfunktionale Anforderungen erfasst?",
-        answer:
-          "Strukturiert nach Qualitätsmerkmalen wie Performance, Sicherheit, Verfügbarkeit und Benutzbarkeit, jeweils messbar formuliert, damit sie im Test überprüft werden können.",
-      },
-      {
-        question: "Mit welchen Werkzeugen arbeitet KOVALI?",
-        answer:
-          "In der Regel mit den Werkzeugen Ihrer Organisation, etwa Jira und Confluence, einschliesslich Testmanagement-Erweiterungen wie Xray oder Zephyr.",
-      },
-    ],
-    cta: "Requirements Engineering anfragen",
-  },
-  {
     slug: "application-management",
-    code: "03",
+    code: "02",
     name: "Application Management",
     summary:
       "Business-Applikationen fachlich betreuen, Änderungen analysieren und Releases begleiten, damit Systeme stabil laufen und sich gezielt weiterentwickeln.",
@@ -304,7 +226,7 @@ export const services: Service[] = [
   },
   {
     slug: "test-management",
-    code: "04",
+    code: "03",
     name: "Test Management",
     summary:
       "Tests konzipieren, planen und koordinieren, Fehler steuern und transparent berichten, bis zur fachlichen Abnahme.",
@@ -399,7 +321,7 @@ export const services: Service[] = [
   },
   {
     slug: "test-engineering",
-    code: "05",
+    code: "04",
     name: "Test Engineering",
     summary:
       "Testfälle systematisch entwerfen und durchführen, von System- und Integrationstests bis zur Regression, mit präziser Fehleranalyse.",

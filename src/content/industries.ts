@@ -17,7 +17,7 @@ export const industries: Industry[] = [
       "Datenschutz und Informationssicherheit als prüfbare Anforderungen",
       "Agile Weiterentwicklung von Fachapplikationen",
     ],
-    services: ["business-analysis", "requirements-engineering", "application-management"],
+    services: ["business-analysis", "application-management"],
   },
   {
     id: "logistik-transport",
@@ -42,7 +42,7 @@ export const industries: Industry[] = [
       "Sicherheits- und Compliance-Vorgaben im Zahlungsverkehr",
       "Tests und fachliche Abnahme vor jeder Einführung",
     ],
-    services: ["business-analysis", "requirements-engineering", "test-management"],
+    services: ["business-analysis", "test-management"],
   },
   {
     id: "finanzdienstleistungen",
@@ -56,7 +56,7 @@ export const industries: Industry[] = [
       "Strukturierte Test- und Abnahmeverfahren",
     ],
     basis: "Übertragbare Kompetenzen aus Zahlungsverkehr, öffentlicher Verwaltung und Qualitätssicherung",
-    services: ["business-analysis", "requirements-engineering", "test-management"],
+    services: ["business-analysis", "test-management"],
   },
   {
     id: "versicherungen",
@@ -84,7 +84,7 @@ export const industries: Industry[] = [
       "Kenntnis der Abläufe und Vorgaben grosser Organisationen",
     ],
     basis: "Übertragbare Kompetenzen aus Analyse und Test in grossen Organisationen",
-    services: ["business-analysis", "requirements-engineering", "test-management", "test-engineering"],
+    services: ["business-analysis", "test-management", "test-engineering"],
   },
 ];
 

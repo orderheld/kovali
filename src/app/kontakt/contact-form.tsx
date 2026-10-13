@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { startTransition, useActionState, useEffect, useRef } from "react";
 import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
+import { Field, Honeypot, Select, inputClass } from "@/components/forms/fields";
 import { requestTypes, serviceOptions, startOptions, workModes } from "@/lib/contact/options";
 import { initialContactState, type ContactField, type ContactValues } from "@/lib/contact/state";
 import { cn } from "@/lib/utils";
@@ -20,16 +21,13 @@ const FIELD_LABELS: Record<ContactField, string> = {
   phone: "Telefon",
   requestType: "Art der Anfrage",
   service: "Gewünschte Leistung",
-  projectDescription: "Projektbeschreibung",
+  projectDescription: "Beschreibung",
   start: "Gewünschter Start",
   workMode: "Arbeitsmodell",
   location: "Einsatzort",
   message: "Nachricht",
   consent: "Datenschutz",
 };
-
-const inputClass =
-  "block w-full rounded-md border border-line bg-white px-3.5 py-3 text-base text-ink shadow-[inset_0_1px_0_rgb(11_23_51/0.03)] transition-colors placeholder:text-slate/60 hover:border-slate/40 focus:border-blue focus:outline-none focus:ring-2 focus:ring-blue/20 aria-[invalid=true]:border-red-600 aria-[invalid=true]:focus:ring-red-600/20";
 
 export function ContactForm({ defaults = {}, fallbackEmail }: { defaults?: ContactDefaults; fallbackEmail: string }) {
   const [state, formAction, pending] = useActionState(submitContact, initialContactState);
@@ -167,9 +165,9 @@ export function ContactForm({ defaults = {}, fallbackEmail }: { defaults?: Conta
 
       <Field
         id="projectDescription"
-        label="Projektbeschreibung"
+        label="Beschreibung"
         required
-        hint="Ausgangslage, Ziel, Umfang und gesuchte Rolle, soweit bekannt. Bei allgemeinen Anfragen genügen ein paar Sätze zu Ihrem Anliegen. Bitte keine vertraulichen Kundendaten."
+        hint="Gesuchte Rolle, Aufgaben, Zeitraum und Pensum oder Ausgangslage und Ziel des Projekts. Ein Anforderungsprofil können Sie direkt hineinkopieren. Bitte keine vertraulichen Kundendaten."
         error={errors.projectDescription}
       >
         {(p) => (
@@ -195,11 +193,7 @@ export function ContactForm({ defaults = {}, fallbackEmail }: { defaults?: Conta
         {(p) => <textarea {...p} name="message" rows={4} defaultValue={v("message")} className={cn(inputClass, "resize-y")} />}
       </Field>
 
-      {/* Honeypot: invisible for people, bots tend to fill it. */}
-      <div aria-hidden="true" className="absolute -left-[9999px] top-auto h-px w-px overflow-hidden">
-        <label htmlFor="website">Website (bitte leer lassen)</label>
-        <input id="website" name="website" type="text" tabIndex={-1} autoComplete="off" defaultValue="" />
-      </div>
+      <Honeypot />
 
       <div>
         <div className="flex gap-3">
@@ -247,91 +241,3 @@ export function ContactForm({ defaults = {}, fallbackEmail }: { defaults?: Conta
   );
 }
 
-interface ControlProps {
-  id: string;
-  "aria-invalid"?: boolean;
-  "aria-describedby"?: string;
-  required?: boolean;
-}
-
-function Field({
-  id,
-  label,
-  required,
-  optional,
-  hint,
-  error,
-  children,
-}: {
-  id: ContactField;
-  label: string;
-  required?: boolean;
-  optional?: boolean;
-  hint?: string;
-  error?: string;
-  children: (props: ControlProps) => React.ReactNode;
-}) {
-  const hintId = hint ? `${id}-hint` : undefined;
-  const errorId = error ? `${id}-error` : undefined;
-  const describedBy = [hintId, errorId].filter(Boolean).join(" ") || undefined;
-  return (
-    <div>
-      <label htmlFor={id} className="mb-2 block text-[0.9375rem] font-medium text-ink">
-        {label}
-        {required ? <span aria-hidden className="text-blue"> *</span> : null}
-        {optional ? <span className="font-normal text-slate"> (optional)</span> : null}
-      </label>
-      {children({ id, required, "aria-invalid": error ? true : undefined, "aria-describedby": describedBy })}
-      {hint ? (
-        <p id={hintId} className="mt-2 text-sm text-slate">
-          {hint}
-        </p>
-      ) : null}
-      {error ? (
-        <p id={errorId} className="mt-2 text-sm text-red-700">
-          {error}
-        </p>
-      ) : null}
-    </div>
-  );
-}
-
-function Select({
-  options,
-  placeholder = "Bitte wählen",
-  ...props
-}: ControlProps & {
-  name: string;
-  defaultValue?: string;
-  options: readonly { value: string; label: string }[];
-  placeholder?: string;
-}) {
-  return (
-    <div className="relative">
-      <select
-        {...props}
-        defaultValue={props.defaultValue ?? ""}
-        className={cn(inputClass, "appearance-none pr-10")}
-      >
-        <option value="" disabled={props.required}>
-          {placeholder}
-        </option>
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
-      <svg
-        aria-hidden
-        viewBox="0 0 20 20"
-        className="pointer-events-none absolute right-3.5 top-1/2 size-4 -translate-y-1/2 text-slate"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.75"
-      >
-        <path d="M5 7.5 10 12.5 15 7.5" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    </div>
-  );
-}

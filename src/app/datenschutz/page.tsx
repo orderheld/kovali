@@ -16,8 +16,8 @@ export default function DatenschutzPage() {
   return (
     <LegalPage title="Datenschutzerklärung" path="/datenschutz" updated="Oktober 2026">
       <p>
-        Diese Datenschutzerklärung informiert darüber, welche Personendaten beim Besuch dieser Website und bei einer
-        Kontaktaufnahme bearbeitet werden. Sie richtet sich nach dem Schweizer Bundesgesetz über den Datenschutz (DSG).
+        Diese Datenschutzerklärung informiert darüber, welche Personendaten beim Besuch dieser Website, bei einer
+        Kontaktaufnahme und beim Senden eines Profils bearbeitet werden. Sie richtet sich nach dem Schweizer Bundesgesetz über den Datenschutz (DSG).
       </p>
 
       <h2>1. Verantwortliche Stelle</h2>
@@ -50,7 +50,7 @@ export default function DatenschutzPage() {
       <h2>4. Kontaktformular und E-Mail</h2>
       <p>
         Wenn Sie das Kontaktformular verwenden, werden die von Ihnen eingegebenen Angaben bearbeitet: Name, Unternehmen,
-        E-Mail-Adresse, optional Telefonnummer, Art der Anfrage, gewünschte Leistung, Projektbeschreibung, optional
+        E-Mail-Adresse, optional Telefonnummer, Art der Anfrage, gewünschte Leistung, Beschreibung, optional
         gewünschter Start, Arbeitsmodell und Einsatzort sowie Ihre Nachricht. Zweck ist die Bearbeitung Ihrer Anfrage
         und gegebenenfalls die Vorbereitung einer Zusammenarbeit.
       </p>
@@ -73,7 +73,34 @@ export default function DatenschutzPage() {
         Anliegens verwendet.
       </p>
 
-      <h2>5. Bekanntgabe ins Ausland</h2>
+      <h2>5. Profil und Lebenslauf</h2>
+      <p>
+        Wenn Sie auf der Seite für Fachleute Ihr Profil senden, werden die von Ihnen eingegebenen Angaben bearbeitet:
+        Name, E-Mail-Adresse, Schwerpunkt, optional Telefonnummer, Verfügbarkeit, bevorzugte Form der Zusammenarbeit,
+        Link zu einem Online-Profil und Nachricht sowie Ihr Lebenslauf mit den darin enthaltenen Angaben. Zweck ist die
+        Prüfung einer Zusammenarbeit in Mandaten von {site.brand}.
+      </p>
+      <ul>
+        <li>
+          Das Profil wird mit dem Lebenslauf als Anhang über Resend an das Postfach von {site.brand} übermittelt. Die
+          Website selbst speichert weder das Profil noch den Lebenslauf.
+        </li>
+        <li>
+          Ihr Profil wird nur mit Ihrer Zustimmung und nur für ein konkretes Mandat an einen Auftraggeber
+          weitergegeben. {site.brand} vermittelt keine Stellen an Dritte.
+        </li>
+        <li>
+          Profile werden höchstens sechs Monate aufbewahrt und danach gelöscht, auf Wunsch jederzeit früher. Entsteht
+          eine Zusammenarbeit, gelten die gesetzlichen Aufbewahrungspflichten.
+        </li>
+        <li>Der Schutz vor Missbrauch erfolgt wie beim Kontaktformular über einen Hashwert der IP-Adresse.</li>
+      </ul>
+      <p>
+        Bitte geben Sie im Lebenslauf keine besonders schützenswerten Personendaten an, die für die Prüfung nicht nötig
+        sind, zum Beispiel Angaben zur Gesundheit oder zur Religion.
+      </p>
+
+      <h2>6. Bekanntgabe ins Ausland</h2>
       <p>
         Die genannten Dienstleister können Personendaten in den USA bearbeiten. Die Bekanntgabe erfolgt gestützt auf
         die Zertifizierung der Anbieter unter dem Swiss-U.S. Data Privacy Framework, das der Bundesrat als angemessenen
@@ -82,21 +109,22 @@ export default function DatenschutzPage() {
         Auftrag und nach Weisung von {site.brand}.
       </p>
 
-      <h2>6. Aufbewahrung</h2>
+      <h2>7. Aufbewahrung</h2>
       <p>
         Personendaten werden nur so lange aufbewahrt, wie es für den jeweiligen Zweck nötig ist. In der Datenbank
-        gespeicherte Anfragen werden nach spätestens zwölf Monaten automatisch gelöscht. Entsteht aus einer Anfrage
+        gespeicherte Anfragen werden nach spätestens zwölf Monaten automatisch gelöscht, Profile von Fachleuten nach
+        spätestens sechs Monaten. Entsteht aus einer Anfrage
         eine Geschäftsbeziehung, gelten die gesetzlichen Aufbewahrungspflichten, insbesondere für Geschäftskorrespondenz
         und Buchhaltungsunterlagen.
       </p>
 
-      <h2>7. Datensicherheit</h2>
+      <h2>8. Datensicherheit</h2>
       <p>
         Die Übertragung zwischen Ihrem Browser und dieser Website ist mit TLS verschlüsselt. Der Zugriff auf
-        Anfragen ist auf die Personen beschränkt, die sie bearbeiten.
+        Anfragen und Profile ist auf die Personen beschränkt, die sie bearbeiten.
       </p>
 
-      <h2>8. Ihre Rechte</h2>
+      <h2>9. Ihre Rechte</h2>
       <p>Im Rahmen des DSG haben Sie insbesondere folgende Rechte:</p>
       <ul>
         <li>Auskunft darüber, ob und welche Personendaten über Sie bearbeitet werden</li>
@@ -112,7 +140,7 @@ export default function DatenschutzPage() {
       </p>
       <p>Es finden keine automatisierten Einzelentscheidungen und kein Profiling statt.</p>
 
-      <h2>9. Änderungen</h2>
+      <h2>10. Änderungen</h2>
       <p>
         Diese Datenschutzerklärung kann angepasst werden, wenn sich die Website oder die eingesetzten Dienste ändern.
         Massgebend ist die auf dieser Seite veröffentlichte Fassung.

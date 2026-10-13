@@ -12,7 +12,7 @@ export const article: Article = {
   readingMinutes: 5,
   excerpt:
     "Business Analysis und Requirements Engineering werden oft gleichgesetzt, setzen aber unterschiedliche Schwerpunkte. Der Beitrag vergleicht beide Disziplinen und zeigt, was das für die Besetzung von Projekten bedeutet.",
-  relatedServices: ["business-analysis", "requirements-engineering"],
+  relatedServices: ["business-analysis", "test-management"],
   blocks: [
     { type: "h2", id: "gemeinsamer-kern", text: "Zwei Disziplinen mit gemeinsamem Kern" },
     {

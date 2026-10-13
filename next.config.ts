@@ -42,9 +42,18 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     serverActions: {
-      // The contact form only sends text.
-      bodySizeLimit: "200kb",
+      // The profile form uploads a CV of up to 4 MB (see CV_MAX_BYTES). 4.5 MB is also
+      // the request body limit of Vercel Functions, so a larger value would not help.
+      bodySizeLimit: "4.5mb",
     },
+  },
+  async redirects() {
+    return [
+      // "Für Partner" became "Für Unternehmen" (two entries: companies and specialists).
+      { source: "/partner", destination: "/unternehmen", permanent: true },
+      // Requirements Engineering is part of the combined service Business Analysis & Requirements Engineering.
+      { source: "/leistungen/requirements-engineering", destination: "/leistungen/business-analysis", permanent: true },
+    ];
   },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];

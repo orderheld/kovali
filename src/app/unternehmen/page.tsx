@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Building2, Mail } from "lucide-react";
+import { ArrowRight, Building2, Mail } from "lucide-react";
 import { Certifications } from "@/components/sections/certifications";
 import { CtaBand } from "@/components/sections/cta-band";
 import { PageHero } from "@/components/sections/page-hero";
@@ -10,33 +10,33 @@ import { Section, SectionHeader } from "@/components/ui/section";
 import { site } from "@/config/site";
 import { competencies } from "@/content/company";
 import { industries } from "@/content/industries";
-import { partner } from "@/content/partner";
+import { business } from "@/content/business";
 import { faqJsonLd, pageMetadata } from "@/lib/seo";
 
 export const metadata = pageMetadata({
-  title: "Business Analyst Contracting für IT-Dienstleister",
+  title: "Für Unternehmen – Business Analyst Contracting",
   description:
-    "Business Analyst Contracting für IT-Dienstleister und Beratungen: KOVALI übernimmt Rollen in Business Analysis, Requirements Engineering und Test im Kundenmandat.",
-  path: "/partner",
+    "Business Analyst Contracting für Beratungen, IT-Dienstleister und Unternehmen: KOVALI übernimmt Rollen in Business Analysis, Requirements Engineering, Application Management und Test.",
+  path: "/unternehmen",
 });
 
-const requestHref = "/kontakt?anfrage=it-consulting-mandat";
+const requestHref = "/kontakt?anfrage=contracting";
 
-export default function PartnerPage() {
+export default function UnternehmenPage() {
   const experience = industries.filter((i) => i.kind === "experience");
   return (
     <>
       <PageHero
         crumbs={[
           { name: "Start", path: "/" },
-          { name: "Für Partner", path: "/partner" },
+          { name: "Für Unternehmen", path: "/unternehmen" },
         ]}
-        eyebrow="Für IT-Dienstleister und Beratungen"
-        title="Ihr Partner für spezialisierte IT-Consulting-Mandate"
-        lead={partner.intro}
+        eyebrow="Für Beratungen, IT-Dienstleister und Unternehmen"
+        title="Spezialisierte Rollen für Ihre IT-Mandate"
+        lead={business.intro}
       >
         <ButtonLink href={requestHref} arrow>
-          Bedarf übermitteln
+          Zusammenarbeit anfragen
         </ButtonLink>
         <ButtonLink href="/ueber-uns" variant="secondary">
           Über KOVALI
@@ -50,7 +50,7 @@ export default function PartnerPage() {
           title="Business Analyst Contracting: diese Rollen übernimmt KOVALI"
         />
         <ul className="mt-12 grid gap-px overflow-hidden rounded-xl border border-line bg-line sm:grid-cols-2 lg:grid-cols-3">
-          {partner.roles.map((r) => (
+          {business.roles.map((r) => (
             <li key={r.title} className="bg-white p-7">
               <h3 className="text-h3 font-semibold">{r.title}</h3>
               <p className="mt-2 leading-relaxed text-slate">{r.text}</p>
@@ -100,7 +100,7 @@ export default function PartnerPage() {
           text="Die Vertragsform richtet sich nach Ihrem Mandat. Rollen, Ergebnisse und Verantwortlichkeiten werden vor dem Start schriftlich vereinbart."
         />
         <ul className="mt-12 grid gap-5 md:grid-cols-3">
-          {partner.models.map((m, i) => (
+          {business.models.map((m, i) => (
             <li key={m.title} className="rounded-xl border border-line p-7">
               <span className="font-mono text-xs text-blue">Modell {i + 1}</span>
               <h3 className="mt-3 text-h3 font-semibold">{m.title}</h3>
@@ -108,7 +108,7 @@ export default function PartnerPage() {
             </li>
           ))}
         </ul>
-        <p className="mt-8 max-w-3xl text-sm leading-relaxed text-slate">{partner.scopeNote}</p>
+        <p className="mt-8 max-w-3xl text-sm leading-relaxed text-slate">{business.scopeNote}</p>
       </Section>
 
       <Section tone="mist" labelledBy="ablauf-title">
@@ -116,11 +116,11 @@ export default function PartnerPage() {
           <div className="lg:col-span-4">
             <SectionHeader id="ablauf-title" eyebrow="Ablauf" title="So übermitteln Sie einen Bedarf" />
             <ButtonLink href={requestHref} arrow className="mt-9">
-              Bedarf übermitteln
+              Zusammenarbeit anfragen
             </ButtonLink>
           </div>
           <ol className="grid gap-5 sm:grid-cols-2 lg:col-span-8">
-            {partner.requestSteps.map((s, i) => (
+            {business.requestSteps.map((s, i) => (
               <li key={s.title} className="rounded-xl border border-line bg-white p-7">
                 <span className="flex size-9 items-center justify-center rounded-md bg-navy font-mono text-sm text-white">
                   {i + 1}
@@ -156,14 +156,19 @@ export default function PartnerPage() {
               </li>
             </ul>
           </div>
-          <div className="rounded-xl border border-dashed border-slate/35 bg-mist/60 p-8 md:p-10">
-            <p className="font-mono text-xs uppercase tracking-[0.12em] text-slate">Netzwerk</p>
-            <h2 className="mt-4 text-2xl font-semibold tracking-tight">{partner.specialists.title}</h2>
-            <p className="mt-4 leading-relaxed text-slate">{partner.specialists.text}</p>
-            <p className="mt-4 text-sm text-slate">{partner.specialists.note}</p>
-            <ButtonLink href="/kontakt?anfrage=b2b-kooperation" variant="secondary" className="mt-6">
-              Kontakt aufnehmen
-            </ButtonLink>
+          <div className="rounded-xl border border-line bg-mist p-8 md:p-10">
+            <p className="font-mono text-xs uppercase tracking-[0.12em] text-slate">Für Fachleute</p>
+            <h2 className="mt-4 text-2xl font-semibold tracking-tight">Sie suchen selbst ein Mandat?</h2>
+            <p className="mt-4 leading-relaxed text-slate">
+              Fachleute aus Business Analysis, Requirements Engineering, Application Management und Test können ihr
+              Profil auf der Seite für Fachleute senden.
+            </p>
+            <Link
+              href="/fachleute"
+              className="mt-6 inline-flex items-center gap-2 font-medium text-blue hover:text-blue-700"
+            >
+              Zur Seite für Fachleute <ArrowRight aria-hidden className="size-4" />
+            </Link>
           </div>
         </div>
       </Section>
@@ -171,21 +176,21 @@ export default function PartnerPage() {
       <Section tone="mist" labelledBy="faq-title">
         <div className="grid gap-12 lg:grid-cols-12 lg:gap-8">
           <div className="lg:col-span-4">
-            <SectionHeader id="faq-title" eyebrow="FAQ" title="Fragen von Partnern" />
+            <SectionHeader id="faq-title" eyebrow="FAQ" title="Fragen von Unternehmen" />
           </div>
           <div className="lg:col-span-8">
-            <Faq items={partner.faq} />
+            <Faq items={business.faq} />
           </div>
         </div>
       </Section>
 
       <CtaBand
         title="Sie haben ein Mandat mit offener Rolle?"
-        text="Senden Sie das Anforderungsprofil oder eine kurze Beschreibung. Sie erhalten eine persönliche Rückmeldung zu Passung und Verfügbarkeit."
-        primary={{ label: "Bedarf übermitteln", href: requestHref }}
+        text="Senden Sie das Anforderungsprofil oder eine kurze Beschreibung. Wir prüfen die Anfrage persönlich und melden uns mit einer ersten Einschätzung."
+        primary={{ label: "Zusammenarbeit anfragen", href: requestHref }}
         secondary={null}
       />
-      <JsonLd data={faqJsonLd([...partner.faq])} />
+      <JsonLd data={faqJsonLd([...business.faq])} />
     </>
   );
 }
