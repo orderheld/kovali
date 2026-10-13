@@ -1,0 +1,97 @@
+# KOVALI Website
+
+Website von **KOVALI – Business & Technology Consulting** (*From Requirements to Value.*).
+Business Analysis, Requirements Engineering, Application Management, Test Management und Test Engineering für IT-Projekte in der Schweiz.
+
+- Go-live: [docs/GO-LIVE.md](docs/GO-LIVE.md)
+- Redaktionsplan Insights: [docs/REDAKTIONSPLAN.md](docs/REDAKTIONSPLAN.md)
+- Logo und Markenzeichen: [brand/README.md](brand/README.md)
+
+## Technik
+
+| Bereich | Lösung |
+| --- | --- |
+| Framework | Next.js 16 (App Router, Turbopack), React 19, TypeScript |
+| Rendering | Alle Seiten statisch vorgerendert: `cacheComponents` und `ensureStatic = "navigation"` im Root-Layout. Eine Änderung, die eine Seite dynamisch machen würde, lässt den Build fehlschlagen. |
+| Styling | Tailwind CSS 4 mit Design-Tokens in `src/app/globals.css` |
+| Komponenten | Eigene Komponenten im shadcn/ui-Stil (`cn`, Varianten). Die Website braucht keine komplexen Primitive wie Dialoge oder Menüs, deshalb wurde auf die shadcn-CLI verzichtet. |
+| Icons | Lucide |
+| Schrift | Geist Sans und Geist Mono, selbst gehostet über das Paket `geist` |
+| Animation | Nur CSS (Hero-Linien, Hover). Keine Motion-Bibliothek, um JavaScript zu sparen. `prefers-reduced-motion` wird respektiert. |
+| Formular | Server Action mit Zod-Validierung, Resend für den Versand, Neon optional |
+| Hosting | Vercel (Region Frankfurt), Domain und DNS bei cyon |
+
+## Lokal starten
+
+```bash
+npm install
+cp .env.example .env.local   # CONTACT_DRY_RUN=true setzen, dann wird nichts versendet
+npm run dev                  # http://localhost:3000
+```
+
+| Skript | Zweck |
+| --- | --- |
+| `npm run dev` | Entwicklungsserver |
+| `npm run build` | Produktions-Build, prüft TypeScript und die statische Ausgabe |
+| `npm run start` | Produktions-Build lokal starten |
+| `npm run lint` | ESLint |
+| `npm run typecheck` | Routentypen erzeugen und `tsc` ausführen |
+| `npm run check:launch` | Offene Firmen- und Kontaktangaben sowie fehlende Umgebungsvariablen auflisten |
+| `npm run brand` | Logo-Dateien neu erzeugen (Python 3 und `fonttools` nötig) |
+
+## Struktur
+
+```
+src/
+  app/                    Seiten (App Router), sitemap.ts, robots.ts, manifest.ts, Icons, OG-Bild
+    kontakt/actions.ts    Server Action des Kontaktformulars
+    api/cron/retention/   Täglicher Lösch-Job für gespeicherte Anfragen (nur mit Neon)
+  components/             Layout, Abschnitte, UI-Bausteine, Logo
+  config/site.ts          Firmen-, Kontakt- und Rechtsangaben, aktive Logo-Richtung
+  content/                Alle Texte: Leistungen, Branchen, Unternehmen, Partner, Insights
+  lib/                    SEO und strukturierte Daten, Kontaktformular, Hilfsfunktionen
+brand/                    Logo-Generator und alle drei Logo-Richtungen als SVG
+db/schema.sql             Tabelle für die optionale Speicherung in Neon
+docs/                     Go-live-Anleitung, Redaktionsplan
+```
+
+## Inhalte pflegen
+
+- **Firmendaten** (Name, Rechtsform, UID, Adresse, E-Mail, Telefon, Domain): nur in `src/config/site.ts`. Impressum, Footer, Kontaktseite und strukturierte Daten lesen von dort. Werte mit `confirmed: false` meldet `npm run check:launch`.
+- **Leistungen**: `src/content/services.ts`. Jede Leistung hat H1, Meta-Titel, Beschreibung, Aufgaben, Ergebnisse, Nutzen, Szenarien, Branchen, Methoden und FAQ.
+- **Branchen**: `src/content/industries.ts`. `kind: "experience"` nur für nachgewiesene Projekterfahrung, `kind: "target"` für Zielmärkte.
+- **Insights**: neue Datei in `src/content/insights/` nach dem Muster der bestehenden Artikel anlegen und in `src/content/insights/index.ts` eintragen. Sitemap, Übersicht und strukturierte Daten folgen automatisch.
+- **Links im Text**: `[Linktext](/pfad)`.
+- **Sprache**: Schweizer Hochdeutsch, immer «ss» statt «ß».
+- **Sitemap-Datum**: `SITE_UPDATED` in `src/app/sitemap.ts` anpassen, wenn sich Seiteninhalte ändern.
+
+### Inhaltliche Leitplanken
+
+- Keine erfundenen Teams, Kundenreferenzen, Partnerschaften, Zitate oder Statistiken.
+- Frühere Arbeitgeber erscheinen nur als persönliche Berufserfahrung von Ferhat Demir, mit Hinweis.
+- Banken, Versicherungen und IT-Dienstleister sind Zielmärkte, keine Referenzbranchen.
+- Keine Angaben zu Verleih- oder Vermittlungsbewilligungen.
+
+## Kontaktformular
+
+Ablauf in `src/app/kontakt/actions.ts`:
+
+1. Honeypot und Mindest-Ausfüllzeit gegen Bots
+2. Validierung aller Felder auf dem Server (Zod, `src/lib/contact/schema.ts`)
+3. Rate Limit pro Absender (gesalzener IP-Hash, im Speicher und optional in Neon)
+4. Referenznummer erzeugen, E-Mail über Resend senden (Reply-To an die Absenderin oder den Absender)
+5. Optional in Neon speichern, mit Versandstatus `sent` oder `failed`
+6. Erfolgs- oder Fehlermeldung mit Referenz; bei Fehlern mit Hinweis auf `info@kovali.ch`
+
+API-Schlüssel werden nur auf dem Server gelesen (`src/lib/env.ts`, `server-only`). Das Formular funktioniert auch ohne JavaScript.
+Vorauswahl per Link: `/kontakt?leistung=business-analysis` oder `/kontakt?anfrage=b2b-kooperation`.
+
+## Qualitätssicherung
+
+Vor jedem Merge:
+
+```bash
+npm run lint && npm run typecheck && npm run build
+```
+
+Geprüft beim Aufbau: Build und TypeScript ohne Fehler, ESLint ohne Befund, axe-Prüfung (WCAG 2.2 AA) auf allen Seiten in Desktop- und Mobilbreite ohne Befund, keine horizontale Scrollbar bei 390 px, alle Formularszenarien (Validierung, Honeypot, zu schnelles Absenden, Rate Limit, Versandfehler, Erfolg, Vorauswahl), 404 für unbekannte Seiten.
