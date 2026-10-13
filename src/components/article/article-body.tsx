@@ -44,7 +44,14 @@ export function ArticleBody({ blocks }: { blocks: ArticleBlock[] }) {
             );
           case "table":
             return (
-              <div key={i} className="!mt-10 -mx-5 overflow-x-auto px-5 sm:mx-0 sm:px-0">
+              // Focusable so keyboard users can scroll the table on narrow screens.
+              <div
+                key={i}
+                role="region"
+                aria-label={block.caption}
+                tabIndex={0}
+                className="!mt-10 -mx-5 overflow-x-auto px-5 sm:mx-0 sm:px-0"
+              >
                 <table className="w-full min-w-[36rem] border-collapse text-left text-[0.9375rem] leading-relaxed">
                   <caption className="mb-3 text-left text-sm text-slate">{block.caption}</caption>
                   <thead>

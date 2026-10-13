@@ -48,8 +48,12 @@ const nextConfig: NextConfig = {
     },
   },
   async redirects() {
-    // "Für Partner" became "Für Unternehmen" (two entries: companies and specialists).
-    return [{ source: "/partner", destination: "/unternehmen", permanent: true }];
+    return [
+      // "Für Partner" became "Für Unternehmen" (two entries: companies and specialists).
+      { source: "/partner", destination: "/unternehmen", permanent: true },
+      // Requirements Engineering is part of the combined service Business Analysis & Requirements Engineering.
+      { source: "/leistungen/requirements-engineering", destination: "/leistungen/business-analysis", permanent: true },
+    ];
   },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];

@@ -84,7 +84,7 @@ export const competencies = [
 
 /** Key facts shown below the hero: the offer, not the founder's career. */
 export const facts = [
-  { value: "5", label: "Leistungen, einzeln oder kombiniert buchbar" },
+  { value: "4", label: "Leistungen, einzeln oder kombiniert buchbar" },
   { value: "2", label: "Methodenstandards: IREB und ISTQB" },
   { value: "3", label: "Projektsprachen: Deutsch, Französisch, Englisch" },
   { value: "CH", label: "Vor Ort, remote oder hybrid in der ganzen Schweiz" },

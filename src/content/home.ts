@@ -9,7 +9,7 @@ export const home = {
   },
   services: {
     eyebrow: "Leistungen",
-    title: "Fünf Leistungen entlang der Strecke von der Anforderung bis zur Abnahme",
+    title: "Vier Leistungen entlang der Strecke von der Anforderung bis zur Abnahme",
     text: "Jede Leistung ist einzeln buchbar. Zusammen decken sie den ganzen Weg ab: verstehen, spezifizieren, betreuen und prüfen.",
   },
   approach: {
