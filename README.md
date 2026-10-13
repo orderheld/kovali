@@ -80,13 +80,14 @@ docs/                     Go-live-Anleitung, Redaktionsplan
 Ablauf in `src/app/kontakt/actions.ts`:
 
 1. Honeypot und Mindest-Ausfüllzeit gegen Bots
-2. Validierung aller Felder auf dem Server (Zod, `src/lib/contact/schema.ts`)
+2. Validierung aller Felder auf dem Server (Zod, `src/lib/contact/schema.ts`) und des optionalen Anforderungsprofils (PDF oder Word bis 4 MB, geprüft am Dateiinhalt, `src/lib/uploads.ts`)
 3. Rate Limit pro Absender (gesalzener IP-Hash, im Speicher und optional in Neon)
 4. Referenznummer erzeugen, E-Mail über Resend senden (Reply-To an die Absenderin oder den Absender)
-5. Optional in Neon speichern, mit Versandstatus `sent` oder `failed`
+5. Optional in Neon speichern, mit Versandstatus `sent` oder `failed` (nur die Textfelder; ein hochgeladenes Anforderungsprofil geht nur als E-Mail-Anhang mit)
 6. Erfolgs- oder Fehlermeldung mit Referenz; bei Fehlern mit Hinweis auf `info@kovali.ch`
 
 API-Schlüssel werden nur auf dem Server gelesen (`src/lib/env.ts`, `server-only`). Das Formular funktioniert auch ohne JavaScript.
+Ohne Resend-Variablen zeigt die Produktion statt der Formulare die E-Mail-Adresse. Preview-Deployments ohne Resend laufen automatisch im Testmodus (`CONTACT_DRY_RUN`): Die Formulare sind sichtbar, prüfen alles und versenden nichts.
 Vorauswahl per Link: `/kontakt?leistung=business-analysis` oder `/kontakt?anfrage=contracting`.
 
 ## Profilformular (Für Fachleute)

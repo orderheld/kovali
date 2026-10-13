@@ -1,12 +1,15 @@
 import "server-only";
 import { Resend } from "resend";
 import { serverEnv } from "@/lib/env";
+import type { Attachment } from "./attachment";
 import { labelOf, requestTypes, serviceOptions, startOptions, workModes } from "./options";
 import type { ContactInput } from "./schema";
 
 export type EmailResult = { ok: true; id: string | null } | { ok: false; error: string };
 
-function rows(input: ContactInput, reference: string): [string, string][] {
+const attachmentLabel = { pdf: "Anforderungsprofil (PDF) im Anhang", docx: "Anforderungsprofil (Word) im Anhang" };
+
+function rows(input: ContactInput, reference: string, attachment?: Attachment): [string, string][] {
   return [
     ["Referenz", reference],
     ["Art der Anfrage", labelOf(requestTypes, input.requestType)],
@@ -18,6 +21,7 @@ function rows(input: ContactInput, reference: string): [string, string][] {
     ["Gewünschter Start", input.start ? labelOf(startOptions, input.start) : "–"],
     ["Arbeitsmodell", input.workMode ? labelOf(workModes, input.workMode) : "–"],
     ["Einsatzort", input.location ?? "–"],
+    ["Anhang", attachment ? attachmentLabel[attachment.kind] : "–"],
   ];
 }
 
@@ -30,8 +34,8 @@ export function escapeHtml(value: string): string {
     .replaceAll("'", "&#39;");
 }
 
-export function renderText(input: ContactInput, reference: string): string {
-  const head = rows(input, reference)
+export function renderText(input: ContactInput, reference: string, attachment?: Attachment): string {
+  const head = rows(input, reference, attachment)
     .map(([k, v]) => `${k}: ${v}`)
     .join("\n");
   return [
@@ -49,8 +53,8 @@ export function renderText(input: ContactInput, reference: string): string {
   ].join("\n");
 }
 
-export function renderHtml(input: ContactInput, reference: string): string {
-  const table = rows(input, reference)
+export function renderHtml(input: ContactInput, reference: string, attachment?: Attachment): string {
+  const table = rows(input, reference, attachment)
     .map(
       ([k, v]) =>
         `<tr><td style="padding:6px 16px 6px 0;color:#4A5878;vertical-align:top;white-space:nowrap">${escapeHtml(k)}</td><td style="padding:6px 0;color:#0B1733">${escapeHtml(v)}</td></tr>`,
@@ -67,13 +71,18 @@ ${block("Nachricht", input.message ?? "–")}
 </div>`;
 }
 
-export async function sendContactEmail(input: ContactInput, reference: string): Promise<EmailResult> {
+export async function sendContactEmail(
+  input: ContactInput,
+  reference: string,
+  attachment?: Attachment,
+): Promise<EmailResult> {
   const subject = `Anfrage ${labelOf(requestTypes, input.requestType)}: ${input.company ?? input.name} (${reference})`;
 
   if (serverEnv.dryRun) {
     // The full text is only printed locally; deployed dry runs log the reference only.
-    const body = process.env.NODE_ENV === "development" ? `\n${subject}\n${renderText(input, reference)}` : "";
-    console.info(`[contact] dry run, email not sent (${reference})${body}`);
+    const body = process.env.NODE_ENV === "development" ? `\n${subject}\n${renderText(input, reference, attachment)}` : "";
+    const file = attachment ? `, ${attachment.kind} ${attachment.content.length} bytes` : "";
+    console.info(`[contact] dry run, email not sent (${reference}${file})${body}`);
     return { ok: true, id: null };
   }
   if (!serverEnv.resendApiKey || !serverEnv.contactTo || !serverEnv.contactFrom) {
@@ -88,8 +97,11 @@ export async function sendContactEmail(input: ContactInput, reference: string): 
         to: serverEnv.contactTo,
         replyTo: input.email,
         subject,
-        text: renderText(input, reference),
-        html: renderHtml(input, reference),
+        text: renderText(input, reference, attachment),
+        html: renderHtml(input, reference, attachment),
+        attachments: attachment
+          ? [{ filename: `Anforderungsprofil-${reference}.${attachment.kind}`, content: attachment.content }]
+          : undefined,
         tags: [{ name: "source", value: "website_contact" }],
       },
       { idempotencyKey: `contact/${reference}` },

@@ -52,8 +52,8 @@ export default function KontaktPage() {
           </h2>
           <div className="mt-8">
             {formActive ? (
-              <Suspense fallback={<ContactForm fallbackEmail={email} />}>
-                <PreselectedContactForm fallbackEmail={email} />
+              <Suspense fallback={<ContactForm fallbackEmail={email} testMode={serverEnv.dryRun} />}>
+                <PreselectedContactForm fallbackEmail={email} testMode={serverEnv.dryRun} />
               </Suspense>
             ) : (
               <div className="rounded-xl border border-line bg-mist p-8">

@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /** Form controls shared by the contact form and the profile form. */
@@ -54,46 +56,6 @@ export function Field({
   );
 }
 
-export function Select({
-  options,
-  placeholder = "Bitte wählen",
-  ...props
-}: ControlProps & {
-  name: string;
-  defaultValue?: string;
-  options: readonly { value: string; label: string }[];
-  placeholder?: string;
-}) {
-  return (
-    <div className="relative">
-      <select
-        {...props}
-        defaultValue={props.defaultValue ?? ""}
-        className={cn(inputClass, "appearance-none pr-10")}
-      >
-        <option value="" disabled={props.required}>
-          {placeholder}
-        </option>
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
-      <svg
-        aria-hidden
-        viewBox="0 0 20 20"
-        className="pointer-events-none absolute right-3.5 top-1/2 size-4 -translate-y-1/2 text-slate"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.75"
-      >
-        <path d="M5 7.5 10 12.5 15 7.5" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    </div>
-  );
-}
-
 /** Invisible for people, bots tend to fill it. */
 export function Honeypot() {
   return (
@@ -101,5 +63,303 @@ export function Honeypot() {
       <label htmlFor="website">Website (bitte leer lassen)</label>
       <input id="website" name="website" type="text" tabIndex={-1} autoComplete="off" defaultValue="" />
     </div>
+  );
+}
+
+/** A numbered section of a form, so longer forms read as a few short steps. */
+export function FormStep({
+  number,
+  title,
+  children,
+}: {
+  number: number;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <fieldset className="space-y-6">
+      <legend className="mb-6 flex items-center gap-3 text-lg font-semibold text-ink">
+        <span
+          aria-hidden
+          className="flex size-7 items-center justify-center rounded-md bg-navy font-mono text-xs font-normal text-white"
+        >
+          {number}
+        </span>
+        {title}
+      </legend>
+      {children}
+    </fieldset>
+  );
+}
+
+interface ChoiceOption {
+  value: string;
+  label: string;
+  description?: string;
+}
+
+interface ChoiceProps {
+  /** Field name; also the id the error summary links to. */
+  name: string;
+  legend: string;
+  options: readonly ChoiceOption[];
+  defaultValue?: string;
+  required?: boolean;
+  optional?: boolean;
+  hint?: string;
+  error?: string;
+}
+
+function ChoiceGroup({
+  name,
+  legend,
+  required,
+  optional,
+  hint,
+  error,
+  children,
+}: Omit<ChoiceProps, "options" | "defaultValue"> & { children: React.ReactNode }) {
+  const hintId = hint ? `${name}-hint` : undefined;
+  const errorId = error ? `${name}-error` : undefined;
+  return (
+    <fieldset
+      id={name}
+      tabIndex={-1}
+      aria-describedby={[hintId, errorId].filter(Boolean).join(" ") || undefined}
+      className="scroll-mt-28 focus:outline-none"
+    >
+      <legend className="mb-3 text-[0.9375rem] font-medium text-ink">
+        {legend}
+        {required ? <span aria-hidden className="text-blue"> *</span> : null}
+        {optional ? <span className="font-normal text-slate"> (optional)</span> : null}
+      </legend>
+      {children}
+      {hint ? (
+        <p id={hintId} className="mt-2 text-sm text-slate">
+          {hint}
+        </p>
+      ) : null}
+      {error ? (
+        <p id={errorId} className="mt-2 text-sm text-red-700">
+          {error}
+        </p>
+      ) : null}
+    </fieldset>
+  );
+}
+
+/** Single choice as cards with a short explanation each. Native radios, so it works without JavaScript. */
+export function ChoiceTiles({ options, defaultValue, ...group }: ChoiceProps) {
+  return (
+    <ChoiceGroup {...group}>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {options.map((o) => (
+          <label
+            key={o.value}
+            className={cn(
+              "flex cursor-pointer gap-3 rounded-lg border bg-white p-4 transition-colors hover:border-slate/40",
+              "has-checked:border-blue has-checked:bg-blue/[0.04] has-checked:shadow-[inset_0_0_0_1px_var(--color-blue)]",
+              "has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-blue",
+              group.error ? "border-red-600/60" : "border-line",
+            )}
+          >
+            <input
+              type="radio"
+              name={group.name}
+              value={o.value}
+              required={group.required}
+              defaultChecked={defaultValue === o.value}
+              className="mt-0.5 size-4 shrink-0 accent-blue focus:outline-none"
+            />
+            <span>
+              <span className="block font-medium leading-snug text-ink">{o.label}</span>
+              {o.description ? <span className="mt-1 block text-sm leading-snug text-slate">{o.description}</span> : null}
+            </span>
+          </label>
+        ))}
+      </div>
+    </ChoiceGroup>
+  );
+}
+
+/** Single choice as compact pills, for short option lists. */
+export function ChoiceChips({ options, defaultValue, ...group }: ChoiceProps) {
+  return (
+    <ChoiceGroup {...group}>
+      <div className="flex flex-wrap gap-2">
+        {options.map((o) => (
+          <label
+            key={o.value}
+            className={cn(
+              "cursor-pointer rounded-full border bg-white px-4 py-2 text-[0.9375rem] text-ink transition-colors hover:border-slate/40",
+              "has-checked:border-blue has-checked:bg-blue has-checked:text-white",
+              "has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-blue",
+              group.error ? "border-red-600/60" : "border-line",
+            )}
+          >
+            <input
+              type="radio"
+              name={group.name}
+              value={o.value}
+              required={group.required}
+              defaultChecked={defaultValue === o.value}
+              className="sr-only"
+            />
+            {o.label}
+          </label>
+        ))}
+      </div>
+    </ChoiceGroup>
+  );
+}
+
+/** Shown above a form whose submissions are only checked, not sent (dry run, previews). */
+export function TestModeNotice() {
+  return (
+    <p className="rounded-lg border border-amber-500/40 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+      <strong className="font-semibold">Testmodus:</strong> Dieses Formular prüft Ihre Eingaben, versendet aber nichts.
+    </p>
+  );
+}
+
+/** Lists every invalid field with a link to it. Receives focus after a failed submit. */
+export function ErrorSummary({
+  ref,
+  errors,
+}: {
+  ref: React.Ref<HTMLDivElement>;
+  /** [field id, field label, message] */
+  errors: [string, string, string][];
+}) {
+  return (
+    <div ref={ref} tabIndex={-1} role="alert" className="rounded-lg border border-red-600/30 bg-red-50 p-5 text-red-900 focus:outline-none">
+      <p className="flex items-center gap-2 font-semibold">
+        <AlertCircle aria-hidden className="size-5" />
+        Bitte prüfen Sie {errors.length === 1 ? "eine Angabe" : `${errors.length} Angaben`}.
+      </p>
+      <ul className="mt-3 list-disc space-y-1 pl-7 text-sm">
+        {errors.map(([id, label, message]) => (
+          <li key={id}>
+            <a href={`#${id}`} className="underline underline-offset-2">
+              {label}
+            </a>
+            : {message}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/** Delivery or spam-check error, with the e-mail address as a way out. */
+export function SubmitError({
+  ref,
+  message,
+  reference,
+  fallbackEmail,
+}: {
+  ref: React.Ref<HTMLDivElement>;
+  message: string;
+  reference?: string;
+  fallbackEmail: string;
+}) {
+  return (
+    <div ref={ref} tabIndex={-1} role="alert" className="rounded-lg border border-red-600/30 bg-red-50 p-5 text-red-900 focus:outline-none">
+      <p className="flex items-start gap-2 font-semibold">
+        <AlertCircle aria-hidden className="mt-0.5 size-5 shrink-0" />
+        {message}
+      </p>
+      {reference ? <p className="mt-2 pl-7 font-mono text-sm">Referenz: {reference}</p> : null}
+      <p className="mt-2 pl-7 text-sm">
+        E-Mail:{" "}
+        <a href={`mailto:${fallbackEmail}`} className="underline underline-offset-2">
+          {fallbackEmail}
+        </a>
+      </p>
+    </div>
+  );
+}
+
+export function SuccessPanel({
+  headingRef,
+  title,
+  text,
+  reference,
+}: {
+  headingRef: React.Ref<HTMLHeadingElement>;
+  title: string;
+  text: string;
+  reference: string;
+}) {
+  return (
+    <div role="status" className="rounded-xl border border-line bg-mist p-8 md:p-10">
+      <CheckCircle2 aria-hidden className="size-9 text-blue" strokeWidth={1.75} />
+      <h2 ref={headingRef} tabIndex={-1} className="mt-5 text-2xl font-semibold tracking-tight focus:outline-none">
+        {title}
+      </h2>
+      <p className="mt-3 leading-relaxed text-slate">{text}</p>
+      <p className="mt-6 font-mono text-sm text-ink">
+        Referenz: <span className="font-semibold">{reference}</span>
+      </p>
+      <p className="mt-8">
+        <Link href="/" className="font-medium text-blue hover:underline">
+          Zur Startseite
+        </Link>
+      </p>
+    </div>
+  );
+}
+
+/** Consent checkbox with the privacy policy link. */
+export function Consent({ text, defaultChecked, error }: { text: string; defaultChecked: boolean; error?: string }) {
+  return (
+    <div>
+      <div className="flex gap-3">
+        <input
+          id="consent"
+          name="consent"
+          type="checkbox"
+          required
+          defaultChecked={defaultChecked}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? "consent-error" : undefined}
+          className="mt-1 size-5 shrink-0 rounded border-line accent-blue"
+        />
+        <label htmlFor="consent" className="leading-relaxed text-ink">
+          Ich habe die{" "}
+          <Link href="/datenschutz" className="text-blue underline underline-offset-[3px]">
+            Datenschutzerklärung
+          </Link>{" "}
+          gelesen und bin einverstanden, {text}
+          <span aria-hidden className="text-blue"> *</span>
+        </label>
+      </div>
+      {error ? (
+        <p id="consent-error" className="mt-2 pl-8 text-sm text-red-700">
+          {error}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+export function SubmitRow({ pending, label, pendingLabel }: { pending: boolean; label: string; pendingLabel: string }) {
+  return (
+    <>
+      <div className="flex flex-col gap-4 border-t border-line pt-7 sm:flex-row sm:items-center sm:justify-between">
+        <button
+          type="submit"
+          disabled={pending}
+          className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-blue px-7 font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-70"
+        >
+          {pending ? <Loader2 aria-hidden className="size-4 animate-spin" /> : null}
+          {pending ? pendingLabel : label}
+        </button>
+        <p className="text-sm text-slate">Die Übermittlung ist verschlüsselt. Es werden keine Cookies gesetzt.</p>
+      </div>
+      <p aria-live="polite" className="sr-only">
+        {pending ? pendingLabel : ""}
+      </p>
+    </>
   );
 }

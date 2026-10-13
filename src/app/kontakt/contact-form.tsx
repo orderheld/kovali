@@ -1,11 +1,36 @@
 "use client";
 
-import Link from "next/link";
-import { startTransition, useActionState, useEffect, useRef } from "react";
-import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
-import { Field, Honeypot, Select, inputClass } from "@/components/forms/fields";
-import { requestTypes, serviceOptions, startOptions, workModes } from "@/lib/contact/options";
-import { initialContactState, type ContactField, type ContactValues } from "@/lib/contact/state";
+import { startTransition, useActionState, useEffect, useRef, useState } from "react";
+import { ChevronDown } from "lucide-react";
+import { FileDrop } from "@/components/forms/file-drop";
+import {
+  ChoiceChips,
+  ChoiceTiles,
+  Consent,
+  ErrorSummary,
+  Field,
+  FormStep,
+  Honeypot,
+  SubmitError,
+  SubmitRow,
+  SuccessPanel,
+  TestModeNotice,
+  inputClass,
+} from "@/components/forms/fields";
+import {
+  ATTACHMENT_MAX_BYTES,
+  ATTACHMENT_MAX_LABEL,
+  requestTypes,
+  serviceOptions,
+  startOptions,
+  workModes,
+} from "@/lib/contact/options";
+import {
+  initialContactState,
+  type ContactErrorField,
+  type ContactField,
+  type ContactValues,
+} from "@/lib/contact/state";
 import { cn } from "@/lib/utils";
 import { submitContact } from "./actions";
 
@@ -14,7 +39,7 @@ export interface ContactDefaults {
   service?: string;
 }
 
-const FIELD_LABELS: Record<ContactField, string> = {
+const FIELD_LABELS: Record<ContactErrorField, string> = {
   name: "Name",
   company: "Unternehmen",
   email: "Geschäftliche E-Mail",
@@ -22,6 +47,7 @@ const FIELD_LABELS: Record<ContactField, string> = {
   requestType: "Art der Anfrage",
   service: "Gewünschte Leistung",
   projectDescription: "Beschreibung",
+  attachment: "Anforderungsprofil",
   start: "Gewünschter Start",
   workMode: "Arbeitsmodell",
   location: "Einsatzort",
@@ -29,8 +55,30 @@ const FIELD_LABELS: Record<ContactField, string> = {
   consent: "Datenschutz",
 };
 
-export function ContactForm({ defaults = {}, fallbackEmail }: { defaults?: ContactDefaults; fallbackEmail: string }) {
+/** Optional details, collapsed until the visitor opens them or one of them needs attention. */
+const DETAIL_FIELDS: ContactField[] = ["start", "workMode", "location", "message"];
+
+/** Quick check in the browser, so an unsuitable file fails before it is uploaded. */
+function attachmentProblem(file: File | undefined): string | undefined {
+  if (!file) return undefined;
+  if (file.size > ATTACHMENT_MAX_BYTES) {
+    return `Die Datei ist grösser als ${ATTACHMENT_MAX_LABEL}. Bitte laden Sie eine kleinere Datei hoch.`;
+  }
+  if (!/\.(pdf|docx)$/i.test(file.name)) return "Bitte laden Sie das Anforderungsprofil als PDF- oder Word-Datei (.docx) hoch.";
+  return undefined;
+}
+
+export function ContactForm({
+  defaults = {},
+  fallbackEmail,
+  testMode = false,
+}: {
+  defaults?: ContactDefaults;
+  fallbackEmail: string;
+  testMode?: boolean;
+}) {
   const [state, formAction, pending] = useActionState(submitContact, initialContactState);
+  const [fileError, setFileError] = useState<string>();
   const mountedAt = useRef(0);
   const summaryRef = useRef<HTMLDivElement>(null);
   const successRef = useRef<HTMLHeadingElement>(null);
@@ -46,198 +94,152 @@ export function ContactForm({ defaults = {}, fallbackEmail }: { defaults?: Conta
 
   if (state.status === "success") {
     return (
-      <div role="status" className="rounded-xl border border-line bg-mist p-8 md:p-10">
-        <CheckCircle2 aria-hidden className="size-9 text-blue" strokeWidth={1.75} />
-        <h2 ref={successRef} tabIndex={-1} className="mt-5 text-2xl font-semibold tracking-tight focus:outline-none">
-          Vielen Dank für Ihre Anfrage
-        </h2>
-        <p className="mt-3 leading-relaxed text-slate">
-          Ihre Nachricht ist angekommen. Sie erhalten eine persönliche Rückmeldung per E-Mail.
-        </p>
-        <p className="mt-6 font-mono text-sm text-ink">
-          Referenz: <span className="font-semibold">{state.reference}</span>
-        </p>
-        <p className="mt-8">
-          <Link href="/" className="font-medium text-blue hover:underline">
-            Zur Startseite
-          </Link>
-        </p>
-      </div>
+      <SuccessPanel
+        headingRef={successRef}
+        title="Vielen Dank für Ihre Anfrage"
+        text="Ihre Anfrage ist angekommen. Wir prüfen sie persönlich und melden uns mit einer ersten Einschätzung."
+        reference={state.reference}
+      />
     );
   }
 
   const values: ContactValues = state.status === "invalid" || state.status === "error" ? state.values : {};
-  const errors = state.status === "invalid" ? state.errors : {};
-  const errorEntries = Object.entries(errors) as [ContactField, string][];
+  const serverErrors = state.status === "invalid" ? state.errors : {};
+  const errors: Partial<Record<ContactErrorField, string>> = fileError ? { ...serverErrors, attachment: fileError } : serverErrors;
+  const errorEntries = (Object.entries(errors) as [ContactErrorField, string][]).map(
+    ([field, message]): [string, string, string] => [field, FIELD_LABELS[field], message],
+  );
   const v = (field: ContactField, fallback = "") => values[field] ?? fallback;
+  const detailsOpen = DETAIL_FIELDS.some((f) => values[f] || errors[f]);
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    // Dispatch manually so the browser keeps all entered values (no automatic form reset).
+    // Dispatch manually so the browser keeps all entered values and the chosen file.
     event.preventDefault();
     const data = new FormData(event.currentTarget);
+    const file = data.get("attachment");
+    const problem = attachmentProblem(file instanceof File && file.size > 0 ? file : undefined);
+    if (problem) {
+      setFileError(problem);
+      document.getElementById("attachment")?.focus();
+      return;
+    }
     // Fill time on the visitor's own clock, so a wrong system time cannot block the request.
     if (mountedAt.current > 0) data.set("elapsedMs", String(Math.round(performance.now() - mountedAt.current)));
     startTransition(() => formAction(data));
   }
 
   return (
-    <form action={formAction} onSubmit={handleSubmit} noValidate className="space-y-7" aria-describedby="form-hint">
-      {state.status === "invalid" ? (
-        <div
-          ref={summaryRef}
-          tabIndex={-1}
-          role="alert"
-          className="rounded-lg border border-red-600/30 bg-red-50 p-5 text-red-900 focus:outline-none"
-        >
-          <p className="flex items-center gap-2 font-semibold">
-            <AlertCircle aria-hidden className="size-5" />
-            Bitte prüfen Sie {errorEntries.length === 1 ? "eine Angabe" : `${errorEntries.length} Angaben`}.
-          </p>
-          <ul className="mt-3 list-disc space-y-1 pl-7 text-sm">
-            {errorEntries.map(([field, message]) => (
-              <li key={field}>
-                <a href={`#${field}`} className="underline underline-offset-2">
-                  {FIELD_LABELS[field]}
-                </a>
-                : {message}
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
-
-      {state.status === "error" ? (
-        <div
-          ref={summaryRef}
-          tabIndex={-1}
-          role="alert"
-          className="rounded-lg border border-red-600/30 bg-red-50 p-5 text-red-900 focus:outline-none"
-        >
-          <p className="flex items-start gap-2 font-semibold">
-            <AlertCircle aria-hidden className="mt-0.5 size-5 shrink-0" />
-            {state.message}
-          </p>
-          {state.reference ? (
-            <p className="mt-2 pl-7 font-mono text-sm">Referenz: {state.reference}</p>
-          ) : null}
-          <p className="mt-2 pl-7 text-sm">
-            E-Mail:{" "}
-            <a href={`mailto:${fallbackEmail}`} className="underline underline-offset-2">
-              {fallbackEmail}
-            </a>
-          </p>
-        </div>
-      ) : null}
-
-      <p id="form-hint" className="text-sm text-slate">
-        Pflichtfelder sind mit <span aria-hidden className="text-blue">*</span>
-        <span className="sr-only">Stern</span> markiert.
-      </p>
-
-      <div className="grid gap-6 sm:grid-cols-2">
-        <Field id="name" label="Name" required error={errors.name}>
-          {(p) => <input {...p} name="name" type="text" autoComplete="name" defaultValue={v("name")} className={inputClass} />}
-        </Field>
-        <Field id="company" label="Unternehmen" optional error={errors.company}>
-          {(p) => (
-            <input {...p} name="company" type="text" autoComplete="organization" defaultValue={v("company")} className={inputClass} />
-          )}
-        </Field>
-        <Field id="email" label="Geschäftliche E-Mail" required error={errors.email}>
-          {(p) => (
-            <input {...p} name="email" type="email" autoComplete="email" inputMode="email" defaultValue={v("email")} className={inputClass} />
-          )}
-        </Field>
-        <Field id="phone" label="Telefon" optional error={errors.phone}>
-          {(p) => <input {...p} name="phone" type="tel" autoComplete="tel" defaultValue={v("phone")} className={inputClass} />}
-        </Field>
-        <Field id="requestType" label="Art der Anfrage" required error={errors.requestType}>
-          {(p) => (
-            <Select {...p} name="requestType" defaultValue={v("requestType", defaults.requestType)} options={requestTypes} />
-          )}
-        </Field>
-        <Field id="service" label="Gewünschte Leistung" optional error={errors.service}>
-          {(p) => (
-            <Select {...p} name="service" defaultValue={v("service", defaults.service)} options={serviceOptions} placeholder="Keine Angabe" />
-          )}
-        </Field>
+    <form action={formAction} onSubmit={handleSubmit} noValidate className="space-y-10" aria-describedby="form-hint">
+      <div className="space-y-4">
+        {testMode ? <TestModeNotice /> : null}
+        {errorEntries.length > 0 ? <ErrorSummary ref={summaryRef} errors={errorEntries} /> : null}
+        {state.status === "error" ? (
+          <SubmitError ref={summaryRef} message={state.message} reference={state.reference} fallbackEmail={fallbackEmail} />
+        ) : null}
+        <p id="form-hint" className="text-sm text-slate">
+          Pflichtfelder sind mit <span aria-hidden className="text-blue">*</span>
+          <span className="sr-only">Stern</span> markiert. Alles Weitere ist freiwillig.
+        </p>
       </div>
 
-      <Field
-        id="projectDescription"
-        label="Beschreibung"
-        required
-        hint="Gesuchte Rolle, Aufgaben, Zeitraum und Pensum oder Ausgangslage und Ziel des Projekts. Ein Anforderungsprofil können Sie direkt hineinkopieren. Bitte keine vertraulichen Kundendaten."
-        error={errors.projectDescription}
-      >
-        {(p) => (
-          <textarea {...p} name="projectDescription" rows={6} defaultValue={v("projectDescription")} className={cn(inputClass, "resize-y")} />
-        )}
-      </Field>
-
-      <div className="grid gap-6 sm:grid-cols-3">
-        <Field id="start" label="Gewünschter Start" optional error={errors.start}>
-          {(p) => <Select {...p} name="start" defaultValue={v("start")} options={startOptions} placeholder="Keine Angabe" />}
-        </Field>
-        <Field id="workMode" label="Arbeitsmodell" optional error={errors.workMode}>
-          {(p) => <Select {...p} name="workMode" defaultValue={v("workMode")} options={workModes} placeholder="Keine Angabe" />}
-        </Field>
-        <Field id="location" label="Einsatzort" optional error={errors.location}>
+      <FormStep number={1} title="Worum geht es?">
+        <ChoiceTiles
+          name="requestType"
+          legend="Art der Anfrage"
+          required
+          options={requestTypes}
+          defaultValue={v("requestType", defaults.requestType)}
+          error={errors.requestType}
+        />
+        <ChoiceChips
+          name="service"
+          legend="Gewünschte Leistung"
+          optional
+          options={serviceOptions}
+          defaultValue={v("service", defaults.service)}
+          error={errors.service}
+        />
+        <Field
+          id="projectDescription"
+          label="Beschreibung"
+          required
+          hint="Gesuchte Rolle, Aufgaben, Zeitraum und Pensum oder Ausgangslage und Ziel des Projekts. Bitte keine vertraulichen Kundendaten."
+          error={errors.projectDescription}
+        >
           {(p) => (
-            <input {...p} name="location" type="text" placeholder="z. B. Bern" defaultValue={v("location")} className={inputClass} />
+            <textarea
+              {...p}
+              name="projectDescription"
+              rows={5}
+              placeholder="Zum Beispiel: Business Analyst für die Ablösung einer Fachapplikation, ab März, 80 bis 100 %, Bern und remote."
+              defaultValue={v("projectDescription")}
+              className={cn(inputClass, "resize-y")}
+            />
           )}
         </Field>
-      </div>
+        <FileDrop
+          id="attachment"
+          label="Anforderungsprofil"
+          optional
+          accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          formats={`PDF oder Word, höchstens ${ATTACHMENT_MAX_LABEL}`}
+          error={errors.attachment}
+          onSelect={(file) => setFileError(attachmentProblem(file))}
+        />
 
-      <Field id="message" label="Nachricht" optional hint="Weitere Fragen, Rahmenbedingungen oder Rückrufwunsch." error={errors.message}>
-        {(p) => <textarea {...p} name="message" rows={4} defaultValue={v("message")} className={cn(inputClass, "resize-y")} />}
-      </Field>
+        <details open={detailsOpen} className="group rounded-lg border border-line">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 font-medium text-ink marker:hidden hover:text-blue [&::-webkit-details-marker]:hidden">
+            <span>
+              Rahmen angeben <span className="font-normal text-slate">(optional: Start, Arbeitsmodell, Einsatzort)</span>
+            </span>
+            <ChevronDown aria-hidden className="size-5 shrink-0 text-slate transition-transform group-open:rotate-180" />
+          </summary>
+          <div className="space-y-6 border-t border-line px-5 pb-6 pt-5">
+            <ChoiceChips name="start" legend="Gewünschter Start" options={startOptions} defaultValue={v("start")} error={errors.start} />
+            <ChoiceChips name="workMode" legend="Arbeitsmodell" options={workModes} defaultValue={v("workMode")} error={errors.workMode} />
+            <Field id="location" label="Einsatzort" error={errors.location}>
+              {(p) => (
+                <input {...p} name="location" type="text" placeholder="z. B. Bern" defaultValue={v("location")} className={inputClass} />
+              )}
+            </Field>
+            <Field id="message" label="Nachricht" hint="Weitere Fragen, Rahmenbedingungen oder Rückrufwunsch." error={errors.message}>
+              {(p) => <textarea {...p} name="message" rows={3} defaultValue={v("message")} className={cn(inputClass, "resize-y")} />}
+            </Field>
+          </div>
+        </details>
+      </FormStep>
+
+      <FormStep number={2} title="Ihre Kontaktdaten">
+        <div className="grid gap-6 sm:grid-cols-2">
+          <Field id="name" label="Name" required error={errors.name}>
+            {(p) => <input {...p} name="name" type="text" autoComplete="name" defaultValue={v("name")} className={inputClass} />}
+          </Field>
+          <Field id="company" label="Unternehmen" optional error={errors.company}>
+            {(p) => (
+              <input {...p} name="company" type="text" autoComplete="organization" defaultValue={v("company")} className={inputClass} />
+            )}
+          </Field>
+          <Field id="email" label="Geschäftliche E-Mail" required error={errors.email}>
+            {(p) => (
+              <input {...p} name="email" type="email" autoComplete="email" inputMode="email" defaultValue={v("email")} className={inputClass} />
+            )}
+          </Field>
+          <Field id="phone" label="Telefon" optional error={errors.phone}>
+            {(p) => <input {...p} name="phone" type="tel" autoComplete="tel" defaultValue={v("phone")} className={inputClass} />}
+          </Field>
+        </div>
+      </FormStep>
 
       <Honeypot />
 
-      <div>
-        <div className="flex gap-3">
-          <input
-            id="consent"
-            name="consent"
-            type="checkbox"
-            required
-            defaultChecked={v("consent") === "on"}
-            aria-invalid={errors.consent ? true : undefined}
-            aria-describedby={errors.consent ? "consent-error" : undefined}
-            className="mt-1 size-5 shrink-0 rounded border-line accent-blue"
-          />
-          <label htmlFor="consent" className="leading-relaxed text-ink">
-            Ich habe die{" "}
-            <Link href="/datenschutz" className="text-blue underline underline-offset-[3px]">
-              Datenschutzerklärung
-            </Link>{" "}
-            gelesen und bin einverstanden, dass meine Angaben zur Bearbeitung der Anfrage verwendet werden.
-            <span aria-hidden className="text-blue"> *</span>
-          </label>
-        </div>
-        {errors.consent ? (
-          <p id="consent-error" className="mt-2 pl-8 text-sm text-red-700">
-            {errors.consent}
-          </p>
-        ) : null}
+      <div className="space-y-7">
+        <Consent
+          text="dass meine Angaben zur Bearbeitung der Anfrage verwendet werden."
+          defaultChecked={v("consent") === "on"}
+          error={errors.consent}
+        />
+        <SubmitRow pending={pending} label="Anfrage senden" pendingLabel="Anfrage wird gesendet" />
       </div>
-
-      <div className="flex flex-col gap-4 border-t border-line pt-7 sm:flex-row sm:items-center sm:justify-between">
-        <button
-          type="submit"
-          disabled={pending}
-          className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-blue px-7 font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-70"
-        >
-          {pending ? <Loader2 aria-hidden className="size-4 animate-spin" /> : null}
-          {pending ? "Anfrage wird gesendet" : "Anfrage senden"}
-        </button>
-        <p className="text-sm text-slate">Die Übermittlung ist verschlüsselt. Es werden keine Cookies gesetzt.</p>
-      </div>
-      <p aria-live="polite" className="sr-only">
-        {pending ? "Anfrage wird gesendet" : ""}
-      </p>
     </form>
   );
 }
-

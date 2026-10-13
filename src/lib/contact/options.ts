@@ -4,10 +4,10 @@ import type { ServiceSlug } from "@/content/types";
 
 /** How a company wants to work with KOVALI. What it needs is asked separately (serviceOptions). */
 export const requestTypes = [
-  { value: "contracting", label: "Contracting: Rolle im Kundenmandat" },
-  { value: "projekt", label: "Projekt oder abgegrenztes Teilmandat" },
-  { value: "kooperation", label: "Kooperation" },
-  { value: "allgemeine-anfrage", label: "Allgemeine Anfrage" },
+  { value: "contracting", label: "Contracting", description: "Eine Rolle im Mandat Ihres Kunden besetzen, als Subunternehmen." },
+  { value: "projekt", label: "Projekt oder Teilmandat", description: "Ein abgegrenztes Vorhaben mit klarem Ergebnis." },
+  { value: "kooperation", label: "Kooperation", description: "Regelmässig zusammenarbeiten, zum Beispiel bei grösseren Mandaten." },
+  { value: "allgemeine-anfrage", label: "Allgemeine Anfrage", description: "Eine Frage oder ein erstes Kennenlernen." },
 ] as const;
 
 // Service names are repeated here (instead of importing all service content) to keep the client bundle small.
@@ -21,7 +21,7 @@ const serviceNames = [
 export const serviceOptions = [
   ...serviceNames,
   { value: "mehrere", label: "Mehrere Leistungen" },
-  { value: "offen", label: "Noch offen, Beratung gewünscht" },
+  { value: "offen", label: "Noch offen" },
 ] as const;
 
 export const startOptions = [
@@ -37,6 +37,10 @@ export const workModes = [
   { value: "remote", label: "Remote" },
   { value: "hybrid", label: "Hybrid" },
 ] as const;
+
+/** Optional requirement profile in the contact form (PDF or Word). Stays below Vercel's 4.5 MB request limit. */
+export const ATTACHMENT_MAX_BYTES = 4 * 1024 * 1024;
+export const ATTACHMENT_MAX_LABEL = "4 MB";
 
 type Values<T extends readonly { value: string }[]> = T[number]["value"];
 export type RequestType = Values<typeof requestTypes>;
