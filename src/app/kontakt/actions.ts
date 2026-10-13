@@ -2,11 +2,12 @@
 
 import { headers } from "next/headers";
 import { site } from "@/config/site";
+import { checkAttachment } from "@/lib/contact/attachment";
 import { sendContactEmail } from "@/lib/contact/email";
 import { clientIp, hashIp, takeToken } from "@/lib/contact/rate-limit";
 import { createReference } from "@/lib/contact/reference";
 import { contactSchema, fieldErrors } from "@/lib/contact/schema";
-import type { ContactField, ContactState, ContactValues } from "@/lib/contact/state";
+import type { ContactErrorField, ContactField, ContactState, ContactValues } from "@/lib/contact/state";
 import { isStorageConfigured, recentRequestCount, storeContactRequest } from "@/lib/contact/store";
 
 /** Minimum time between page load and submit. Faster submissions are almost always bots. */
@@ -65,10 +66,13 @@ export async function submitContact(_prev: ContactState, formData: FormData): Pr
     };
   }
 
-  // 3. Server-side validation.
+  // 3. Server-side validation of the text fields and the optional file, reported together.
   const parsed = contactSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) {
-    return { status: "invalid", errors: fieldErrors(parsed.error), values };
+  const file = await checkAttachment(formData.get("attachment"));
+  if (!parsed.success || !file.ok) {
+    const errors: Partial<Record<ContactErrorField, string>> = parsed.success ? {} : fieldErrors(parsed.error);
+    if (!file.ok) errors.attachment = file.error;
+    return { status: "invalid", errors, values };
   }
   const input = parsed.data;
 
@@ -92,8 +96,9 @@ export async function submitContact(_prev: ContactState, formData: FormData): Pr
   }
 
   // 5. Deliver by email first, then store (optional). Each step is logged with the reference.
+  // The attachment only travels with the e-mail; the database keeps the text fields.
   const reference = createReference();
-  const email = await sendContactEmail(input, reference);
+  const email = await sendContactEmail(input, reference, file.attachment);
 
   let storage: "disabled" | "stored" | "failed" = "disabled";
   if (isStorageConfigured()) {
@@ -109,6 +114,7 @@ export async function submitContact(_prev: ContactState, formData: FormData): Pr
   log("contact.received", {
     reference,
     requestType: input.requestType,
+    attachment: file.attachment?.kind ?? "none",
     email: email.ok ? "sent" : "failed",
     emailError: email.ok ? undefined : email.error,
     storage,

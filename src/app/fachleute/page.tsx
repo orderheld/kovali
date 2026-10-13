@@ -84,7 +84,7 @@ export default function FachleutePage() {
             </h2>
             <div className="mt-8">
               {formActive ? (
-                <ProfileForm fallbackEmail={email} />
+                <ProfileForm fallbackEmail={email} testMode={serverEnv.dryRun} />
               ) : (
                 <div className="rounded-xl border border-line bg-mist p-8">
                   <p className="leading-relaxed text-slate">

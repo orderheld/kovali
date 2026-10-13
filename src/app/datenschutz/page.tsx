@@ -51,17 +51,19 @@ export default function DatenschutzPage() {
       <p>
         Wenn Sie das Kontaktformular verwenden, werden die von Ihnen eingegebenen Angaben bearbeitet: Name, Unternehmen,
         E-Mail-Adresse, optional Telefonnummer, Art der Anfrage, gewünschte Leistung, Beschreibung, optional
-        gewünschter Start, Arbeitsmodell und Einsatzort sowie Ihre Nachricht. Zweck ist die Bearbeitung Ihrer Anfrage
+        gewünschter Start, Arbeitsmodell und Einsatzort, Ihre Nachricht sowie optional ein Anforderungsprofil als Datei.
+        Zweck ist die Bearbeitung Ihrer Anfrage
         und gegebenenfalls die Vorbereitung einer Zusammenarbeit.
       </p>
       <ul>
         <li>
           Die Anfrage wird über den E-Mail-Dienst Resend (Resend, Inc., USA) an das Postfach von {site.brand}{" "}
-          übermittelt.
+          übermittelt, ein Anforderungsprofil als Anhang.
         </li>
         <li>
           Je nach Konfiguration wird die Anfrage zusätzlich in einer Datenbank des Anbieters Neon (Neon, Inc., USA) mit
-          Speicherort in der Europäischen Union abgelegt, damit keine Anfrage verloren geht.
+          Speicherort in der Europäischen Union abgelegt, damit keine Anfrage verloren geht. Ein Anforderungsprofil wird
+          dort nicht gespeichert.
         </li>
         <li>
           Zum Schutz vor Missbrauch wird aus Ihrer IP-Adresse ein nicht umkehrbarer Hashwert gebildet, mit dem die
