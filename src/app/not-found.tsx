@@ -1,11 +1,14 @@
 import Link from "next/link";
+import { SiteChrome } from "@/components/layout/site-chrome";
 import { ButtonLink } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { mainNav } from "@/content/navigation";
 
+/** Unknown addresses render outside the site layout, so the page brings its own chrome. */
 export default function NotFound() {
   return (
-    <section className="relative overflow-hidden bg-mist">
+    <SiteChrome>
+      <section className="relative overflow-hidden bg-mist">
       <div aria-hidden className="grid-lines absolute inset-0 opacity-60 [mask-image:linear-gradient(to_bottom,black,transparent)]" />
       <Container className="relative py-24 md:py-32">
         <p className="font-mono text-sm text-blue">Fehler 404</p>
@@ -26,6 +29,7 @@ export default function NotFound() {
           Zur Startseite
         </ButtonLink>
       </Container>
-    </section>
+      </section>
+    </SiteChrome>
   );
 }

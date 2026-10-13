@@ -1,15 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
-import { SiteFooter } from "@/components/layout/site-footer";
-import { SiteHeader } from "@/components/layout/site-header";
-import { JsonLd } from "@/components/seo/json-ld";
 import { isIndexable, site } from "@/config/site";
-import { organizationJsonLd, websiteJsonLd } from "@/lib/seo";
 import "./globals.css";
-
-/** The whole site is prerendered at build time; request-time rendering fails the build. */
-export const ensureStatic = "navigation";
 
 const googleVerification = process.env.GOOGLE_SITE_VERIFICATION;
 
@@ -39,23 +32,14 @@ export const viewport: Viewport = {
   colorScheme: "light",
 };
 
+/**
+ * Shared document shell for the public site (`(site)/layout.tsx`, prerendered) and the
+ * admin area (`admin/`, rendered per request). Page chrome lives in those layouts.
+ */
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="de-CH" className={`${GeistSans.variable} ${GeistMono.variable} h-full antialiased`}>
-      <body className="flex min-h-full flex-col">
-        <a
-          href="#inhalt"
-          className="sr-only z-[60] rounded-md bg-navy px-4 py-3 text-white focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
-        >
-          Zum Inhalt springen
-        </a>
-        <SiteHeader />
-        <main id="inhalt" className="flex-1">
-          {children}
-        </main>
-        <SiteFooter />
-        <JsonLd data={[organizationJsonLd(), websiteJsonLd()]} />
-      </body>
+      <body className="flex min-h-full flex-col">{children}</body>
     </html>
   );
 }

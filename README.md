@@ -12,7 +12,7 @@ Business Analysis, Requirements Engineering, Application Management, Test Manage
 | Bereich | Lösung |
 | --- | --- |
 | Framework | Next.js 16 (App Router, Turbopack), React 19, TypeScript |
-| Rendering | Alle Seiten statisch vorgerendert: `cacheComponents` und `ensureStatic = "navigation"` im Root-Layout. Eine Änderung, die eine Seite dynamisch machen würde, lässt den Build fehlschlagen. |
+| Rendering | Alle Seiten der Website statisch vorgerendert: `cacheComponents` und `ensureStatic = "navigation"` im Layout der Routengruppe `(site)`. Eine Änderung, die eine Seite dynamisch machen würde, lässt den Build fehlschlagen. |
 | Styling | Tailwind CSS 4 mit Design-Tokens in `src/app/globals.css` |
 | Komponenten | Eigene Komponenten im shadcn/ui-Stil (`cn`, Varianten). Die Website braucht keine komplexen Primitive wie Dialoge oder Menüs, deshalb wurde auf die shadcn-CLI verzichtet. |
 | Icons | Lucide |
@@ -43,9 +43,10 @@ npm run dev                  # http://localhost:3000
 
 ```
 src/
-  app/                    Seiten (App Router), sitemap.ts, robots.ts, manifest.ts, Icons, OG-Bild
-    kontakt/actions.ts    Server Action des Kontaktformulars (Unternehmen)
-    fachleute/actions.ts  Server Action des Profilformulars (Fachleute, Lebenslauf als PDF)
+  app/                    Root-Layout, sitemap.ts, robots.ts, manifest.ts, Icons, OG-Bild, 404
+    (site)/               Öffentliche Website (statisch vorgerendert, eigenes Layout mit Header und Footer)
+      kontakt/actions.ts  Server Action des Kontaktformulars (Unternehmen)
+      fachleute/actions.ts Server Action des Profilformulars (Fachleute, Lebenslauf als PDF)
     api/cron/retention/   Täglicher Lösch-Job für gespeicherte Anfragen (nur mit Neon)
   components/             Layout, Abschnitte, UI-Bausteine, Logo
   config/site.ts          Firmen-, Kontakt- und Rechtsangaben, aktive Logo-Richtung
@@ -77,7 +78,7 @@ docs/                     Go-live-Anleitung, Redaktionsplan
 
 ## Kontaktformular
 
-Ablauf in `src/app/kontakt/actions.ts`:
+Ablauf in `src/app/(site)/kontakt/actions.ts`:
 
 1. Honeypot und Mindest-Ausfüllzeit gegen Bots
 2. Validierung aller Felder auf dem Server (Zod, `src/lib/contact/schema.ts`) und des optionalen Anforderungsprofils (PDF oder Word bis 4 MB, geprüft am Dateiinhalt, `src/lib/uploads.ts`)
@@ -92,7 +93,7 @@ Vorauswahl per Link: `/kontakt?leistung=business-analysis` oder `/kontakt?anfrag
 
 ## Profilformular (Für Fachleute)
 
-Ablauf in `src/app/fachleute/actions.ts`, mit denselben Schutzmechanismen wie das Kontaktformular:
+Ablauf in `src/app/(site)/fachleute/actions.ts`, mit denselben Schutzmechanismen wie das Kontaktformular:
 
 1. Honeypot, Mindest-Ausfüllzeit und Rate Limit
 2. Validierung der Felder (`src/lib/profile/schema.ts`) und des Lebenslaufs (`src/lib/profile/cv.ts`): genau eine PDF-Datei bis 4 MB, geprüft am Dateiinhalt
