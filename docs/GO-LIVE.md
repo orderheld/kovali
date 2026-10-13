@@ -124,7 +124,7 @@ Das Formular sendet jede Anfrage über [Resend](https://resend.com) an `info@kov
 - [ ] Impressum: Firmenname, Adresse, E-Mail, gegebenenfalls UID, MWST und Handelsregister korrekt.
 - [ ] Datenschutzerklärung: Regionen der Anbieter bestätigen (Vercel Funktionen Frankfurt, Resend EU, Neon Frankfurt) und prüfen, ob Vercel, Resend und Neon unter dem Swiss-U.S. Data Privacy Framework zertifiziert sind ([dataprivacyframework.gov](https://www.dataprivacyframework.gov)). Andernfalls bleibt der Hinweis auf Standardvertragsklauseln massgebend.
 - [ ] Auftragsverarbeitungsverträge (DPA) von Vercel, Resend und gegebenenfalls Neon in den jeweiligen Konten akzeptieren bzw. herunterladen.
-- [ ] Wird Neon **nicht** verwendet: den Absatz zur Datenbank in `src/app/datenschutz/page.tsx` entfernen.
+- [ ] Wird Neon **nicht** verwendet: den Absatz zur Datenbank in `src/app/(site)/datenschutz/page.tsx` entfernen.
 - [ ] Markenrecherche für «KOVALI» beim IGE ([swissreg.ch](https://www.swissreg.ch)), bevor Logo und Domain auf Drucksachen erscheinen.
 - [ ] Zusammenarbeitsmodelle (Subunternehmen, Teilmandat) rechtlich prüfen lassen. Die Website erwähnt ausdrücklich, dass Personalverleih und Arbeitsvermittlung derzeit nicht angeboten werden.
 - [ ] Die drei Insights-Artikel fachlich gegenlesen.
