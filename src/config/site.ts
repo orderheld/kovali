@@ -17,6 +17,13 @@ export interface Confirmable<T> {
 
 export type LegalForm = "einzelunternehmen" | "gmbh";
 
+/**
+ * Production address Vercel reports at build time, without "https://": the shortest
+ * custom domain, or the *.vercel.app address while no custom domain is connected.
+ * Unset outside Vercel.
+ */
+const vercelProductionHost = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+
 export const legalFormLabel: Record<LegalForm, string> = {
   einzelunternehmen: "Einzelunternehmen",
   gmbh: "Gesellschaft mit beschränkter Haftung (GmbH)",
@@ -33,9 +40,14 @@ export const site = {
   /** Active logo direction: "signature" | "tech" | "minimal" (see brand/README.md). */
   logoDirection: "signature",
 
-  /** Public base URL. Set NEXT_PUBLIC_SITE_URL in Vercel; the fallback is only used locally. */
+  /**
+   * Public base URL. NEXT_PUBLIC_SITE_URL wins; without it the Vercel production address
+   * is used, and outside Vercel the planned domain.
+   */
   url: {
-    value: process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.kovali.ch",
+    value:
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      (vercelProductionHost ? `https://${vercelProductionHost}` : "https://www.kovali.ch"),
     confirmed: false,
     note: "Domain noch nicht registriert bzw. bestätigt.",
   } satisfies Confirmable<string>,
@@ -93,6 +105,14 @@ export const site = {
     linkedin: null as string | null,
   },
 } as const;
+
+/**
+ * Search engines may index the site only in production on its own domain. Previews and
+ * the *.vercel.app address stay out of the index until a custom domain is connected and
+ * the project is redeployed. Outside Vercel the site counts as indexable.
+ */
+export const isIndexable =
+  (process.env.VERCEL_ENV ?? "production") === "production" && !vercelProductionHost?.endsWith(".vercel.app");
 
 /** Display name of the contracting party, e.g. in the imprint. */
 export function legalEntityName(): string {

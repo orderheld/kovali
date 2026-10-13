@@ -1,8 +1,10 @@
 import { Suspense } from "react";
 import { Mail, MapPin, UserRound } from "lucide-react";
 import { PageHero } from "@/components/sections/page-hero";
+import { buttonClasses } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { site } from "@/config/site";
+import { isEmailConfigured, serverEnv } from "@/lib/env";
 import { pageMetadata } from "@/lib/seo";
 import { ContactForm } from "./contact-form";
 import { PreselectedContactForm } from "./preselected-form";
@@ -14,8 +16,16 @@ export const metadata = pageMetadata({
   path: "/kontakt",
 });
 
+/**
+ * The form only appears when requests can be delivered (Resend configured) or in a dry run.
+ * Until then the page offers the e-mail address instead of a form that would fail.
+ */
+const formActive = isEmailConfigured() || serverEnv.dryRun;
+
 const nextSteps = [
-  "Sie schildern Ihr Vorhaben über das Formular oder per E-Mail.",
+  formActive
+    ? "Sie schildern Ihr Vorhaben über das Formular oder per E-Mail."
+    : "Sie schildern Ihr Vorhaben per E-Mail.",
   "Ferhat Demir prüft die Anfrage persönlich und meldet sich mit einer ersten Einschätzung.",
   "In einem kurzen Gespräch klären Sie Ziel, Umfang, Zeitrahmen und Zusammenarbeit.",
 ];
@@ -41,9 +51,22 @@ export default function KontaktPage() {
             Ihre Anfrage
           </h2>
           <div className="mt-8">
-            <Suspense fallback={<ContactForm fallbackEmail={email} />}>
-              <PreselectedContactForm fallbackEmail={email} />
-            </Suspense>
+            {formActive ? (
+              <Suspense fallback={<ContactForm fallbackEmail={email} />}>
+                <PreselectedContactForm fallbackEmail={email} />
+              </Suspense>
+            ) : (
+              <div className="rounded-xl border border-line bg-mist p-8">
+                <p className="leading-relaxed text-slate">
+                  Das Kontaktformular wird noch eingerichtet. Bis dahin senden Sie Ihre Anfrage bitte per E-Mail. Sie
+                  erhalten eine persönliche Rückmeldung.
+                </p>
+                <a href={`mailto:${email}`} className={buttonClasses({ className: "mt-6" })}>
+                  <Mail aria-hidden className="size-4" />
+                  {email}
+                </a>
+              </div>
+            )}
           </div>
         </section>
 

@@ -43,7 +43,7 @@ Beim Wechsel zur GmbH: `legal.form` auf `"gmbh"` setzen, Firmenname, UID und Han
 
 | Variable | Production | Preview | Hinweis |
 | --- | --- | --- | --- |
-| `NEXT_PUBLIC_SITE_URL` | `https://www.kovali.ch` | `https://www.kovali.ch` | Für Canonical-URLs und Sitemap |
+| `NEXT_PUBLIC_SITE_URL` | erst mit eigener Domain: `https://www.kovali.ch` | gleich | Für Canonical-URLs und Sitemap. Ohne Wert gilt die Vercel-Adresse |
 | `RESEND_API_KEY` | Schlüssel aus Schritt 4 | leer lassen | Nur auf dem Server, nie im Browser |
 | `CONTACT_TO_EMAIL` | `info@kovali.ch` | `info@kovali.ch` | Empfänger der Anfragen |
 | `CONTACT_FROM_EMAIL` | `KOVALI Website <website@mail.kovali.ch>` | gleich | Absender auf verifizierter Domain |
@@ -54,7 +54,8 @@ Beim Wechsel zur GmbH: `legal.form` auf `"gmbh"` setzen, Firmenname, UID und Han
 | `CONTACT_RETENTION_DAYS` | `365` | – | Löschfrist gespeicherter Anfragen |
 
 5. **Deploy** auslösen. Die Funktionsregion ist in `vercel.json` auf Frankfurt (`fra1`) gesetzt.
-6. Preview-Deployments werden automatisch nicht indexiert (`robots.txt` sperrt alles ausserhalb von Production).
+6. Suchmaschinen indexieren nur die Produktion auf der eigenen Domain. Preview-Deployments und die Adresse `*.vercel.app` sperrt `robots.txt` und ein `noindex`-Tag, bis eine eigene Domain verbunden und neu deployt ist.
+7. Solange `RESEND_API_KEY`, `CONTACT_TO_EMAIL` und `CONTACT_FROM_EMAIL` fehlen, zeigt die Kontaktseite statt des Formulars die E-Mail-Adresse. Das Formular erscheint nach dem nächsten Deployment mit diesen Variablen.
 
 ## 3. Domain bei cyon verbinden
 
@@ -70,6 +71,7 @@ Beim Wechsel zur GmbH: `legal.form` auf `"gmbh"` setzen, Firmenname, UID und Han
    Zeigt Vercel andere Werte an, gelten die Werte aus Vercel.
 3. **Wichtig:** Bestehende **MX-Einträge** und den SPF-Eintrag der E-Mail bei cyon **nicht ändern**, sonst kommt keine E-Mail mehr an `info@kovali.ch` an. Bestehende A- oder AAAA-Einträge für `@` und `www`, die auf cyon zeigen, ersetzen bzw. entfernen.
 4. Warten, bis Vercel die Domain als *Valid Configuration* meldet. Das SSL-Zertifikat erstellt Vercel automatisch.
+5. `NEXT_PUBLIC_SITE_URL` auf `https://www.kovali.ch` setzen und neu deployen (*Deployments → Redeploy*). Erst danach gibt die Website die Indexierung frei und verweist in Canonical-URLs, Sitemap und Vorschaubildern auf die eigene Domain.
 
 ## 4. Resend für das Kontaktformular
 

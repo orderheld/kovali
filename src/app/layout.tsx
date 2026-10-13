@@ -4,7 +4,7 @@ import { GeistMono } from "geist/font/mono";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { JsonLd } from "@/components/seo/json-ld";
-import { site } from "@/config/site";
+import { isIndexable, site } from "@/config/site";
 import { organizationJsonLd, websiteJsonLd } from "@/lib/seo";
 import "./globals.css";
 
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     siteName: site.brand,
     locale: "de_CH",
   },
-  robots: { index: true, follow: true },
+  robots: isIndexable ? { index: true, follow: true } : { index: false, follow: false },
   ...(googleVerification ? { verification: { google: googleVerification } } : {}),
 };
 
