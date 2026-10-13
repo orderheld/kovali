@@ -116,7 +116,7 @@ Das Formular sendet jede Anfrage über [Resend](https://resend.com) an `info@kov
 3. Unter **Sitemaps** `https://www.kovali.ch/sitemap.xml` einreichen.
 4. Mit der **URL-Prüfung** die Startseite und die fünf Leistungsseiten zur Indexierung anmelden.
 5. Optional: [Bing Webmaster Tools](https://www.bing.com/webmasters) über den Import aus der Search Console einrichten.
-6. Optional für lokale Sichtbarkeit: ein Google-Unternehmensprofil mit der Adresse in Grenchen anlegen.
+6. Optional: ein Google-Unternehmensprofil als Unternehmen mit Einzugsgebiet anlegen und die Adresse dort ausblenden.
 
 ## 7. Rechtliche Schlusskontrolle
 

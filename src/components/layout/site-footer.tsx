@@ -8,7 +8,7 @@ import { footerNav, legalNav } from "@/content/navigation";
 const year = process.env.NEXT_PUBLIC_BUILD_YEAR;
 
 export function SiteFooter() {
-  const { address, email } = site.contact;
+  const { email } = site.contact;
   return (
     <footer className="on-dark bg-navy text-white">
       <Container className="py-16 md:py-20">
@@ -43,17 +43,11 @@ export function SiteFooter() {
             <h2 className="font-mono text-xs uppercase tracking-[0.14em] text-white/50">Kontakt</h2>
             <address className="mt-5 space-y-3 text-[0.9375rem] not-italic text-white/80">
               <p>
-                {site.brand}
-                <br />
-                {address.street}
-                <br />
-                {address.postalCode} {address.city}, {address.country}
-              </p>
-              <p>
                 <a href={`mailto:${email.value}`} className="hover:text-electric">
                   {email.value}
                 </a>
               </p>
+              <p>Vor Ort, remote oder hybrid in der ganzen Schweiz</p>
             </address>
           </div>
         </div>

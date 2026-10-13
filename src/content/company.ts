@@ -125,9 +125,3 @@ export const principles: TitledText[] = [
     text: "Fachbereich, Entwicklung und Management brauchen unterschiedliche Sichten auf dieselbe Sache. KOVALI übersetzt zwischen ihnen.",
   },
 ];
-
-/** Location statements for Über uns and Kontakt (no claims about specific clients). */
-export const location = {
-  title: "Sitz in Grenchen, tätig in der ganzen Schweiz",
-  text: "KOVALI hat seinen Sitz in Grenchen im Kanton Solothurn, an der Sprachgrenze zwischen Deutschschweiz und Romandie. Solothurn, Biel/Bienne, Bern und das Mittelland sind rasch erreichbar. Mandate werden in der ganzen Schweiz vor Ort, remote oder hybrid umgesetzt.",
-};

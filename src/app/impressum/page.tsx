@@ -5,7 +5,7 @@ import { pageMetadata } from "@/lib/seo";
 
 export const metadata = pageMetadata({
   title: "Impressum",
-  description: "Impressum von KOVALI, Business & Technology Consulting, Grenchen: Anbieter, Kontakt und rechtliche Hinweise.",
+  description: "Impressum von KOVALI, Business & Technology Consulting: Anbieter, Kontakt und rechtliche Hinweise.",
   path: "/impressum",
 });
 

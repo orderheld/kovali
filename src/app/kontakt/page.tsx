@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { Mail, MapPin, UserRound } from "lucide-react";
+import { Mail, UserRound } from "lucide-react";
 import { PageHero } from "@/components/sections/page-hero";
 import { buttonClasses } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
@@ -10,9 +10,9 @@ import { ContactForm } from "./contact-form";
 import { PreselectedContactForm } from "./preselected-form";
 
 export const metadata = pageMetadata({
-  title: "Kontakt – IT Consulting Solothurn und Schweiz",
+  title: "Kontakt – IT Consulting für die ganze Schweiz",
   description:
-    "Kontakt zu KOVALI, IT Consulting aus Grenchen im Kanton Solothurn: Projekt anfragen, Mandat besprechen oder Partnerschaft anfragen. Persönliche Rückmeldung.",
+    "Kontakt zu KOVALI, Business & Technology Consulting: Projekt anfragen, Mandat besprechen oder Partnerschaft anfragen. Persönliche Rückmeldung.",
   path: "/kontakt",
 });
 
@@ -32,7 +32,6 @@ const nextSteps = [
 
 export default function KontaktPage() {
   const email = site.contact.email.value;
-  const { address } = site.contact;
   return (
     <>
       <PageHero
@@ -42,7 +41,7 @@ export default function KontaktPage() {
         ]}
         eyebrow="Kontakt"
         title="Projekt anfragen"
-        lead="Ob konkretes Mandat, offene Rolle im Kundenprojekt oder erste Idee: Schildern Sie kurz Ihr Anliegen. IT Consulting aus dem Kanton Solothurn, für Organisationen in der ganzen Schweiz."
+        lead="Ob konkretes Mandat, offene Rolle im Kundenprojekt oder erste Idee: Schildern Sie kurz Ihr Anliegen. IT Consulting für Organisationen in der ganzen Schweiz."
       />
 
       <Container className="grid gap-14 py-16 md:py-20 lg:grid-cols-12 lg:gap-8">
@@ -84,14 +83,6 @@ export default function KontaktPage() {
                 {email}
               </a>
             </p>
-            <address className="mt-4 flex gap-3 not-italic text-white/85">
-              <MapPin aria-hidden className="mt-0.5 size-5 shrink-0 text-electric" />
-              <span>
-                {address.street}
-                <br />
-                {address.postalCode} {address.city}, {address.country}
-              </span>
-            </address>
           </div>
 
           <div className="rounded-xl border border-line p-8">

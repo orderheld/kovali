@@ -1,4 +1,3 @@
-import { MapPin } from "lucide-react";
 import { Approach } from "@/components/sections/approach";
 import { Certifications } from "@/components/sections/certifications";
 import { CtaBand } from "@/components/sections/cta-band";
@@ -6,13 +5,13 @@ import { PageHero } from "@/components/sections/page-hero";
 import { JsonLd } from "@/components/seo/json-ld";
 import { Section, SectionHeader } from "@/components/ui/section";
 import { site } from "@/config/site";
-import { founder, location, principles, projectLanguages } from "@/content/company";
+import { founder, principles, projectLanguages } from "@/content/company";
 import { pageMetadata, personJsonLd } from "@/lib/seo";
 
 export const metadata = pageMetadata({
-  title: "Über uns – IT Consulting aus Grenchen",
+  title: "Über uns – IT Consulting für die ganze Schweiz",
   description:
-    "KOVALI ist ein IT-Consulting-Unternehmen aus Grenchen für Business Analysis, Requirements Engineering und Test in der ganzen Schweiz. Gründer: Ferhat Demir.",
+    "KOVALI ist ein IT-Consulting-Unternehmen für Business Analysis, Requirements Engineering und Test in der ganzen Schweiz. Gründer: Ferhat Demir.",
   path: "/ueber-uns",
 });
 
@@ -25,7 +24,7 @@ export default function UeberUnsPage() {
           { name: "Über uns", path: "/ueber-uns" },
         ]}
         eyebrow="Über uns"
-        title="IT Consulting aus Grenchen für die ganze Schweiz"
+        title="IT Consulting für die ganze Schweiz"
         lead="KOVALI bringt Klarheit in IT-Vorhaben: Anforderungen, die alle Beteiligten gleich verstehen, und Lösungen, die nachweislich tun, was sie sollen."
       />
 
@@ -84,12 +83,6 @@ export default function UeberUnsPage() {
                 <dt className="font-mono text-xs uppercase tracking-[0.12em] text-slate">Arbeitsmodell</dt>
                 <dd className="mt-2 text-ink">Vor Ort, remote oder hybrid in der ganzen Schweiz</dd>
               </div>
-              <div className="p-6">
-                <dt className="font-mono text-xs uppercase tracking-[0.12em] text-slate">Standort</dt>
-                <dd className="mt-2 text-ink">
-                  {site.contact.address.city}, Kanton Solothurn
-                </dd>
-              </div>
             </dl>
           </div>
         </div>
@@ -99,25 +92,6 @@ export default function UeberUnsPage() {
         <SectionHeader id="zertifikate-title" eyebrow="Methodik" title="Methodische Grundlage" />
         <div className="mt-12">
           <Certifications />
-        </div>
-      </Section>
-
-      <Section labelledBy="standort-title">
-        <div className="grid gap-10 md:grid-cols-12 md:gap-8">
-          <div className="md:col-span-7">
-            <SectionHeader id="standort-title" eyebrow="Standort" title={location.title} text={location.text} />
-          </div>
-          <address className="self-end rounded-xl bg-mist p-7 not-italic md:col-span-4 md:col-start-9">
-            <MapPin aria-hidden className="size-6 text-blue" />
-            <p className="mt-4 font-semibold text-ink">{site.brand}</p>
-            <p className="mt-1 leading-relaxed text-slate">
-              {site.contact.address.street}
-              <br />
-              {site.contact.address.postalCode} {site.contact.address.city}
-              <br />
-              {site.contact.address.country}
-            </p>
-          </address>
         </div>
       </Section>
 

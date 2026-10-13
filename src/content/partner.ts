@@ -71,7 +71,7 @@ export const partner = {
     {
       question: "Sind Einsätze vor Ort, remote oder hybrid möglich?",
       answer:
-        "Alle drei Varianten sind möglich. Einsatzort und Remote-Anteil werden je Mandat vereinbart. Der Sitz von KOVALI ist in Grenchen im Kanton Solothurn.",
+        "Alle drei Varianten sind möglich. Einsatzort und Remote-Anteil werden je Mandat vereinbart.",
     },
     {
       question: "Welche Angaben braucht KOVALI für eine erste Einschätzung?",

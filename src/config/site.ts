@@ -87,6 +87,10 @@ export const site = {
       confirmed: false,
       note: "Optional. Leer lassen, wenn keine Telefonnummer veröffentlicht werden soll.",
     } as Confirmable<string | null>,
+    /**
+     * Postal address, shown only in the imprint and the privacy policy. Marketing pages,
+     * footer and structured data do not name the town (Ferhat Demir, 13.10.2026).
+     */
     address: {
       street: "Bettlachstrasse 45",
       postalCode: "2540",

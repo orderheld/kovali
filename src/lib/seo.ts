@@ -68,7 +68,6 @@ const PERSON_ID = `${absoluteUrl("/ueber-uns")}#ferhat-demir`;
 const WEBSITE_ID = `${absoluteUrl("/")}#website`;
 
 export function organizationJsonLd() {
-  const { address } = site.contact;
   return {
     "@context": "https://schema.org",
     "@type": "ProfessionalService",
@@ -82,14 +81,8 @@ export function organizationJsonLd() {
     image: absoluteUrl("/opengraph-image.png"),
     email: site.contact.email.value,
     ...(site.contact.phone.value ? { telephone: site.contact.phone.value } : {}),
-    address: {
-      "@type": "PostalAddress",
-      streetAddress: address.street,
-      postalCode: address.postalCode,
-      addressLocality: address.city,
-      addressRegion: address.region,
-      addressCountry: address.countryCode,
-    },
+    // Only the country: the full address belongs in the imprint, not in marketing data.
+    address: { "@type": "PostalAddress", addressCountry: site.contact.address.countryCode },
     areaServed: site.areaServed.map((name) => ({ "@type": "Country", name })),
     knowsLanguage: ["de", "fr", "en"],
     knowsAbout: company.knowsAbout,
