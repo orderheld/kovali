@@ -246,11 +246,12 @@ create index sessions_expires_idx on sessions (expires_at);
 create table login_attempts (
   id      bigint generated always as identity primary key,
   at      timestamptz not null default now(),
+  scope   text not null check (scope in ('admin', 'portal')),
   ip_hash text not null,
   success boolean not null
 );
-create index login_attempts_ip_at_idx on login_attempts (ip_hash, at);
-create index login_attempts_at_idx on login_attempts (at);
+create index login_attempts_ip_at_idx on login_attempts (scope, ip_hash, at);
+create index login_attempts_at_idx on login_attempts (scope, at);
 
 create table candidate_accounts (
   id               bigint generated always as identity primary key,
@@ -300,7 +301,8 @@ create table vacancy_shares (
   seen_at          timestamptz,
   response         text not null default 'offen' check (response in ('offen', 'interessiert', 'kein_interesse')),
   response_at      timestamptz,
-  response_message text
+  response_message text,
+  reviewed_at      timestamptz
 );
 create unique index vacancy_shares_mandate_candidate_key on vacancy_shares (mandate_id, candidate_id);
 create index vacancy_shares_candidate_idx on vacancy_shares (candidate_id);

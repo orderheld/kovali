@@ -58,6 +58,8 @@ function init() {
   const url = adminEnv.databaseUrl;
   if (!url) throw new Error("DATABASE_URL fehlt.");
   const pool = new Pool({ connectionString: url, ssl: sslFor(url), max: 5, idleTimeoutMillis: 10_000 });
+  // An idle connection dropped by the server must not crash the process.
+  pool.on("error", (error) => console.error(JSON.stringify({ event: "admin.db_pool_error", error: String(error) })));
   attachDatabasePool(pool);
   const db = drizzle(pool, { schema });
   const ready = migrate(pool);

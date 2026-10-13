@@ -8,7 +8,10 @@ import "server-only";
 export const adminEnv = {
   /** Postgres connection string (Neon via the Vercel integration, or a local database). */
   databaseUrl: process.env.DATABASE_URL,
-  /** PBKDF2 hash of the admin password: pbkdf2-sha256$<iterations>$<salt>$<hash> (base64url). */
+  /**
+   * PBKDF2 hash of the admin password: pbkdf2-sha256:<iterations>:<salt>:<hash> (base64url).
+   * Colons instead of the usual "$", because .env files expand "$" as variables.
+   */
   passwordHash: process.env.ADMIN_PASSWORD_HASH,
   /**
    * At least 32 random bytes (base64url). Keys for sessions, IP hashes and file encryption are
@@ -35,9 +38,19 @@ export function secretBytes(): Buffer | null {
   return bytes.length >= SECRET_MIN_BYTES ? bytes : null;
 }
 
+/** Splits a stored password hash; "$" is accepted as separator too. */
+export function parsePasswordHash(value: string | undefined) {
+  const parts = value?.trim().split(/[:$]/) ?? [];
+  const iterations = Number(parts[1]);
+  if (parts.length !== 4 || parts[0] !== "pbkdf2-sha256" || !Number.isInteger(iterations) || iterations < 100_000 || !parts[2] || !parts[3]) {
+    return null;
+  }
+  return { iterations, salt: Buffer.from(parts[2], "base64url"), hash: Buffer.from(parts[3], "base64url") };
+}
+
 function passwordHashValid(): boolean {
-  const parts = adminEnv.passwordHash?.trim().split("$") ?? [];
-  return parts.length === 4 && parts[0] === "pbkdf2-sha256" && Number(parts[1]) >= 100_000;
+  const parsed = parsePasswordHash(adminEnv.passwordHash);
+  return parsed !== null && parsed.salt.length >= 16 && parsed.hash.length >= 32;
 }
 
 /** State of every setting, for the setup page. Contains no values. */

@@ -30,6 +30,9 @@ export function proxy(request: NextRequest) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
   const login = new URL(admin ? "/admin/login" : "/portal/login", request.url);
+  if (pathname !== "/admin" && pathname !== "/portal") {
+    login.searchParams.set("next", pathname + request.nextUrl.search);
+  }
   return NextResponse.redirect(login);
 }
 

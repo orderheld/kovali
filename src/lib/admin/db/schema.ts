@@ -342,10 +342,12 @@ export const loginAttempts = pgTable(
   {
     id: id(),
     at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
+    /** "admin" or "portal": failed portal logins must not lock Ferhat out of the admin. */
+    scope: text("scope").notNull(),
     ipHash: text("ip_hash").notNull(),
     success: boolean("success").notNull(),
   },
-  (t) => [index("login_attempts_ip_at_idx").on(t.ipHash, t.at), index("login_attempts_at_idx").on(t.at)],
+  (t) => [index("login_attempts_ip_at_idx").on(t.scope, t.ipHash, t.at), index("login_attempts_at_idx").on(t.scope, t.at)],
 );
 
 /** Login for the candidate portal. One account per candidate. */
@@ -420,6 +422,8 @@ export const vacancyShares = pgTable(
     response: text("response").notNull().default("offen"),
     responseAt: timestamp("response_at", { withTimezone: true }),
     responseMessage: text("response_message"),
+    /** Set when Ferhat has looked at the candidate's answer. */
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
   },
   (t) => [
     uniqueIndex("vacancy_shares_mandate_candidate_key").on(t.mandateId, t.candidateId),
