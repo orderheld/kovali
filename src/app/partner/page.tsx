@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Mail, UserRound } from "lucide-react";
+import { Building2, Mail } from "lucide-react";
 import { Certifications } from "@/components/sections/certifications";
 import { CtaBand } from "@/components/sections/cta-band";
 import { PageHero } from "@/components/sections/page-hero";
@@ -39,7 +39,7 @@ export default function PartnerPage() {
           Bedarf übermitteln
         </ButtonLink>
         <ButtonLink href="/ueber-uns" variant="secondary">
-          Mehr über KOVALI
+          Über KOVALI
         </ButtonLink>
       </PageHero>
 
@@ -73,9 +73,9 @@ export default function PartnerPage() {
             </dl>
           </div>
           <div className="lg:col-span-6 lg:col-start-7">
-            <h3 className="font-mono text-xs uppercase tracking-[0.12em] text-blue">Zertifizierungen</h3>
+            <h3 className="font-mono text-xs uppercase tracking-[0.12em] text-blue">Methodenstandards</h3>
             <div className="mt-5">
-              <Certifications stacked />
+              <Certifications stacked headingLevel="h4" />
             </div>
             <h3 className="mt-12 font-mono text-xs uppercase tracking-[0.12em] text-blue">Branchenerfahrung</h3>
             <ul className="mt-5 divide-y divide-line rounded-xl border border-line bg-white">
@@ -149,7 +149,7 @@ export default function PartnerPage() {
                 </a>
               </li>
               <li className="flex items-center gap-3">
-                <UserRound aria-hidden className="size-5 text-blue" />
+                <Building2 aria-hidden className="size-5 text-blue" />
                 <Link href="/ueber-uns" className="text-ink hover:text-blue">
                   Über KOVALI
                 </Link>

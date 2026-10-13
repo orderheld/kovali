@@ -8,22 +8,28 @@ export function IndustryCards({
   kind,
   detailed = false,
   label = true,
+  headingLevel: Heading = "h3",
+  labelledBy,
 }: {
   kind: Industry["kind"];
   detailed?: boolean;
   /** Show the kind label inside each card. */
   label?: boolean;
+  /** Use h4 when the cards sit below a group heading (h3). */
+  headingLevel?: "h3" | "h4";
+  /** Id of the heading that names this group of cards. */
+  labelledBy?: string;
 }) {
   const list = industries.filter((i) => i.kind === kind);
   const experience = kind === "experience";
   return (
-    <ul className="grid gap-5 md:grid-cols-3">
+    <ul aria-labelledby={labelledBy} className="grid gap-5 lg:grid-cols-3">
       {list.map((industry) => (
         <li
           key={industry.id}
           id={detailed ? industry.id : undefined}
           className={cn(
-            "flex scroll-mt-28 flex-col rounded-xl border p-7",
+            "flex min-w-0 scroll-mt-28 flex-col rounded-xl border p-7",
             experience ? "border-line bg-white" : "border-dashed border-slate/35 bg-mist/60",
           )}
         >
@@ -32,8 +38,8 @@ export function IndustryCards({
               {experience ? "Erfahrung" : "Zielmarkt"}
             </p>
           ) : null}
-          <h3 className="text-h3 font-semibold">{industry.name}</h3>
-          <p className="mt-3 leading-relaxed text-slate">{industry.summary}</p>
+          <Heading className="hyphens-auto break-words text-h3 font-semibold">{industry.name}</Heading>
+          <p className="mt-3 hyphens-auto break-words leading-relaxed text-slate">{industry.summary}</p>
           {detailed ? (
             <>
               <ul className="mt-5 space-y-2 text-[0.9375rem] text-ink">
@@ -64,9 +70,15 @@ export function IndustryCards({
                 })}
               </p>
             </>
-          ) : industry.basis ? (
-            <p className="mt-auto pt-5 text-sm text-slate">{industry.basis}</p>
-          ) : null}
+          ) : (
+            <p className="mt-auto pt-5 text-sm text-slate">
+              {industry.basis ??
+                industry.services
+                  .map((slug) => getService(slug)?.name)
+                  .filter(Boolean)
+                  .join(" · ")}
+            </p>
+          )}
         </li>
       ))}
     </ul>

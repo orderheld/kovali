@@ -122,7 +122,7 @@ export function personJsonLd() {
     knowsLanguage: ["de", "fr", "en"],
     hasCredential: company.certifications.map((c) => ({
       "@type": "EducationalOccupationalCredential",
-      name: c.name,
+      name: c.credential,
       credentialCategory: "certification",
     })),
   };

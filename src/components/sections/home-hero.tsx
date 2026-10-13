@@ -30,13 +30,6 @@ export function HomeHero() {
               {hero.secondary.label}
             </ButtonLink>
           </div>
-          <p className="kv-rise mt-12 flex flex-wrap gap-x-5 gap-y-2 font-mono text-xs uppercase tracking-[0.12em] text-white/55 [--kv-delay:0.24s]">
-            <span>IREB CPRE</span>
-            <span aria-hidden className="text-electric">/</span>
-            <span>ISTQB CTFL</span>
-            <span aria-hidden className="text-electric">/</span>
-            <span>Deutsch · Français · English</span>
-          </p>
         </div>
         <div className="hidden md:block lg:col-span-6">
           <HeroVisual className="mx-auto w-full max-w-[40rem]" />

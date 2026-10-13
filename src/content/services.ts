@@ -266,19 +266,19 @@ export const services: Service[] = [
     scenarios: [
       {
         title: "Fachapplikation im Betrieb",
-        text: "Laufende Weiterentwicklung einer Fachapplikation mit regelmässigen Releases.",
+        text: "Änderungswünsche laufend umsetzen und in regelmässigen Releases ausliefern.",
       },
       {
         title: "Release- und Hotfix-Koordination",
         text: "Auslieferungen planen und mit allen Beteiligten abstimmen, von der Entwicklung bis zum Betrieb.",
       },
       {
-        title: "Applikationen mit strengen Vorgaben",
-        text: "Betreuung von Applikationen mit hohen Anforderungen an Berechtigungen, Aufbewahrung und Nachvollziehbarkeit.",
+        title: "Regulierte Umgebungen",
+        text: "Applikationen betreuen, bei denen jede Änderung Vorgaben einhalten und lückenlos dokumentiert sein muss.",
       },
       {
-        title: "Tool- und Prozessmigration",
-        text: "Wechsel von Werkzeugen und Plattformen fachlich begleiten, einschliesslich Workflows, Rollen und Berechtigungen.",
+        title: "Werkzeugwechsel",
+        text: "Neue Werkzeuge so einführen, dass Abläufe und Zuständigkeiten danach klar geregelt sind.",
       },
     ],
     industries: ["oeffentliche-verwaltung", "logistik-transport", "detailhandel-zahlungsverkehr", "versicherungen"],
@@ -356,7 +356,7 @@ export const services: Service[] = [
     scenarios: [
       {
         title: "End-to-End-Prozesse über mehrere Systeme",
-        text: "Geschäftsprozesse testen, die über mehrere Systeme, Schnittstellen und Kanäle laufen.",
+        text: "Geschäftsprozesse durchgängig testen, über alle beteiligten Schnittstellen und Kanäle hinweg.",
       },
       {
         title: "Einführung eines neuen Systems",
@@ -368,7 +368,7 @@ export const services: Service[] = [
       },
       {
         title: "Mehrere Entwicklungspartner",
-        text: "Fehlerbehebung mit internen und externen Teams koordinieren und priorisieren.",
+        text: "Wenn mehrere Teams und Lieferanten beteiligt sind, Fehler zentral erfassen, priorisieren und bis zur Behebung verfolgen.",
       },
     ],
     industries: ["logistik-transport", "detailhandel-zahlungsverkehr", "oeffentliche-verwaltung", "finanzdienstleistungen", "versicherungen"],

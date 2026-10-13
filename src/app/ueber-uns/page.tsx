@@ -60,7 +60,7 @@ export default function UeberUnsPage() {
       </Section>
 
       <Section labelledBy="gruender-title">
-        <div className="grid gap-12 lg:grid-cols-12 lg:gap-8">
+        <div className="grid gap-12 lg:grid-cols-12 lg:items-center lg:gap-8">
           <div className="lg:col-span-7">
             <SectionHeader id="gruender-title" eyebrow={founder.role} title={founder.name} />
             <div className="mt-6 space-y-4 text-lg leading-relaxed text-slate">
@@ -96,7 +96,7 @@ export default function UeberUnsPage() {
       </Section>
 
       <Section tone="mist" labelledBy="zertifikate-title">
-        <SectionHeader id="zertifikate-title" eyebrow="Zertifizierungen" title="Methodische Grundlage" />
+        <SectionHeader id="zertifikate-title" eyebrow="Methodik" title="Methodische Grundlage" />
         <div className="mt-12">
           <Certifications />
         </div>

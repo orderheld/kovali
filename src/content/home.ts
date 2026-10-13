@@ -20,7 +20,7 @@ export const home = {
   industries: {
     eyebrow: "Branchen",
     title: "Erfahrung aus anspruchsvollen IT-Umgebungen",
-    text: "Erfahrung aus Vorhaben mit vielen Schnittstellen und Anspruchsgruppen, übertragbar auf weitere regulierte Branchen.",
+    text: "Branchenkenntnis aus öffentlicher Verwaltung, Logistik und Detailhandel, übertragbar auf weitere regulierte Branchen.",
   },
   competencies: {
     eyebrow: "Kompetenzen",
@@ -31,7 +31,7 @@ export const home = {
     title: "Ein Partner, der Business und IT verbindet",
   },
   certifications: {
-    eyebrow: "Zertifizierungen",
+    eyebrow: "Methodik",
     title: "Anerkannte Standards als gemeinsame Sprache",
   },
   partner: {

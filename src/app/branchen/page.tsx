@@ -28,8 +28,8 @@ export default function BranchenPage() {
         <SectionHeader
           id="erfahrung-title"
           eyebrow="Erfahrung"
-          title="Branchen, die KOVALI aus der Praxis kennt"
-          text="Abläufe, Fachbegriffe und typische Anforderungen dieser Branchen sind vertraut, von der Erhebung über die Spezifikation bis zum Test."
+          title="Branchen mit Praxiserfahrung"
+          text="Abläufe, Fachbegriffe und typische Vorgaben dieser Branchen sind bekannt. Das verkürzt die Einarbeitung, von der Erhebung bis zum Test."
         />
         <div className="mt-12">
           <IndustryCards kind="experience" detailed label={false} />

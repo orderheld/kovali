@@ -74,13 +74,17 @@ export default function HomePage() {
             Branchen im Detail
           </ButtonLink>
         </div>
-        <p className="mt-14 font-mono text-xs uppercase tracking-[0.12em] text-blue">Erfahrung</p>
+        <h3 id="branchen-praxis" className="mt-14 font-mono text-xs uppercase tracking-[0.12em] text-blue">
+          Aus der Praxis
+        </h3>
         <div className="mt-5">
-          <IndustryCards kind="experience" label={false} />
+          <IndustryCards kind="experience" label={false} headingLevel="h4" labelledBy="branchen-praxis" />
         </div>
-        <p className="mt-12 font-mono text-xs uppercase tracking-[0.12em] text-slate">Weitere Zielmärkte</p>
+        <h3 id="branchen-zielmaerkte" className="mt-12 font-mono text-xs uppercase tracking-[0.12em] text-slate">
+          Weitere Zielmärkte
+        </h3>
         <div className="mt-5">
-          <IndustryCards kind="target" label={false} />
+          <IndustryCards kind="target" label={false} headingLevel="h4" labelledBy="branchen-zielmaerkte" />
         </div>
       </Section>
 
@@ -125,7 +129,7 @@ export default function HomePage() {
             <h3 className="mt-4 text-2xl font-semibold tracking-tight">{home.certifications.title}</h3>
           </div>
           <div className="lg:col-span-8">
-            <Certifications />
+            <Certifications headingLevel="h4" />
           </div>
         </div>
       </Section>

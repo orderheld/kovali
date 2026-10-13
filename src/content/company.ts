@@ -28,12 +28,12 @@ export const reasons: TitledText[] = [
     text: "Der Fokus liegt auf der Strecke von der Anforderung bis zur Abnahme: Analyse, Anforderungen, Betreuung und Test aus einer Hand.",
   },
   {
-    title: "Erfahrung in komplexen IT-Landschaften",
-    text: "Vorhaben mit vielen Schnittstellen, Umsystemen und Anspruchsgruppen, in der öffentlichen Verwaltung ebenso wie in der Privatwirtschaft.",
+    title: "Praxis in grossen Organisationen",
+    text: "Viele Schnittstellen, Umsysteme und Anspruchsgruppen sind der Normalfall, im öffentlichen Sektor wie in der Privatwirtschaft.",
   },
   {
     title: "Zertifizierte Methodik",
-    text: "IREB CPRE und ISTQB CTFL schaffen eine gemeinsame Sprache mit Fachbereichen, Entwicklung und Test.",
+    text: "Anerkannte Standards nach IREB und ISTQB schaffen eine gemeinsame Sprache mit Fachbereichen, Entwicklung und Test.",
   },
   {
     title: "Business und IT verbinden",
@@ -46,14 +46,16 @@ export const certifications = [
   {
     id: "ireb-cpre-fl",
     short: "IREB CPRE",
-    name: "Certified Professional for Requirements Engineering – Foundation Level",
-    text: "Anforderungen werden nach dem Standard des International Requirements Engineering Board (IREB) erhoben, dokumentiert und geprüft.",
+    name: "Requirements Engineering nach IREB-Standard",
+    text: "Anforderungen werden nach dem Standard des International Requirements Engineering Board erhoben, dokumentiert und geprüft.",
+    credential: "Certified Professional for Requirements Engineering – Foundation Level",
   },
   {
     id: "istqb-ctfl",
     short: "ISTQB CTFL",
-    name: "Certified Tester – Foundation Level",
-    text: "Tests werden nach dem Standard des International Software Testing Qualifications Board (ISTQB) geplant, entworfen und ausgewertet.",
+    name: "Softwaretest nach ISTQB-Standard",
+    text: "Tests werden nach dem Standard des International Software Testing Qualifications Board geplant, entworfen und ausgewertet.",
+    credential: "Certified Tester – Foundation Level",
   },
 ] as const;
 
@@ -76,14 +78,14 @@ export const competencies = [
   },
   {
     group: "Werkzeuge",
-    items: ["Jira und Confluence", "Xray und Zephyr für das Testmanagement", "SQL für Datenanalysen"],
+    items: ["Jira und Confluence", "Xray und Zephyr", "SQL"],
   },
 ] as const;
 
 /** Key facts shown below the hero: the offer, not the founder's career. */
 export const facts = [
-  { value: "5", label: "Leistungen von der Anforderung bis zur Abnahme" },
-  { value: "2", label: "Methodenstandards: IREB CPRE und ISTQB" },
+  { value: "5", label: "Leistungen, einzeln oder kombiniert buchbar" },
+  { value: "2", label: "Methodenstandards: IREB und ISTQB" },
   { value: "3", label: "Projektsprachen: Deutsch, Französisch, Englisch" },
   { value: "CH", label: "Vor Ort, remote oder hybrid in der ganzen Schweiz" },
 ] as const;
@@ -96,8 +98,8 @@ export const founder = {
   name: "Ferhat Demir",
   role: "Gründer",
   summary: [
-    "Ferhat Demir hat KOVALI gegründet, um Analyse, Anforderungen und Test als durchgängige Leistung anzubieten, von der ersten Anforderung bis zur abgenommenen Lösung.",
-    "Seine Erfahrung stammt aus IT-Vorhaben in grossen Schweizer Organisationen, in der öffentlichen Verwaltung ebenso wie in der Privatwirtschaft. Als Ansprechpartner klärt er neue Anfragen persönlich.",
+    "Ferhat Demir hat KOVALI gegründet, damit Analyse, Spezifikation, Betreuung und Test eines IT-Vorhabens aus einer Hand kommen.",
+    "Sein Schwerpunkt liegt auf Vorhaben mit vielen Schnittstellen und Anspruchsgruppen, in denen Fachbereich und IT eine gemeinsame Sprache brauchen.",
   ],
 } as const;
 
