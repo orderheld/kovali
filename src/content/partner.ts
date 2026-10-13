@@ -3,7 +3,7 @@ import type { FaqItem, TitledText } from "./types";
 /** Content for /partner: IT service providers, consultancies and contracting partners. */
 export const partner = {
   intro:
-    "Sie betreuen ein Kundenmandat und suchen einen erfahrenen Business Analyst, Requirements Engineer oder Test Manager? KOVALI unterstützt IT-Dienstleister, Beratungsunternehmen und Contracting-Partner als selbständiger Auftragnehmer im Mandat Ihres Kunden.",
+    "Sie betreuen ein Kundenmandat und suchen einen erfahrenen Business Analyst, Requirements Engineer oder Test Manager? KOVALI unterstützt IT-Dienstleister, Beratungsunternehmen und Contracting-Partner als Subunternehmen im Mandat Ihres Kunden.",
 
   roles: [
     { title: "Business Analyst", text: "Geschäftsprozesse analysieren, Anforderungen erheben und fachliche Lösungen definieren." },
@@ -31,7 +31,7 @@ export const partner = {
 
   /** Truthful scope statement: no staffing or placement permits are claimed. */
   scopeNote:
-    "KOVALI erbringt Leistungen als selbständiger Auftragnehmer auf Basis von Auftrags- oder Werkverträgen. Personalverleih und private Arbeitsvermittlung bietet KOVALI derzeit nicht an.",
+    "KOVALI erbringt Leistungen in eigener Verantwortung auf Basis von Auftrags- oder Werkverträgen. Personalverleih und private Arbeitsvermittlung bietet KOVALI derzeit nicht an.",
 
   requestSteps: [
     {

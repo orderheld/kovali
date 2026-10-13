@@ -53,9 +53,10 @@ export async function submitContact(_prev: ContactState, formData: FormData): Pr
     return { status: "success", reference: createReference() };
   }
 
-  // 2. Spam protection: minimum fill time (only when JavaScript set the timestamp).
-  const startedAt = Number(formData.get("startedAt"));
-  if (Number.isFinite(startedAt) && startedAt > 0 && Date.now() - startedAt < MIN_FILL_MS) {
+  // 2. Spam protection: minimum fill time, measured in the browser (only sent with JavaScript).
+  const elapsedRaw = formData.get("elapsedMs");
+  const elapsed = typeof elapsedRaw === "string" && elapsedRaw !== "" ? Number(elapsedRaw) : Number.NaN;
+  if (Number.isFinite(elapsed) && elapsed >= 0 && elapsed < MIN_FILL_MS) {
     log("contact.spam", { reason: "too_fast" });
     return {
       status: "error",

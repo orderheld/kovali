@@ -20,7 +20,7 @@ if (open.length) {
   console.log("Alle Firmen- und Kontaktangaben sind bestätigt.");
 }
 
-const required = ["NEXT_PUBLIC_SITE_URL", "RESEND_API_KEY", "CONTACT_TO_EMAIL", "CONTACT_FROM_EMAIL", "CONTACT_IP_SALT"];
+const required = ["RESEND_API_KEY", "CONTACT_TO_EMAIL", "CONTACT_FROM_EMAIL", "CONTACT_IP_SALT"];
 const missing = required.filter((k) => !process.env[k]);
 console.log("");
 if (missing.length) {
@@ -28,6 +28,9 @@ if (missing.length) {
   for (const k of missing) console.log(`  - ${k}`);
 } else {
   console.log("Alle Pflicht-Umgebungsvariablen sind gesetzt.");
+}
+if (!process.env.NEXT_PUBLIC_SITE_URL) {
+  console.log("  - NEXT_PUBLIC_SITE_URL erst setzen, wenn die eigene Domain verbunden ist.");
 }
 if (process.env.CONTACT_DRY_RUN === "true") {
   console.log("  - CONTACT_DRY_RUN=true: Anfragen werden nicht versendet.");

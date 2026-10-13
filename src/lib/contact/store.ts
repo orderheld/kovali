@@ -9,8 +9,12 @@ function db() {
   return serverEnv.databaseUrl ? neon(serverEnv.databaseUrl) : null;
 }
 
+/**
+ * Requests are stored only when the privacy policy's promises can hold: a secret salt for
+ * the IP hash and a secret for the daily deletion job.
+ */
 export function isStorageConfigured(): boolean {
-  return Boolean(serverEnv.databaseUrl);
+  return Boolean(serverEnv.databaseUrl && serverEnv.cronSecret && serverEnv.ipSalt);
 }
 
 /** Requests from this IP hash in the last hour, across all server instances. */

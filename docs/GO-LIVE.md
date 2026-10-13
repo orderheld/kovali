@@ -43,7 +43,7 @@ Beim Wechsel zur GmbH: `legal.form` auf `"gmbh"` setzen, Firmenname, UID und Han
 
 | Variable | Production | Preview | Hinweis |
 | --- | --- | --- | --- |
-| `NEXT_PUBLIC_SITE_URL` | erst mit eigener Domain: `https://www.kovali.ch` | gleich | Für Canonical-URLs und Sitemap. Ohne Wert gilt die Vercel-Adresse |
+| `NEXT_PUBLIC_SITE_URL` | erst mit eigener Domain: `https://www.kovali.ch` | gleich | Für Canonical-URLs und Sitemap. Solange die Seite auf `*.vercel.app` läuft, gilt diese Adresse |
 | `RESEND_API_KEY` | Schlüssel aus Schritt 4 | leer lassen | Nur auf dem Server, nie im Browser |
 | `CONTACT_TO_EMAIL` | `info@kovali.ch` | `info@kovali.ch` | Empfänger der Anfragen |
 | `CONTACT_FROM_EMAIL` | `KOVALI Website <website@mail.kovali.ch>` | gleich | Absender auf verifizierter Domain |
@@ -54,7 +54,7 @@ Beim Wechsel zur GmbH: `legal.form` auf `"gmbh"` setzen, Firmenname, UID und Han
 | `CONTACT_RETENTION_DAYS` | `365` | – | Löschfrist gespeicherter Anfragen |
 
 5. **Deploy** auslösen. Die Funktionsregion ist in `vercel.json` auf Frankfurt (`fra1`) gesetzt.
-6. Suchmaschinen indexieren nur die Produktion auf der eigenen Domain. Preview-Deployments und die Adresse `*.vercel.app` sperrt `robots.txt` und ein `noindex`-Tag, bis eine eigene Domain verbunden und neu deployt ist.
+6. Suchmaschinen indexieren nur die Produktion auf der eigenen Domain. Preview-Deployments und die Adresse `*.vercel.app` tragen ein `noindex`-Tag, bis eine eigene Domain verbunden und neu deployt ist.
 7. Solange `RESEND_API_KEY`, `CONTACT_TO_EMAIL` und `CONTACT_FROM_EMAIL` fehlen, zeigt die Kontaktseite statt des Formulars die E-Mail-Adresse. Das Formular erscheint nach dem nächsten Deployment mit diesen Variablen.
 
 ## 3. Domain bei cyon verbinden
@@ -106,6 +106,7 @@ Das Formular sendet jede Anfrage über [Resend](https://resend.com) an `info@kov
 2. Im SQL Editor von Neon den Inhalt von `db/schema.sql` ausführen.
 3. Den Connection String (Pooled) als `DATABASE_URL` in Vercel (Production) eintragen.
 4. `CRON_SECRET` setzen. Der tägliche Cron-Job (`vercel.json`, 03:00 UTC) löscht Anfragen, die älter als `CONTACT_RETENTION_DAYS` sind. Das entspricht der Angabe in der Datenschutzerklärung (zwölf Monate).
+   Gespeichert wird erst, wenn `DATABASE_URL`, `CRON_SECRET` und `CONTACT_IP_SALT` gesetzt sind. So gelten die Löschfrist und die nicht umkehrbare IP-Kennung aus der Datenschutzerklärung.
 5. Neu deployen und eine Testanfrage senden. In Neon prüfen: `select reference, created_at, email_status from contact_requests order by created_at desc;`
 
 ## 6. Google Search Console

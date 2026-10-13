@@ -33,12 +33,12 @@ const inputClass =
 
 export function ContactForm({ defaults = {}, fallbackEmail }: { defaults?: ContactDefaults; fallbackEmail: string }) {
   const [state, formAction, pending] = useActionState(submitContact, initialContactState);
-  const startedRef = useRef<HTMLInputElement>(null);
+  const mountedAt = useRef(0);
   const summaryRef = useRef<HTMLDivElement>(null);
   const successRef = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
-    if (startedRef.current) startedRef.current.value = String(Date.now());
+    mountedAt.current = performance.now();
   }, []);
 
   useEffect(() => {
@@ -77,6 +77,8 @@ export function ContactForm({ defaults = {}, fallbackEmail }: { defaults?: Conta
     // Dispatch manually so the browser keeps all entered values (no automatic form reset).
     event.preventDefault();
     const data = new FormData(event.currentTarget);
+    // Fill time on the visitor's own clock, so a wrong system time cannot block the request.
+    if (mountedAt.current > 0) data.set("elapsedMs", String(Math.round(performance.now() - mountedAt.current)));
     startTransition(() => formAction(data));
   }
 
@@ -198,7 +200,6 @@ export function ContactForm({ defaults = {}, fallbackEmail }: { defaults?: Conta
         <label htmlFor="website">Website (bitte leer lassen)</label>
         <input id="website" name="website" type="text" tabIndex={-1} autoComplete="off" defaultValue="" />
       </div>
-      <input ref={startedRef} type="hidden" name="startedAt" defaultValue="" />
 
       <div>
         <div className="flex gap-3">

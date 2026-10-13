@@ -57,7 +57,7 @@ export default function KontaktPage() {
             ) : (
               <div className="rounded-xl border border-line bg-mist p-8">
                 <p className="leading-relaxed text-slate">
-                  Das Kontaktformular wird noch eingerichtet. Bis dahin senden Sie Ihre Anfrage bitte per E-Mail. Sie
+                  Senden Sie Ihre Anfrage per E-Mail. Beschreiben Sie kurz Ausgangslage, Ziel und Zeitrahmen. Sie
                   erhalten eine persönliche Rückmeldung.
                 </p>
                 <a href={`mailto:${email}`} className={buttonClasses({ className: "mt-6" })}>

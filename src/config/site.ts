@@ -41,12 +41,14 @@ export const site = {
   logoDirection: "signature",
 
   /**
-   * Public base URL. NEXT_PUBLIC_SITE_URL wins; without it the Vercel production address
-   * is used, and outside Vercel the planned domain.
+   * Public base URL. While Vercel serves production on a *.vercel.app address, that address
+   * is used even if NEXT_PUBLIC_SITE_URL is set, so links and share images point to the page
+   * being served. With a custom domain NEXT_PUBLIC_SITE_URL wins; outside Vercel the
+   * planned domain is the fallback.
    */
   url: {
     value:
-      process.env.NEXT_PUBLIC_SITE_URL ||
+      (vercelProductionHost?.endsWith(".vercel.app") ? undefined : process.env.NEXT_PUBLIC_SITE_URL) ||
       (vercelProductionHost ? `https://${vercelProductionHost}` : "https://www.kovali.ch"),
     confirmed: false,
     note: "Domain noch nicht registriert bzw. bestätigt.",
