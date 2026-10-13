@@ -22,6 +22,9 @@ export type LegalForm = "einzelunternehmen" | "gmbh";
  * custom domain, or the *.vercel.app address while no custom domain is connected.
  * Unset outside Vercel.
  */
+/** Title shown with Ferhat Demir's name. He does not want to be called "Gründer" (13.10.2026). */
+const contactTitle = "Geschäftsführer";
+
 const vercelProductionHost = process.env.VERCEL_PROJECT_PRODUCTION_URL;
 
 export const legalFormLabel: Record<LegalForm, string> = {
@@ -77,7 +80,8 @@ export const site = {
 
   contact: {
     person: "Ferhat Demir",
-    role: "Gründer und fachlicher Ansprechpartner",
+    title: contactTitle,
+    role: `${contactTitle} und fachlicher Ansprechpartner`,
     email: {
       value: "info@kovali.ch",
       confirmed: true,

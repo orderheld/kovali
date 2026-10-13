@@ -1,3 +1,4 @@
+import { site } from "@/config/site";
 import type { TitledText } from "./types";
 
 /** Brand philosophy: the three elements behind the name KOVALI. */
@@ -91,14 +92,14 @@ export const facts = [
 ] as const;
 
 /**
- * Founder, shown briefly on Über uns. Deliberately no CV details: no former
+ * Ferhat Demir, shown briefly on Über uns. Deliberately no CV details: no former
  * employers, projects, periods, job titles or language levels (Ferhat Demir, 13.10.2026).
  */
 export const founder = {
   name: "Ferhat Demir",
-  role: "Gründer",
+  role: site.contact.title,
   summary: [
-    "Ferhat Demir hat KOVALI gegründet, damit Analyse, Spezifikation, Betreuung und Test eines IT-Vorhabens aus einer Hand kommen.",
+    "Ferhat Demir leitet KOVALI. Sein Anspruch: Analyse, Spezifikation, Betreuung und Test eines IT-Vorhabens kommen aus einer Hand.",
     "Sein Schwerpunkt liegt auf Vorhaben mit vielen Schnittstellen und Anspruchsgruppen, in denen Fachbereich und IT eine gemeinsame Sprache brauchen.",
   ],
 } as const;

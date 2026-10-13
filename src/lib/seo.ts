@@ -86,7 +86,6 @@ export function organizationJsonLd() {
     areaServed: site.areaServed.map((name) => ({ "@type": "Country", name })),
     knowsLanguage: ["de", "fr", "en"],
     knowsAbout: company.knowsAbout,
-    founder: { "@id": PERSON_ID },
     ...(site.social.linkedin ? { sameAs: [site.social.linkedin] } : {}),
   };
 }
