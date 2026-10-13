@@ -21,7 +21,7 @@ function rows(input: ContactInput, reference: string): [string, string][] {
   ];
 }
 
-function escapeHtml(value: string): string {
+export function escapeHtml(value: string): string {
   return value
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
@@ -39,7 +39,7 @@ export function renderText(input: ContactInput, reference: string): string {
     "",
     head,
     "",
-    "Projektbeschreibung:",
+    "Beschreibung:",
     input.projectDescription,
     "",
     "Nachricht:",
@@ -61,7 +61,7 @@ export function renderHtml(input: ContactInput, reference: string): string {
   return `<div style="font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;font-size:14px;max-width:640px">
 <p style="margin:0 0 16px;font-size:16px;color:#0B1733"><strong>Neue Anfrage über kovali.ch</strong></p>
 <table style="border-collapse:collapse;font-size:14px">${table}</table>
-${block("Projektbeschreibung", input.projectDescription)}
+${block("Beschreibung", input.projectDescription)}
 ${block("Nachricht", input.message ?? "–")}
 <p style="margin:24px 0 0;color:#4A5878;font-size:12px">Einwilligung Datenschutz: bestätigt. Antworten gehen direkt an ${escapeHtml(input.email)}.</p>
 </div>`;

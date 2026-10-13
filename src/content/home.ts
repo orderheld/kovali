@@ -3,9 +3,9 @@ export const home = {
   hero: {
     eyebrow: "IT Consulting Schweiz",
     title: "Klarheit in Anforderungen. Sicherheit in der Umsetzung.",
-    lead: "KOVALI unterstützt Unternehmen und öffentliche Organisationen in der Schweiz mit Business Analysis, Requirements Engineering, Application Management und Test Management, von der ersten Anforderung bis zur abgenommenen Lösung.",
-    primary: { label: "Projekt anfragen", href: "/kontakt" },
-    secondary: { label: "Leistungen entdecken", href: "/leistungen" },
+    lead: "KOVALI unterstützt Beratungen, IT-Dienstleister und Unternehmen in der Schweiz mit Business Analysis, Requirements Engineering, Application Management und Test Management, von der ersten Anforderung bis zur abgenommenen Lösung.",
+    primary: { label: "Zusammenarbeit anfragen", href: "/kontakt" },
+    secondary: { label: "Für Fachleute", href: "/fachleute" },
   },
   services: {
     eyebrow: "Leistungen",
@@ -34,11 +34,39 @@ export const home = {
     eyebrow: "Methodik",
     title: "Anerkannte Standards als gemeinsame Sprache",
   },
-  partner: {
-    eyebrow: "Für IT-Dienstleister",
-    title: "Verstärkung für Ihre Kundenmandate",
-    text: "Für IT-Dienstleister, Beratungsunternehmen und Contracting-Partner übernimmt KOVALI spezialisierte Rollen in Business Analysis, Requirements Engineering und Test, als Subunternehmen oder im klar abgegrenzten Teilmandat.",
-    cta: { label: "Zusammenarbeit für Partner", href: "/partner" },
+  /** The two entries of the site: companies that need a role filled, specialists who send a profile. */
+  entries: {
+    eyebrow: "Zusammenarbeit",
+    title: "Zwei Wege zu KOVALI",
+    text: "Unternehmen fragen Rollen und Projekte an, Fachleute senden ihr Profil. Beides prüfen wir persönlich.",
+    companies: {
+      id: "weg-unternehmen",
+      eyebrow: "Für Unternehmen",
+      title: "Verstärkung für Mandate und Projekte",
+      text: "Beratungen, IT-Dienstleister und Unternehmen besetzen mit KOVALI Rollen in Business Analysis, Requirements Engineering, Application Management und Test.",
+      points: [
+        "Als Subunternehmen im Kundenmandat",
+        "Im abgegrenzten Projekt oder Teilmandat",
+        "Vor Ort, remote oder hybrid",
+        "Auf Deutsch, Französisch und Englisch",
+      ],
+      primary: { label: "Zusammenarbeit anfragen", href: "/kontakt?anfrage=contracting" },
+      secondary: { label: "Mehr für Unternehmen", href: "/unternehmen" },
+    },
+    specialists: {
+      id: "weg-fachleute",
+      eyebrow: "Für Fachleute",
+      title: "Mitarbeit in IT-Mandaten",
+      text: "Sie arbeiten in Business Analysis, Requirements Engineering, Application Management oder im Test? Senden Sie Ihr Profil für kommende Mandate.",
+      points: [
+        "Lebenslauf als PDF hochladen",
+        "Persönliche Prüfung Ihres Profils",
+        "Mandate in der ganzen Schweiz",
+        "Weitergabe nur mit Ihrer Zustimmung",
+      ],
+      primary: { label: "Profil senden", href: "/fachleute#profil" },
+      secondary: { label: "Mehr für Fachleute", href: "/fachleute" },
+    },
   },
   insights: {
     eyebrow: "Insights",
@@ -47,8 +75,8 @@ export const home = {
 } as const;
 
 export const contactCta = {
-  title: "Sie planen ein IT-Projekt oder suchen Verstärkung?",
-  text: "Schildern Sie kurz Ausgangslage, Ziel und Zeitrahmen. Sie erhalten eine persönliche Rückmeldung von Ferhat Demir.",
-  primary: { label: "Projekt anfragen", href: "/kontakt" },
+  title: "Sie suchen Verstärkung oder planen ein IT-Projekt?",
+  text: "Schildern Sie kurz die gesuchte Rolle oder Ihr Vorhaben. Wir prüfen die Anfrage persönlich und melden uns mit einer ersten Einschätzung.",
+  primary: { label: "Zusammenarbeit anfragen", href: "/kontakt" },
   secondary: { label: "Leistungen ansehen", href: "/leistungen" },
 } as const;

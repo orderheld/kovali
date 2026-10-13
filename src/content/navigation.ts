@@ -8,12 +8,13 @@ export interface NavItem {
 export const mainNav: NavItem[] = [
   { label: "Leistungen", href: "/leistungen" },
   { label: "Branchen", href: "/branchen" },
-  { label: "Für Partner", href: "/partner" },
+  { label: "Für Unternehmen", href: "/unternehmen" },
+  { label: "Für Fachleute", href: "/fachleute" },
   { label: "Über uns", href: "/ueber-uns" },
-  { label: "Insights", href: "/insights" },
 ];
 
-export const primaryCta: NavItem = { label: "Projekt anfragen", href: "/kontakt" };
+/** Neutral on purpose: the site has two audiences (companies and specialists), each with its own entry. */
+export const primaryCta: NavItem = { label: "Kontakt", href: "/kontakt" };
 
 export const footerNav: { title: string; items: NavItem[] }[] = [
   {
@@ -21,10 +22,11 @@ export const footerNav: { title: string; items: NavItem[] }[] = [
     items: services.map((s) => ({ label: s.name, href: serviceHref(s.slug) })),
   },
   {
-    title: "Unternehmen",
+    title: "KOVALI",
     items: [
+      { label: "Für Unternehmen", href: "/unternehmen" },
+      { label: "Für Fachleute", href: "/fachleute" },
       { label: "Branchen", href: "/branchen" },
-      { label: "Für Partner", href: "/partner" },
       { label: "Über uns", href: "/ueber-uns" },
       { label: "Insights", href: "/insights" },
       { label: "Kontakt", href: "/kontakt" },

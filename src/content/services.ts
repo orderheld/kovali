@@ -108,7 +108,7 @@ export const services: Service[] = [
       {
         question: "Kann KOVALI auch über einen IT-Dienstleister beauftragt werden?",
         answer:
-          "Ja. Neben Direktmandaten arbeitet KOVALI als Subunternehmen für Consulting- und Contracting-Firmen. Details zur Zusammenarbeit finden Sie unter [Für Partner](/partner).",
+          "Ja. Neben Direktmandaten arbeitet KOVALI als Subunternehmen für Consulting- und Contracting-Firmen. Details zur Zusammenarbeit finden Sie unter [Für Unternehmen](/unternehmen).",
       },
     ],
     cta: "Business Analysis anfragen",

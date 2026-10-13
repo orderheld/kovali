@@ -4,7 +4,7 @@ import { CtaBand } from "@/components/sections/cta-band";
 import { PageHero } from "@/components/sections/page-hero";
 import { ButtonLink } from "@/components/ui/button";
 import { Section, SectionHeader } from "@/components/ui/section";
-import { partner } from "@/content/partner";
+import { business } from "@/content/business";
 import { services, serviceHref } from "@/content/services";
 import { pageMetadata } from "@/lib/seo";
 
@@ -35,7 +35,7 @@ export default function LeistungenPage() {
         lead="Von der ersten Anforderung bis zur abgenommenen Lösung: KOVALI unterstützt Fachbereiche, IT-Abteilungen und Projektteams dort, wo Anforderungen entstehen, umgesetzt und geprüft werden."
       >
         <ButtonLink href="/kontakt" arrow>
-          Projekt anfragen
+          Zusammenarbeit anfragen
         </ButtonLink>
       </PageHero>
 
@@ -118,7 +118,7 @@ export default function LeistungenPage() {
           text="KOVALI arbeitet direkt für Unternehmen und öffentliche Organisationen oder als Subunternehmen für IT-Dienstleister."
         />
         <ul className="mt-12 grid gap-5 md:grid-cols-3">
-          {partner.models.map((m) => (
+          {business.models.map((m) => (
             <li key={m.title} className="rounded-xl border border-line p-7">
               <h3 className="text-h3 font-semibold">{m.title}</h3>
               <p className="mt-3 leading-relaxed text-slate">{m.text}</p>
@@ -126,9 +126,9 @@ export default function LeistungenPage() {
           ))}
         </ul>
         <p className="mt-8 text-slate">
-          Mehr zur Zusammenarbeit mit IT-Dienstleistern:{" "}
-          <Link href="/partner" className="text-blue underline underline-offset-[3px]">
-            Für Partner
+          Mehr zur Zusammenarbeit mit Beratungen und IT-Dienstleistern:{" "}
+          <Link href="/unternehmen" className="text-blue underline underline-offset-[3px]">
+            Für Unternehmen
           </Link>
         </p>
       </Section>

@@ -7,6 +7,9 @@ import { Menu, X, ArrowRight } from "lucide-react";
 import { mainNav, primaryCta } from "@/content/navigation";
 import { cn } from "@/lib/utils";
 
+/** The mobile menu has room for Insights, which the desktop header leaves to the footer. */
+const items = [...mainNav, { label: "Insights", href: "/insights" }];
+
 export function MobileNav() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
@@ -52,7 +55,7 @@ export function MobileNav() {
       >
         <nav aria-label="Hauptnavigation mobil" className="px-5 pb-10 pt-4 sm:px-8">
           <ul className="divide-y divide-line">
-            {mainNav.map((item) => {
+            {items.map((item) => {
               const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
               return (
                 <li key={item.href}>
@@ -71,12 +74,6 @@ export function MobileNav() {
                 </li>
               );
             })}
-            <li>
-              <Link href="/kontakt" onClick={close} className="flex items-center justify-between py-4 text-lg font-medium text-ink">
-                Kontakt
-                <ArrowRight aria-hidden className="size-4 text-slate/60" />
-              </Link>
-            </li>
           </ul>
           <Link
             href={primaryCta.href}
