@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import {
   Briefcase,
   Building2,
@@ -144,6 +144,30 @@ function QuickCreate() {
   );
 }
 
+/**
+ * Logs out and then loads the login page fresh, so no previously visited admin page stays
+ * in the browser's memory (Next.js keeps recent pages mounted for back navigation).
+ */
+function LogoutButton({ logout }: { logout: () => Promise<void> }) {
+  const [pending, start] = useTransition();
+  return (
+    <button
+      type="button"
+      disabled={pending}
+      onClick={() =>
+        start(async () => {
+          await logout();
+          window.location.replace("/admin/login");
+        })
+      }
+      className="inline-flex h-9 items-center gap-1.5 rounded-md px-2.5 text-sm text-slate hover:bg-mist hover:text-ink disabled:opacity-60"
+    >
+      <LogOut aria-hidden className="size-4" />
+      <span className="hidden sm:inline">Abmelden</span>
+    </button>
+  );
+}
+
 export function AdminShell({
   counts,
   logout,
@@ -207,12 +231,7 @@ export function AdminShell({
           </form>
           <div className="ml-auto flex items-center gap-2">
             <QuickCreate />
-            <form action={logout}>
-              <button type="submit" className="inline-flex h-9 items-center gap-1.5 rounded-md px-2.5 text-sm text-slate hover:bg-mist hover:text-ink">
-                <LogOut aria-hidden className="size-4" />
-                <span className="hidden sm:inline">Abmelden</span>
-              </button>
-            </form>
+            <LogoutButton logout={logout} />
           </div>
         </header>
         <main id="admin-inhalt" className="mx-auto w-full max-w-[90rem] flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">

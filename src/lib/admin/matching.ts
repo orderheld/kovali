@@ -1,4 +1,5 @@
 import { normalizeSkill } from "./skills";
+import { toHourly } from "./rates";
 
 /**
  * Candidate-to-mandate matching. Pure and deterministic, so the ranking is explainable:
@@ -48,16 +49,9 @@ export interface MatchResult {
 }
 
 const SENIORITY_ORDER = ["junior", "professional", "senior", "expert"];
-/** Hours per day used to compare hourly and daily rates. */
-export const HOURS_PER_DAY = 8.4;
 
 function key(s: string): string {
   return normalizeSkill(s).toLowerCase();
-}
-
-function toHourly(amount: number | null, unit: string | null): number | null {
-  if (amount === null || amount === undefined) return null;
-  return unit === "tag" ? amount / HOURS_PER_DAY : amount;
 }
 
 function daysBetween(a: string, b: string): number {

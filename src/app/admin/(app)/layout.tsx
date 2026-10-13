@@ -1,3 +1,4 @@
+import { connection } from "next/server";
 import { and, count, eq, inArray, isNotNull, isNull, lte } from "drizzle-orm";
 import { AdminShell, type NavCounts } from "@/components/admin/shell";
 import { requireAdmin } from "@/lib/admin/auth/session";
@@ -26,6 +27,7 @@ async function navCounts(): Promise<NavCounts> {
 
 export default async function AdminAppLayout({ children }: LayoutProps<"/admin">) {
   await requireAdmin();
+  await connection();
   const counts = await navCounts();
   return (
     <AdminShell counts={counts} logout={logout}>

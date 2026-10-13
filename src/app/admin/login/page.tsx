@@ -7,6 +7,9 @@ import { adminEnv, isAdminConfigured } from "@/lib/admin/env";
 import { safeAdminTarget } from "@/lib/admin/auth/login";
 import { LoginForm } from "./login-form";
 
+/** Admin pages read the session and the database per request and may block. */
+export const instant = false;
+
 export const metadata: Metadata = { title: "Anmelden" };
 
 export default async function LoginPage({ searchParams }: PageProps<"/admin/login">) {

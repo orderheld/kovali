@@ -7,6 +7,9 @@ import { getAdminSession } from "@/lib/admin/auth/session";
 import { adminConfigStatus, isAdminConfigured } from "@/lib/admin/env";
 import { SetupGenerator } from "./setup-generator";
 
+/** Admin pages read the session and the database per request and may block. */
+export const instant = false;
+
 export const metadata: Metadata = { title: "Einrichtung" };
 
 export default async function SetupPage() {

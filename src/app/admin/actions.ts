@@ -1,6 +1,5 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { audit } from "@/lib/admin/audit";
 import { destroyAdminSession, getAdminSession } from "@/lib/admin/auth/session";
 
@@ -9,5 +8,5 @@ export async function logout(): Promise<void> {
     await audit("logout");
   }
   await destroyAdminSession();
-  redirect("/admin/login");
+  // The client then loads /admin/login with a full page load (see LogoutButton).
 }

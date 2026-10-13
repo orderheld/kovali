@@ -1,6 +1,7 @@
 import "server-only";
 import { and, eq, gt, lt, sql } from "drizzle-orm";
 import { cookies } from "next/headers";
+import { connection } from "next/server";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import { randomToken, sha256 } from "../crypto";
@@ -49,6 +50,8 @@ export async function createAdminSession(): Promise<void> {
 
 /** The current session, or null. Cached per request. */
 export const getAdminSession = cache(async (): Promise<AdminSession | null> => {
+  // Everything after this point runs per request, never while prerendering.
+  await connection();
   if (!isAdminConfigured()) return null;
   const token = (await cookies()).get(ADMIN_COOKIE)?.value;
   if (!token || token.length > 100) return null;

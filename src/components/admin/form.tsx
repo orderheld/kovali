@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, startTransition, use, useActionState, useEffect, useId, useRef, useState, useTransition } from "react";
+import { createContext, startTransition, use, useActionState, useEffect, useId, useLayoutEffect, useRef, useState, useTransition } from "react";
 import { AlertCircle, CheckCircle2, Loader2, Upload, X } from "lucide-react";
 import type { ActionState } from "@/lib/admin/forms";
 import { cn } from "@/lib/utils";
@@ -20,23 +20,27 @@ export function useFormState() {
   return use(FormContext);
 }
 
+/** Calls `onReset` when the surrounding form is reset (form.reset(), e.g. after saving). */
+function useFormReset(ref: React.RefObject<HTMLElement | null>, onReset: () => void) {
+  const callback = useRef(onReset);
+  useEffect(() => {
+    callback.current = onReset;
+  });
+  useEffect(() => {
+    const form = ref.current?.closest("form");
+    if (!form) return;
+    const handler = () => callback.current();
+    form.addEventListener("reset", handler);
+    return () => form.removeEventListener("reset", handler);
+  }, [ref]);
+}
+
 function useFieldError(name: string): string | undefined {
   const { state } = useFormState();
   return state.status === "error" ? state.errors?.[name] : undefined;
 }
 
-export function ActionForm({
-  action,
-  children,
-  submitLabel = "Speichern",
-  pendingLabel = "Wird gespeichert …",
-  secondary,
-  className,
-  resetOnSuccess = false,
-  hideSubmit = false,
-  submitVariant = "primary",
-  id,
-}: {
+type ActionFormProps = {
   action: Action;
   children: React.ReactNode;
   submitLabel?: string;
@@ -47,7 +51,31 @@ export function ActionForm({
   hideSubmit?: boolean;
   submitVariant?: "primary" | "secondary" | "danger";
   id?: string;
-}) {
+};
+
+/**
+ * Next.js keeps recently visited pages mounted but hidden (React Activity). A form that was
+ * left must not come back with old entries or an old message, so it starts fresh each time
+ * its page is shown again.
+ */
+export function ActionForm(props: ActionFormProps) {
+  const [generation, setGeneration] = useState(0);
+  useLayoutEffect(() => () => setGeneration((g) => g + 1), []);
+  return <ActionFormInner key={generation} {...props} />;
+}
+
+function ActionFormInner({
+  action,
+  children,
+  submitLabel = "Speichern",
+  pendingLabel = "Wird gespeichert …",
+  secondary,
+  className,
+  resetOnSuccess = false,
+  hideSubmit = false,
+  submitVariant = "primary",
+  id,
+}: ActionFormProps) {
   const [state, formAction, pending] = useActionState(action, { status: "idle" } as ActionState);
   const formRef = useRef<HTMLFormElement>(null);
   const summaryRef = useRef<HTMLDivElement>(null);
@@ -371,8 +399,10 @@ export function MultiChoiceField({
   const [selected, setSelected] = useState<string[]>(defaultValue);
   const error = useFieldError(name);
   const id = `${useId()}-${name}`;
+  const ref = useRef<HTMLFieldSetElement>(null);
+  useFormReset(ref, () => setSelected(defaultValue));
   return (
-    <fieldset className={className} aria-describedby={describedBy(id, hint, error)}>
+    <fieldset ref={ref} className={className} aria-describedby={describedBy(id, hint, error)}>
       <legend className="mb-1.5 text-sm font-medium text-ink">{label}</legend>
       <input type="hidden" name={name} value={JSON.stringify(selected)} />
       <div className="flex flex-wrap gap-2">
@@ -427,6 +457,11 @@ export function TagInputField({
   const error = useFieldError(name);
   const id = `${useId()}-${name}`;
   const listId = `${id}-list`;
+  const ref = useRef<HTMLInputElement>(null);
+  useFormReset(ref, () => {
+    setTags(defaultValue);
+    setDraft("");
+  });
 
   const add = (raw: string) => {
     const parts = raw
@@ -444,7 +479,7 @@ export function TagInputField({
 
   return (
     <FieldShell id={id} label={label} hint={hint} error={error} className={className}>
-      <input type="hidden" name={name} value={JSON.stringify(tags)} />
+      <input ref={ref} type="hidden" name={name} value={JSON.stringify(tags)} />
       <div
         className={cn(
           control,
@@ -513,9 +548,12 @@ export function FileField({
   const error = useFieldError(name);
   const [fileName, setFileName] = useState<string | null>(null);
   const [over, setOver] = useState(false);
+  const ref = useRef<HTMLLabelElement>(null);
+  useFormReset(ref, () => setFileName(null));
   return (
     <FieldShell id={id} label={label} required={required} hint={hint} error={error} className={className}>
       <label
+        ref={ref}
         htmlFor={id}
         onDragOver={(e) => {
           e.preventDefault();
