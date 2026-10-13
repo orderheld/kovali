@@ -55,12 +55,12 @@ export interface Service {
 export interface Industry {
   id: IndustryId;
   name: string;
-  /** experience = proven through professional history; target = market KOVALI is building. */
+  /** experience = sector known from practice; target = market KOVALI is building. */
   kind: "experience" | "target";
   summary: string;
   points: string[];
-  /** Where the experience comes from (experience) or what transfers (target). */
-  basis: string;
+  /** What transfers to a target market. Not used for experience entries (no CV details on the site). */
+  basis?: string;
   services: ServiceSlug[];
 }
 

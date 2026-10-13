@@ -3,7 +3,7 @@ import { facts } from "@/content/company";
 
 export function Facts() {
   return (
-    <section aria-label="KOVALI in Zahlen" className="border-b border-line bg-white">
+    <section aria-label="KOVALI auf einen Blick" className="border-b border-line bg-white">
       <Container>
         <dl className="grid grid-cols-2 divide-line md:grid-cols-4 md:divide-x">
           {facts.map((f, i) => (

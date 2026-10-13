@@ -59,7 +59,7 @@ docs/                     Go-live-Anleitung, Redaktionsplan
 
 - **Firmendaten** (Name, Rechtsform, UID, Adresse, E-Mail, Telefon, Domain): nur in `src/config/site.ts`. Impressum, Footer, Kontaktseite und strukturierte Daten lesen von dort. Werte mit `confirmed: false` meldet `npm run check:launch`.
 - **Leistungen**: `src/content/services.ts`. Jede Leistung hat H1, Meta-Titel, Beschreibung, Aufgaben, Ergebnisse, Nutzen, Szenarien, Branchen, Methoden und FAQ.
-- **Branchen**: `src/content/industries.ts`. `kind: "experience"` nur für nachgewiesene Projekterfahrung, `kind: "target"` für Zielmärkte.
+- **Branchen**: `src/content/industries.ts`. `kind: "experience"` für Branchen mit Praxiserfahrung (ohne Arbeitgeber, Projekte, Systeme oder Jahreszahlen), `kind: "target"` für Zielmärkte.
 - **Insights**: neue Datei in `src/content/insights/` nach dem Muster der bestehenden Artikel anlegen und in `src/content/insights/index.ts` eintragen. Sitemap, Übersicht und strukturierte Daten folgen automatisch.
 - **Links im Text**: `[Linktext](/pfad)`.
 - **Sprache**: Schweizer Hochdeutsch, immer «ss» statt «ß».
@@ -68,7 +68,7 @@ docs/                     Go-live-Anleitung, Redaktionsplan
 ### Inhaltliche Leitplanken
 
 - Keine erfundenen Teams, Kundenreferenzen, Partnerschaften, Zitate oder Statistiken.
-- Frühere Arbeitgeber erscheinen nur als persönliche Berufserfahrung von Ferhat Demir, mit Hinweis.
+- Keine Angaben aus dem Lebenslauf von Ferhat Demir: keine früheren Arbeitgeber, Projekt- oder Systemnamen, Zeiträume, Funktionsbezeichnungen, Sprachniveaus oder Zertifikatsjahre. Die Website stellt KOVALI und seine Leistungen vor, nicht den Werdegang.
 - Banken, Versicherungen und IT-Dienstleister sind Zielmärkte, keine Referenzbranchen.
 - Keine Angaben zu Verleih- oder Vermittlungsbewilligungen.
 

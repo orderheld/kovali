@@ -124,7 +124,6 @@ export function personJsonLd() {
       "@type": "EducationalOccupationalCredential",
       name: c.name,
       credentialCategory: "certification",
-      dateCreated: c.year,
     })),
   };
 }

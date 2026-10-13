@@ -20,11 +20,11 @@ export const home = {
   industries: {
     eyebrow: "Branchen",
     title: "Erfahrung aus anspruchsvollen IT-Umgebungen",
-    text: "Projekterfahrung in Bundesverwaltung, Transport, Logistik, Detailhandel und Zahlungsverkehr, übertragbar auf weitere regulierte Branchen.",
+    text: "Erfahrung aus Vorhaben mit vielen Schnittstellen und Anspruchsgruppen, übertragbar auf weitere regulierte Branchen.",
   },
   competencies: {
     eyebrow: "Kompetenzen",
-    title: "Methoden und Werkzeuge aus der Projektpraxis",
+    title: "Methoden und Werkzeuge, mit denen KOVALI arbeitet",
   },
   reasons: {
     eyebrow: "Warum KOVALI",

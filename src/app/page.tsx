@@ -74,7 +74,7 @@ export default function HomePage() {
             Branchen im Detail
           </ButtonLink>
         </div>
-        <p className="mt-14 font-mono text-xs uppercase tracking-[0.12em] text-blue">Projekterfahrung</p>
+        <p className="mt-14 font-mono text-xs uppercase tracking-[0.12em] text-blue">Erfahrung</p>
         <div className="mt-5">
           <IndustryCards kind="experience" label={false} />
         </div>

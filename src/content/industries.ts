@@ -1,9 +1,9 @@
 import type { Industry, IndustryId } from "./types";
 
 /**
- * Industries. "experience" entries are backed by the founder's professional
- * history; "target" entries are markets KOVALI addresses with transferable skills.
- * Never present a target market as proven experience.
+ * Industries. "experience" entries are sectors known from practice; "target" entries
+ * are markets KOVALI addresses with transferable skills. Never present a target market
+ * as experience, and never name former employers, projects, systems or periods here.
  */
 export const industries: Industry[] = [
   {
@@ -11,43 +11,39 @@ export const industries: Industry[] = [
     name: "Öffentliche Verwaltung",
     kind: "experience",
     summary:
-      "Nationale Fachapplikationen mit vielen Anspruchsgruppen: Bund, Kantone, Verbände und Fachstellen.",
+      "Fachapplikationen mit vielen Anspruchsgruppen, strengen Vorgaben und hohen Anforderungen an Nachvollziehbarkeit.",
     points: [
-      "Anforderungen zahlreicher Stakeholder konsolidieren und priorisieren",
-      "Schnittstellen zu Bundesdiensten wie eIAM und Personenregistern",
+      "Anforderungen zahlreicher Anspruchsgruppen konsolidieren und priorisieren",
+      "Schnittstellen zu zentralen Diensten und Registern",
       "Datenschutz, Informationssicherheit und rollenbasierte Berechtigungen",
-      "Agile Entwicklung von Webapplikationen und Mobile Apps",
+      "Agile Weiterentwicklung von Fachapplikationen",
     ],
-    basis: "Berufserfahrung beim Bundesamt für Sport BASPO, 2023–2026",
     services: ["business-analysis", "requirements-engineering", "application-management"],
   },
   {
     id: "logistik-transport",
     name: "Logistik und Transport",
     kind: "experience",
-    summary:
-      "Grosse IT-Organisationen mit durchgängigen Prozessen von der Planung bis zur Zustellung.",
+    summary: "Durchgängige Prozesse über viele Systeme, Standorte und Partner hinweg.",
     points: [
-      "End-to-End-Prozesse von der Tourenplanung bis zur Zustellung",
-      "Mobile Zustellanwendungen und Scanlösungen",
-      "Dokumentenmanagement und revisionssichere Archivierung",
+      "End-to-End-Prozesse über mehrere Systeme und Organisationseinheiten",
+      "Mobile Anwendungen im operativen Einsatz",
+      "Integrations- und Regressionstests in gekoppelten Systemlandschaften",
       "Zusammenarbeit in SAFe- und Kanban-Organisationen",
     ],
-    basis: "Berufserfahrung bei der Schweizerischen Post, 2020–2022, und bei SBB Informatik, 2016–2020",
     services: ["test-management", "test-engineering", "application-management"],
   },
   {
     id: "detailhandel-zahlungsverkehr",
     name: "Detailhandel und Zahlungsverkehr",
     kind: "experience",
-    summary: "Kassensysteme, elektronischer Zahlungsverkehr und die Einführung neuer Zahlungsmittel.",
+    summary: "Kassen- und Zahlungsprozesse mit vielen beteiligten Systemen und Partnern.",
     points: [
-      "Electronic Funds Transfer (EFT) und Kassenprozesse",
-      "Einführung von TWINT im Kassenumfeld",
-      "Pilotierung und Rollout neuer Kassensysteme",
+      "Elektronischer Zahlungsverkehr und Kassenprozesse",
+      "Einführung neuer Zahlungsmittel",
+      "Pilotierung und schrittweiser Rollout neuer Systeme",
       "Schnittstellen zu Zahlungsdienstleistern",
     ],
-    basis: "Berufserfahrung bei Coop, 2022–2023",
     services: ["business-analysis", "requirements-engineering", "test-management"],
   },
   {
@@ -61,7 +57,7 @@ export const industries: Industry[] = [
       "Compliance- und Datenschutzvorgaben als prüfbare Anforderungen",
       "Strukturierte Test- und Abnahmeverfahren",
     ],
-    basis: "Übertragbare Kompetenzen aus Zahlungsverkehr, Bundesverwaltung und Qualitätssicherung",
+    basis: "Übertragbare Kompetenzen aus Zahlungsverkehr, öffentlicher Verwaltung und Qualitätssicherung",
     services: ["business-analysis", "requirements-engineering", "test-management"],
   },
   {
@@ -87,7 +83,7 @@ export const industries: Industry[] = [
     points: [
       "Einsatz als Subunternehmen im Kundenmandat",
       "Klar abgegrenzte Teilprojekte mit definiertem Ergebnis",
-      "Erfahrung in den Strukturen grosser Auftraggeber",
+      "Vertraut mit den Abläufen und Vorgaben grosser Organisationen",
     ],
     basis: "Zusammenarbeit als B2B-Partner, siehe Seite «Für Partner»",
     services: ["business-analysis", "requirements-engineering", "test-management", "test-engineering"],

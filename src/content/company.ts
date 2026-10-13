@@ -28,8 +28,8 @@ export const reasons: TitledText[] = [
     text: "Der Fokus liegt auf der Strecke von der Anforderung bis zur Abnahme: Analyse, Anforderungen, Betreuung und Test aus einer Hand.",
   },
   {
-    title: "Erfahrung in komplexen Landschaften",
-    text: "Projekte in Bundesverwaltung, Transport, Logistik, Detailhandel und Zahlungsverkehr, mit vielen Schnittstellen und Anspruchsgruppen.",
+    title: "Erfahrung in komplexen IT-Landschaften",
+    text: "Vorhaben mit vielen Schnittstellen, Umsystemen und Anspruchsgruppen, in der öffentlichen Verwaltung ebenso wie in der Privatwirtschaft.",
   },
   {
     title: "Zertifizierte Methodik",
@@ -41,20 +41,19 @@ export const reasons: TitledText[] = [
   },
 ];
 
+/** Method standards KOVALI works by. Shown as company methodology, not as personal certificate data. */
 export const certifications = [
   {
     id: "ireb-cpre-fl",
-    short: "IREB CPRE FL",
+    short: "IREB CPRE",
     name: "Certified Professional for Requirements Engineering – Foundation Level",
-    issuer: "International Requirements Engineering Board (IREB), geprüft durch SAQ Swiss Association for Quality",
-    year: "2024",
+    text: "Anforderungen werden nach dem Standard des International Requirements Engineering Board (IREB) erhoben, dokumentiert und geprüft.",
   },
   {
     id: "istqb-ctfl",
     short: "ISTQB CTFL",
     name: "Certified Tester – Foundation Level",
-    issuer: "International Software Testing Qualifications Board (ISTQB), geprüft durch SAQ Swiss Association for Quality",
-    year: "2024",
+    text: "Tests werden nach dem Standard des International Software Testing Qualifications Board (ISTQB) geplant, entworfen und ausgewertet.",
   },
 ] as const;
 
@@ -77,80 +76,33 @@ export const competencies = [
   },
   {
     group: "Werkzeuge",
-    items: ["Jira", "Confluence", "Xray", "Zephyr", "SQL", "Microsoft 365"],
+    items: ["Jira und Confluence", "Xray und Zephyr für das Testmanagement", "SQL für Datenanalysen"],
   },
 ] as const;
 
-/** Key facts shown below the hero. Only verifiable statements. */
+/** Key facts shown below the hero: the offer, not the founder's career. */
 export const facts = [
-  { value: "10+", label: "Jahre im IT-Umfeld" },
-  { value: "5+", label: "Jahre Business Analysis und Requirements Engineering" },
-  { value: "2", label: "Zertifizierungen: IREB CPRE und ISTQB" },
+  { value: "5", label: "Leistungen von der Anforderung bis zur Abnahme" },
+  { value: "2", label: "Methodenstandards: IREB CPRE und ISTQB" },
   { value: "3", label: "Projektsprachen: Deutsch, Französisch, Englisch" },
+  { value: "CH", label: "Vor Ort, remote oder hybrid in der ganzen Schweiz" },
 ] as const;
 
+/**
+ * Founder, shown briefly on Über uns. Deliberately no CV details: no former
+ * employers, projects, periods, job titles or language levels (Ferhat Demir, 13.10.2026).
+ */
 export const founder = {
   name: "Ferhat Demir",
-  role: "Gründer, Business Analyst, Requirements Engineer und IT-Consultant",
+  role: "Gründer",
   summary: [
-    "Ferhat Demir verbindet über fünf Jahre Erfahrung in Business Analysis und Requirements Engineering mit mehr als zehn Jahren Praxis im IT-Umfeld grosser Schweizer Organisationen, seit 2016.",
-    "Seine Stärke liegt darin, komplexe fachliche Anforderungen zu verstehen, strukturiert aufzubereiten und zwischen Fachbereichen, IT, Entwicklungsteams und weiteren Anspruchsgruppen zu vermitteln.",
+    "Ferhat Demir hat KOVALI gegründet, um Analyse, Anforderungen und Test als durchgängige Leistung anzubieten, von der ersten Anforderung bis zur abgenommenen Lösung.",
+    "Seine Erfahrung stammt aus IT-Vorhaben in grossen Schweizer Organisationen, in der öffentlichen Verwaltung ebenso wie in der Privatwirtschaft. Als Ansprechpartner klärt er neue Anfragen persönlich.",
   ],
-  languages: [
-    { name: "Deutsch", level: "Muttersprache" },
-    { name: "Französisch", level: "sehr gut (C1)" },
-    { name: "Englisch", level: "gut (B2)" },
-  ],
-  experience: [
-    {
-      period: "2023–2026",
-      organisation: "Bundesamt für Sport BASPO",
-      role: "Business Analyst, Nationale Datenbank Sport / Jugend+Sport",
-      points: [
-        "Verantwortung für definierte Fachbereiche einer nationalen Fachapplikation mit Webapplikation und Mobile App",
-        "Anforderungen von Kantonen, Verbänden und Fachstellen erhoben, konsolidiert und priorisiert",
-        "Epics, User Stories, Akzeptanzkriterien, UML Use Cases, Fachkonzepte und technische Spezifikationen",
-        "Schnittstellen zu Personenregister, eIAM und TrainingPlus, inklusive Datenflüssen und Feld-Mappings",
-        "Zusätzlich Release-Koordination und fachliche Leitung der Migration auf das interne Jira-System",
-      ],
-    },
-    {
-      period: "2022–2023",
-      organisation: "Coop",
-      role: "Business Analyst, EFT und Kassensysteme",
-      points: [
-        "Analyse und Weiterentwicklung von Zahlungs-, EFT- und Kassenprozessen",
-        "Anforderungen für die Einführung von TWINT im Kassenumfeld",
-        "Begleitung der OmniPOS-Pilotierung und des Rollouts",
-        "Schnittstellen zwischen Kassensystemen und Zahlungsdienstleistern",
-      ],
-    },
-    {
-      period: "2020–2022",
-      organisation: "Die Schweizerische Post",
-      role: "ICT Test Engineer / Test Manager",
-      points: [
-        "Test Management und Test Engineering für logistische IT-Systeme",
-        "End-to-End-Prozesse von der Tourenplanung bis zur Zustellung, inklusive mobiler Zustellapplikationen",
-        "Integrations- und Funktionstests, User Stories und Akzeptanzkriterien",
-        "Koordination von Testaktivitäten in einer SAFe-Organisation",
-      ],
-    },
-    {
-      period: "2016–2020",
-      organisation: "SBB Informatik",
-      role: "Junior User Service Manager, Dokumentenmanagement",
-      points: [
-        "Application Management für Dokumentenmanagement auf Basis von OpenText",
-        "Anforderungen, Change Requests und Use Cases aus verschiedenen Fachbereichen",
-        "Test- und Release-Begleitung in Kanban-basierter Zusammenarbeit",
-      ],
-    },
-  ],
-  /** Required note: former employers are not KOVALI references. */
-  employerNote:
-    "Die genannten Organisationen sind Stationen der persönlichen Berufserfahrung von Ferhat Demir und keine Referenzkunden von KOVALI.",
 } as const;
+
+/** Working languages of KOVALI mandates. */
+export const projectLanguages = ["Deutsch", "Französisch", "Englisch"] as const;
 
 /** How KOVALI works with clients (Über uns). */
 export const principles: TitledText[] = [

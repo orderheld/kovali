@@ -35,7 +35,7 @@ export const services: Service[] = [
     deliverables: [
       "Ist-/Soll-Analyse mit Handlungsbedarf",
       "Prozessmodelle in BPMN",
-      "Fachkonzept als Entscheidungs- und Umsetzungsgrundlage",
+      "Fachkonzept mit Lösungsvarianten und Empfehlung",
       "Epics und umsetzungsreife User Stories mit Akzeptanzkriterien",
       "Bewertete Change Requests",
       "Stakeholder-Übersicht und Workshop-Ergebnisse",
@@ -61,7 +61,7 @@ export const services: Service[] = [
     scenarios: [
       {
         title: "Neue Fachapplikation",
-        text: "Anforderungen vieler Anspruchsgruppen wie Kantone, Verbände oder Fachstellen erheben, konsolidieren und priorisieren.",
+        text: "Anforderungen vieler Anspruchsgruppen zusammenführen, Zielkonflikte klären und Prioritäten festlegen.",
       },
       {
         title: "Ablösung oder Erweiterung eines Systems",
@@ -168,7 +168,7 @@ export const services: Service[] = [
     scenarios: [
       {
         title: "Systemintegration",
-        text: "Schnittstellen zu Registern, Identitätsdiensten oder Zahlungsdienstleistern fachlich spezifizieren.",
+        text: "Schnittstellen zu Umsystemen, zentralen Diensten oder externen Partnern fachlich spezifizieren.",
       },
       {
         title: "Ausschreibung oder Offertvergleich",
@@ -266,19 +266,19 @@ export const services: Service[] = [
     scenarios: [
       {
         title: "Fachapplikation im Betrieb",
-        text: "Laufende Weiterentwicklung einer Web- oder Mobile-Applikation mit regelmässigen Releases.",
+        text: "Laufende Weiterentwicklung einer Fachapplikation mit regelmässigen Releases.",
       },
       {
         title: "Release- und Hotfix-Koordination",
-        text: "Planung und Abstimmung zwischen Product Owner, Entwicklung, Change Management und Anspruchsgruppen.",
+        text: "Auslieferungen planen und mit allen Beteiligten abstimmen, von der Entwicklung bis zum Betrieb.",
       },
       {
-        title: "Dokumentenmanagement und Archivierung",
-        text: "Betreuung von DMS-Plattformen mit Anforderungen an Berechtigungen, Aufbewahrung und Nachvollziehbarkeit.",
+        title: "Applikationen mit strengen Vorgaben",
+        text: "Betreuung von Applikationen mit hohen Anforderungen an Berechtigungen, Aufbewahrung und Nachvollziehbarkeit.",
       },
       {
         title: "Tool- und Prozessmigration",
-        text: "Migration von Werkzeugen wie Jira, einschliesslich Workflows, Prozessen und Berechtigungskonzepten.",
+        text: "Wechsel von Werkzeugen und Plattformen fachlich begleiten, einschliesslich Workflows, Rollen und Berechtigungen.",
       },
     ],
     industries: ["oeffentliche-verwaltung", "logistik-transport", "detailhandel-zahlungsverkehr", "versicherungen"],
@@ -356,7 +356,7 @@ export const services: Service[] = [
     scenarios: [
       {
         title: "End-to-End-Prozesse über mehrere Systeme",
-        text: "Geschäftsprozesse testen, die von der Planung über die Verarbeitung bis zur mobilen Anwendung reichen.",
+        text: "Geschäftsprozesse testen, die über mehrere Systeme, Schnittstellen und Kanäle laufen.",
       },
       {
         title: "Einführung eines neuen Systems",
@@ -449,7 +449,7 @@ export const services: Service[] = [
     scenarios: [
       {
         title: "Integrationen testen",
-        text: "Datenflüsse, Rückmeldungen und Fehlerfälle zwischen gekoppelten Systemen prüfen.",
+        text: "Datenaustausch und Fehlerbehandlung zwischen gekoppelten Systemen prüfen.",
       },
       {
         title: "Web und Mobile",

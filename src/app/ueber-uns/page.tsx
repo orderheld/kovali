@@ -6,7 +6,7 @@ import { PageHero } from "@/components/sections/page-hero";
 import { JsonLd } from "@/components/seo/json-ld";
 import { Section, SectionHeader } from "@/components/ui/section";
 import { site } from "@/config/site";
-import { founder, location, principles } from "@/content/company";
+import { founder, location, principles, projectLanguages } from "@/content/company";
 import { pageMetadata, personJsonLd } from "@/lib/seo";
 
 export const metadata = pageMetadata({
@@ -62,51 +62,23 @@ export default function UeberUnsPage() {
       <Section labelledBy="gruender-title">
         <div className="grid gap-12 lg:grid-cols-12 lg:gap-8">
           <div className="lg:col-span-7">
-            <SectionHeader id="gruender-title" eyebrow="Gründer" title={founder.name} />
-            <p className="mt-3 font-medium text-blue">{founder.role}</p>
+            <SectionHeader id="gruender-title" eyebrow={founder.role} title={founder.name} />
             <div className="mt-6 space-y-4 text-lg leading-relaxed text-slate">
               {founder.summary.map((p) => (
                 <p key={p}>{p}</p>
               ))}
             </div>
-
-            <h3 className="mt-14 text-h3 font-semibold">Ausgewählte Projekterfahrung</h3>
-            <ol className="mt-6 border-l border-line">
-              {founder.experience.map((e) => (
-                <li key={e.organisation} className="relative pb-10 pl-8 last:pb-0">
-                  <span aria-hidden className="absolute -left-[5px] top-1.5 size-2.5 rotate-45 bg-blue" />
-                  <p className="font-mono text-xs uppercase tracking-[0.1em] text-slate">{e.period}</p>
-                  <h4 className="mt-2 text-lg font-semibold">{e.organisation}</h4>
-                  <p className="text-blue">{e.role}</p>
-                  <ul className="mt-3 space-y-1.5 text-slate">
-                    {e.points.slice(0, 3).map((pt) => (
-                      <li key={pt} className="flex gap-3">
-                        <span aria-hidden className="mt-[0.7em] h-px w-2.5 shrink-0 bg-slate/50" />
-                        {pt}
-                      </li>
-                    ))}
-                  </ul>
-                </li>
-              ))}
-            </ol>
-            <p className="mt-8 text-sm leading-relaxed text-slate">{founder.employerNote}</p>
           </div>
 
-          <div className="self-start lg:sticky lg:top-28 lg:col-span-4 lg:col-start-9">
+          <div className="lg:col-span-4 lg:col-start-9">
             <dl className="divide-y divide-line rounded-xl border border-line">
               <div className="p-6">
                 <dt className="font-mono text-xs uppercase tracking-[0.12em] text-slate">Schwerpunkte</dt>
                 <dd className="mt-2 text-ink">Business Analysis, Requirements Engineering, Application Management, Test</dd>
               </div>
               <div className="p-6">
-                <dt className="font-mono text-xs uppercase tracking-[0.12em] text-slate">Sprachen</dt>
-                <dd className="mt-2 space-y-1 text-ink">
-                  {founder.languages.map((l) => (
-                    <p key={l.name}>
-                      {l.name} <span className="text-slate">· {l.level}</span>
-                    </p>
-                  ))}
-                </dd>
+                <dt className="font-mono text-xs uppercase tracking-[0.12em] text-slate">Projektsprachen</dt>
+                <dd className="mt-2 text-ink">{projectLanguages.join(", ")}</dd>
               </div>
               <div className="p-6">
                 <dt className="font-mono text-xs uppercase tracking-[0.12em] text-slate">Arbeitsmodell</dt>

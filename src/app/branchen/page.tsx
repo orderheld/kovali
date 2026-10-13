@@ -2,13 +2,12 @@ import { CtaBand } from "@/components/sections/cta-band";
 import { IndustryCards } from "@/components/sections/industry-cards";
 import { PageHero } from "@/components/sections/page-hero";
 import { Section, SectionHeader } from "@/components/ui/section";
-import { founder } from "@/content/company";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata = pageMetadata({
   title: "Branchen – IT Business Analyst für Verwaltung und Logistik",
   description:
-    "IT Business Analyst mit Erfahrung in öffentlicher Verwaltung, Logistik, Transport, Detailhandel und Zahlungsverkehr, dazu Banken, Versicherungen und IT-Dienstleister.",
+    "Business Analysis, Requirements Engineering und Test für öffentliche Verwaltung, Logistik, Transport, Detailhandel und Zahlungsverkehr sowie für Banken, Versicherungen und IT-Dienstleister.",
   path: "/branchen",
 });
 
@@ -22,20 +21,19 @@ export default function BranchenPage() {
         ]}
         eyebrow="Branchen"
         title="IT Business Analyst für öffentliche Verwaltung und komplexe Organisationen"
-        lead="Grosse Organisationen haben viele Anspruchsgruppen, gewachsene Systemlandschaften und hohe Anforderungen an Nachvollziehbarkeit. Genau dort liegt die Projekterfahrung hinter KOVALI."
+        lead="Grosse Organisationen haben viele Anspruchsgruppen, gewachsene Systemlandschaften und hohe Anforderungen an Nachvollziehbarkeit. Genau dort liegt die Erfahrung, auf der KOVALI aufbaut."
       />
 
       <Section labelledBy="erfahrung-title">
         <SectionHeader
           id="erfahrung-title"
-          eyebrow="Projekterfahrung"
-          title="Branchen mit nachgewiesener Projekterfahrung"
-          text="In diesen Branchen wurden Anforderungen erhoben, Fachkonzepte erstellt, Applikationen betreut und Tests verantwortet."
+          eyebrow="Erfahrung"
+          title="Branchen, die KOVALI aus der Praxis kennt"
+          text="Abläufe, Fachbegriffe und typische Anforderungen dieser Branchen sind vertraut, von der Erhebung über die Spezifikation bis zum Test."
         />
         <div className="mt-12">
           <IndustryCards kind="experience" detailed label={false} />
         </div>
-        <p className="mt-8 max-w-3xl text-sm leading-relaxed text-slate">{founder.employerNote}</p>
       </Section>
 
       <Section tone="mist" labelledBy="zielmaerkte-title">

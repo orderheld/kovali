@@ -29,7 +29,7 @@ export function IndustryCards({
         >
           {label ? (
             <p className={cn("mb-3 font-mono text-[0.6875rem] uppercase tracking-[0.12em]", experience ? "text-blue" : "text-slate")}>
-              {experience ? "Projekterfahrung" : "Zielmarkt"}
+              {experience ? "Erfahrung" : "Zielmarkt"}
             </p>
           ) : null}
           <h3 className="text-h3 font-semibold">{industry.name}</h3>
@@ -44,10 +44,12 @@ export function IndustryCards({
                   </li>
                 ))}
               </ul>
-              <p className="mt-6 text-sm text-slate">
-                <span className="font-medium text-ink">{experience ? "Grundlage: " : "Übertragbar: "}</span>
-                {industry.basis.replace(/^Übertragbare Kompetenzen aus /, "Kompetenzen aus ")}
-              </p>
+              {industry.basis ? (
+                <p className="mt-6 text-sm text-slate">
+                  <span className="font-medium text-ink">Übertragbar: </span>
+                  {industry.basis.replace(/^Übertragbare Kompetenzen aus /, "Kompetenzen aus ")}
+                </p>
+              ) : null}
               <p className="mt-auto pt-6 text-sm">
                 {industry.services.map((slug, idx) => {
                   const s = getService(slug);
@@ -62,9 +64,9 @@ export function IndustryCards({
                 })}
               </p>
             </>
-          ) : (
+          ) : industry.basis ? (
             <p className="mt-auto pt-5 text-sm text-slate">{industry.basis}</p>
-          )}
+          ) : null}
         </li>
       ))}
     </ul>

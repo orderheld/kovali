@@ -39,7 +39,7 @@ export default function PartnerPage() {
           Bedarf übermitteln
         </ButtonLink>
         <ButtonLink href="/ueber-uns" variant="secondary">
-          Profil ansehen
+          Mehr über KOVALI
         </ButtonLink>
       </PageHero>
 
@@ -151,7 +151,7 @@ export default function PartnerPage() {
               <li className="flex items-center gap-3">
                 <UserRound aria-hidden className="size-5 text-blue" />
                 <Link href="/ueber-uns" className="text-ink hover:text-blue">
-                  Profil und Projekterfahrung
+                  Über KOVALI
                 </Link>
               </li>
             </ul>
