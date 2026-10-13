@@ -1,0 +1,259 @@
+@import "tailwindcss";
+
+/*
+ * KOVALI design tokens. Colours and type follow the brand concept:
+ * Navy carries the brand, Corporate Blue is the accent for text and actions,
+ * Electric Blue is only used on dark backgrounds or as a graphic accent.
+ */
+@theme {
+  --color-navy: #0b1733;
+  --color-navy-800: #13224a;
+  --color-navy-700: #1c2e5c;
+  --color-blue: #145bce;
+  --color-blue-700: #0f4aab;
+  --color-electric: #35a9ff;
+  --color-sky: #8fc9ff;
+  --color-mist: #f4f8fc;
+  --color-slate: #4a5878;
+  --color-line: #dce4ef;
+  --color-ink: #0b1733;
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SFMono-Regular", monospace;
+
+  --text-display: clamp(2.375rem, 1.6rem + 3.4vw, 4rem);
+  --text-display--line-height: 1.05;
+  --text-display--letter-spacing: -0.03em;
+  --text-h1: clamp(2.125rem, 1.6rem + 2.2vw, 3.25rem);
+  --text-h1--line-height: 1.1;
+  --text-h1--letter-spacing: -0.025em;
+  --text-h2: clamp(1.75rem, 1.4rem + 1.4vw, 2.5rem);
+  --text-h2--line-height: 1.15;
+  --text-h2--letter-spacing: -0.02em;
+  --text-h3: 1.25rem;
+  --text-h3--line-height: 1.35;
+  --text-lead: clamp(1.125rem, 1.05rem + 0.3vw, 1.3125rem);
+  --text-lead--line-height: 1.6;
+
+  --container-site: 75rem;
+  --container-prose: 42rem;
+
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+    -webkit-text-size-adjust: 100%;
+    scroll-padding-top: 6rem;
+  }
+
+  body {
+    background: var(--color-white);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-feature-settings: "ss01" 0;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--color-electric) 35%, transparent);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-blue);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  .on-dark :focus-visible {
+    outline-color: var(--color-electric);
+  }
+}
+
+@layer components {
+  /* Small monospace label above headings: "— LEISTUNGEN" */
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    line-height: 1rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-blue);
+  }
+  .eyebrow::before {
+    content: "";
+    width: 1.5rem;
+    height: 1px;
+    background: currentColor;
+  }
+  .on-dark .eyebrow {
+    color: var(--color-electric);
+  }
+
+  /* Fine technical grid used on dark and light hero surfaces. */
+  .grid-lines {
+    background-image:
+      linear-gradient(to right, var(--grid-color, rgb(220 228 239 / 0.7)) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--grid-color, rgb(220 228 239 / 0.7)) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+
+  /* Article and legal text. */
+  .prose-kovali {
+    max-width: var(--container-prose);
+    color: var(--color-slate);
+    font-size: 1.0625rem;
+    line-height: 1.75;
+  }
+  .prose-kovali > * + * {
+    margin-top: 1.25em;
+  }
+  .prose-kovali h2 {
+    margin-top: 2.25em;
+    color: var(--color-ink);
+    font-size: 1.625rem;
+    line-height: 1.25;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+  }
+  .prose-kovali h3 {
+    margin-top: 1.75em;
+    color: var(--color-ink);
+    font-size: 1.1875rem;
+    line-height: 1.4;
+    font-weight: 600;
+  }
+  .prose-kovali h2 + *,
+  .prose-kovali h3 + * {
+    margin-top: 0.75em;
+  }
+  .prose-kovali strong {
+    color: var(--color-ink);
+    font-weight: 600;
+  }
+  .prose-kovali a {
+    color: var(--color-blue);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
+  .prose-kovali a:hover {
+    color: var(--color-blue-700);
+    text-decoration-thickness: 2px;
+  }
+  .prose-kovali ul,
+  .prose-kovali ol {
+    padding-left: 1.25rem;
+  }
+  .prose-kovali ul {
+    list-style: none;
+    padding-left: 0;
+  }
+  .prose-kovali ul > li {
+    position: relative;
+    padding-left: 1.5rem;
+  }
+  .prose-kovali ul > li::before {
+    content: "";
+    position: absolute;
+    left: 0.125rem;
+    top: 0.75em;
+    width: 0.5rem;
+    height: 2px;
+    background: var(--color-blue);
+    transform: rotate(-48deg);
+  }
+  .prose-kovali ol {
+    list-style: decimal;
+  }
+  .prose-kovali ol > li::marker {
+    color: var(--color-blue);
+    font-family: var(--font-mono);
+    font-size: 0.875em;
+  }
+  .prose-kovali li + li {
+    margin-top: 0.5em;
+  }
+}
+
+/* Hero line animation: requirements flow towards value. Disabled for reduced motion. */
+@keyframes kv-flow {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+@keyframes kv-draw {
+  from {
+    stroke-dashoffset: var(--kv-len, 400);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes kv-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes kv-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+.kv-flow {
+  stroke-dasharray: 4 8;
+  animation: kv-flow 1.6s linear infinite;
+}
+.kv-draw {
+  stroke-dasharray: var(--kv-len, 400);
+  animation: kv-draw 1.4s var(--ease-out-soft) both;
+  animation-delay: var(--kv-delay, 0s);
+}
+.kv-rise {
+  animation: kv-rise 0.7s var(--ease-out-soft) both;
+  animation-delay: var(--kv-delay, 0s);
+}
+.kv-pulse {
+  animation: kv-pulse 2.8s ease-in-out infinite;
+  animation-delay: var(--kv-delay, 0s);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kv-flow,
+  .kv-draw,
+  .kv-rise,
+  .kv-pulse {
+    animation: none !important;
+  }
+  .kv-draw {
+    stroke-dasharray: none;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+}
