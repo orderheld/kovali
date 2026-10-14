@@ -195,7 +195,10 @@ function ContractFields({ template, options, initial, initialData }: { template:
     setMandateId(next);
     const m = options.mandates.find((x) => x.value === next);
     const allowed = (id: number) => options.companies.some((c) => c.value === id && (!template.companyKinds.length || template.companyKinds.includes(c.kind)));
-    if (m?.companyId && companyId === null && links.company !== "hidden" && template.id !== "subunternehmer" && allowed(m.companyId)) {
+    // A consent names the mandate's client as recipient, so it follows the mandate.
+    if (template.id === "einwilligung" && m) {
+      changeCompany(m.companyId ?? null);
+    } else if (m?.companyId && companyId === null && links.company !== "hidden" && template.id !== "subunternehmer" && allowed(m.companyId)) {
       changeCompany(m.companyId);
     }
   }

@@ -14,11 +14,14 @@ export function PortalCard({
   shares,
   submissions,
   choices,
+  kovaliVatRegistered,
 }: {
   mandate: MandateDetail;
   shares: MandateShare[];
   submissions: MandateSubmission[];
   choices: ShareChoice[];
+  /** For the margin preview: without a VAT number the subcontractor's VAT is a cost. */
+  kovaliVatRegistered: boolean;
 }) {
   const ready = Boolean(mandate.portalTitle && mandate.portalDescription);
   const visibilityTone = mandate.portalVisibility === "keine" ? "neutral" : "green";
@@ -53,6 +56,7 @@ export function PortalCard({
             rateSell: mandate.rateSell,
             rateUnit: mandate.rateUnit,
             workload: mandate.workload,
+            kovaliVatRegistered,
           }}
         />
       </CardBody>

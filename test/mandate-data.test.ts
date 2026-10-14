@@ -213,7 +213,7 @@ describe.skipIf(!url)("mandate data", () => {
 
   it("renews consent after a withdrawal and stores the firm at the hand-over", async () => {
     const at = new Date("2026-10-08T12:00:00Z");
-    expect(await submissionsData.giveSubmissionConsent(leaOpen, { at, method: "muendlich", note: "Telefon 08.10.2026" })).toEqual({
+    expect(await submissionsData.giveSubmissionConsent(leaOpen, { at, method: "muendlich", note: "Telefon 08.10.2026", scope: "anonym" })).toEqual({
       status: "vorgemerkt",
       withdrawalLifted: { at: new Date("2026-10-07T12:00:00Z"), note: "E-Mail: möchte nicht" },
       objectionLifted: null,
@@ -222,6 +222,7 @@ describe.skipIf(!url)("mandate data", () => {
       consentAt: at,
       consentMethod: "muendlich",
       consentNote: "Telefon 08.10.2026",
+      consentScope: "anonym",
       withdrawnAt: null,
       withdrawalNote: null,
     });
@@ -272,12 +273,12 @@ describe.skipIf(!url)("mandate data", () => {
 
     // A consent dated before the objection does not lift it.
     const pending = (await submissionsData.listCandidateSubmissions(2)).find((s) => s.mandateId === 4)!.id;
-    const early = await submissionsData.giveSubmissionConsent(pending, { at: new Date("2026-10-09T12:00:00Z"), method: "email", note: null });
+    const early = await submissionsData.giveSubmissionConsent(pending, { at: new Date("2026-10-09T12:00:00Z"), method: "email", note: null, scope: "anonym" });
     expect(early?.objectionLifted).toBeNull();
     expect((await objectionOf(2)).at).toEqual(at);
     // An explicit new consent for a mandate on or after the objection lifts it; the other
     // withdrawn submissions stay withdrawn until consent is given there too.
-    const renewed = await submissionsData.giveSubmissionConsent(pending, { at: new Date("2026-10-10T15:00:00Z"), method: "schriftlich", note: null });
+    const renewed = await submissionsData.giveSubmissionConsent(pending, { at: new Date("2026-10-10T15:00:00Z"), method: "schriftlich", note: null, scope: "anonym" });
     expect(renewed).toMatchObject({ status: "vorgemerkt", objectionLifted: { at, note: "E-Mail: keine Weitergabe mehr" } });
     expect(await objectionOf(2)).toEqual({ at: null, note: null });
     expect((await submissionRow(proposed)).withdrawnAt).toEqual(at);
@@ -308,5 +309,47 @@ describe.skipIf(!url)("mandate data", () => {
     expect(await submissionRow(first)).toMatchObject({ withdrawnAt: at, status: "zurueckgezogen" });
     expect(await objectionOf(1)).toEqual({ at, note: "Schriftlich" });
     expect(await submissionRow(leaOther)).toMatchObject({ withdrawnAt: at, status: "zurueckgezogen" });
+    // The objection clears what the consents covered.
+    expect(await submissionRow(leaOpen)).toMatchObject({ withdrawnAt: at, consentScope: null });
+  });
+
+  it("hands over a named dossier only with a consent that covers the name", async () => {
+    // Mia (3) said yes in the portal: that covers the anonymised dossier only.
+    const portal = new Date("2026-10-06T09:00:00Z");
+    const id = await addSubmission({
+      mandateId: 1,
+      candidateId: 3,
+      consentAt: portal,
+      consentMethod: "portal",
+      consentScope: "anonym",
+      profileVariant: "namentlich",
+      status: "vorgemerkt",
+    });
+    expect(await submissionsData.markSubmissionStatus(id, { status: "vorgeschlagen", submittedAt: new Date(), toClient: true })).toBe(false);
+    expect((await submissionRow(id)).submittedAt).toBeNull();
+    // A scope without consent is refused by the database.
+    const db = await getDb();
+    const { eq } = await import("drizzle-orm");
+    const error = await db
+      .update(schema.submissions)
+      .set({ consentAt: null, consentMethod: null, consentNote: null })
+      .where(eq(schema.submissions.id, id))
+      .then(() => null)
+      .catch((e: unknown) => String((e as { cause?: unknown }).cause ?? e));
+    expect(error).toContain("submissions_consent_scope_needs_consent");
+
+    // Asked again, she agrees to the name as well.
+    const named = new Date("2026-10-07T10:00:00Z");
+    expect(await submissionsData.giveSubmissionConsent(id, { at: named, method: "email", note: null, scope: "namentlich" })).toMatchObject({ status: "vorgemerkt" });
+    expect(await submissionRow(id)).toMatchObject({ consentAt: named, consentMethod: "email", consentScope: "namentlich" });
+    const submittedAt = new Date("2026-10-08T08:00:00Z");
+    expect(await submissionsData.markSubmissionStatus(id, { status: "vorgeschlagen", submittedAt, toClient: true })).toBe(true);
+    // Later steps of a hand-over already made are not blocked by the scope.
+    await db.update(schema.submissions).set({ consentScope: "anonym" }).where(eq(schema.submissions.id, id));
+    expect(await submissionsData.markSubmissionStatus(id, { status: "interview", submittedAt, toClient: true })).toBe(true);
+
+    // Withdrawing clears the scope and keeps the consent date as record.
+    expect(await submissionsData.withdrawSubmission(id, { at: new Date("2026-10-09T12:00:00Z"), note: null, allMandates: false })).toEqual({ others: [] });
+    expect(await submissionRow(id)).toMatchObject({ consentAt: named, consentScope: null, status: "zurueckgezogen" });
   });
 });

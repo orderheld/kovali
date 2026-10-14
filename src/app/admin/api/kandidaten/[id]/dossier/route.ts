@@ -14,8 +14,9 @@ import { renderPdf } from "@/lib/admin/render/pdf";
  * Candidate dossier as PDF or Word:
  * GET /admin/api/kandidaten/[id]/dossier?format=pdf|docx&variante=anonym|namentlich[&mandat=<id>]
  * With a mandate, the dossier carries its number, the selling rate of the proposal and, while
- * the candidate's consent for that mandate is missing or withdrawn, or the candidate objects to
- * any hand-over, a prominent draft notice "Nicht weitergeben".
+ * the candidate's consent for that mandate is missing, withdrawn or covers only the anonymised
+ * dossier while this one carries the name, or the candidate objects to any hand-over, a
+ * prominent draft notice "Nicht weitergeben".
  */
 
 const querySchema = z.object({
@@ -61,7 +62,7 @@ export async function GET(request: Request, { params }: RouteContext<"/admin/api
   const variantLabel = variant === "anonym" ? "anonym" : "namentlich";
   const formatLabel = format === "pdf" ? "PDF" : "Word";
   const mandateNo = mandate ? displayNo.mandate(mandate.id) : null;
-  const draft = mandate && mandateDraftReasons({ submission, company, objection }).length ? ", Entwurf" : "";
+  const draft = mandate && mandateDraftReasons({ variant, submission, company, objection }).length ? ", Entwurf" : "";
   await audit("export", {
     entity: "candidate",
     entityId: id,

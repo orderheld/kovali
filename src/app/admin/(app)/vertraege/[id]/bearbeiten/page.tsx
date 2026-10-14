@@ -6,6 +6,7 @@ import { Card, CardBody, CardHeader, LinkButton, Notice, PageHeader } from "@/co
 import { requireAdmin } from "@/lib/admin/auth/session";
 import { contractFormOptions, getContract } from "@/lib/admin/contracts/data";
 import { getTemplate, templateInfo } from "@/lib/admin/contracts/templates";
+import { formatDate } from "@/lib/admin/format";
 import { parseId } from "@/lib/admin/forms";
 import { contractStatuses, labelOf } from "@/lib/admin/options";
 import { copyContract, deleteContract, updateContract } from "../../actions";
@@ -76,14 +77,21 @@ export default async function EditContractPage({ params }: PageProps<"/admin/ver
           cancelHref={`/admin/vertraege/${id}`}
           submitLabel="Änderungen speichern"
         />
-        <Card className="border-red-200">
-          <CardHeader title="Entwurf löschen" description="Nur Entwürfe können gelöscht werden. Hochgeladene Dokumente und Notizen des Entwurfs werden mitgelöscht." />
-          <CardBody>
-            <ActionButton action={deleteContract.bind(null, id)} confirm={`Entwurf ${row.number} endgültig löschen?`} variant="danger" size="md">
-              Entwurf endgültig löschen
-            </ActionButton>
-          </CardBody>
-        </Card>
+        {row.sentAt ? (
+          // Its number is known outside KOVALI: it stays on record and is cancelled instead.
+          <Notice tone="neutral" icon={Lock}>
+            Am {formatDate(row.sentAt)} versendet: Der Vertrag bleibt mit seiner Nummer erhalten. Gilt er nicht mehr, storniere ihn auf der Vertragsseite.
+          </Notice>
+        ) : (
+          <Card className="border-red-200">
+            <CardHeader title="Entwurf löschen" description="Nur Entwürfe, die nie versendet wurden, können gelöscht werden. Hochgeladene Dokumente und Notizen des Entwurfs werden mitgelöscht." />
+            <CardBody>
+              <ActionButton action={deleteContract.bind(null, id)} confirm={`Entwurf ${row.number} endgültig löschen?`} variant="danger" size="md">
+                Entwurf endgültig löschen
+              </ActionButton>
+            </CardBody>
+          </Card>
+        )}
       </div>
     </>
   );

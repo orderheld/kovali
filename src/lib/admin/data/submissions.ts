@@ -1,7 +1,7 @@
 import "server-only";
-import { and, asc, desc, eq, getTableColumns, inArray, isNotNull, isNull, notInArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, getTableColumns, inArray, isNotNull, isNull, ne, notInArray, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
-import { decidedSubmissionStatuses, statusAfterConsent, statusAfterWithdrawal } from "../consent";
+import { decidedSubmissionStatuses, statusAfterConsent, statusAfterWithdrawal, type ConsentScope } from "../consent";
 import { getDb, type AdminDb } from "../db/client";
 import { candidates, companies, mandates, submissions, vacancyShares } from "../db/schema";
 import { todayIso } from "../format";
@@ -220,7 +220,7 @@ async function objectInTx(tx: Tx, candidateId: number, at: Date, note: string | 
   const changed: WithdrawnSubmission[] = [];
   for (const s of open) {
     const status = statusAfterWithdrawal(s);
-    await tx.update(submissions).set({ withdrawnAt: at, withdrawalNote: note, status, updatedAt: now }).where(eq(submissions.id, s.id));
+    await tx.update(submissions).set({ withdrawnAt: at, withdrawalNote: note, consentScope: null, status, updatedAt: now }).where(eq(submissions.id, s.id));
     changed.push({ id: s.id, mandateId: s.mandateId, previousStatus: s.status, status, submittedAt: s.submittedAt });
   }
   return changed;
@@ -260,8 +260,9 @@ export async function liftObjection(candidateId: number): Promise<{ at: Date; no
 /**
  * The candidate withdraws consent for one submission (or declines the mandate): withdrawn_at
  * and the note are set, the consent date stays as record of what earlier hand-overs were based
- * on, the submission ends as "zurückgezogen". With `allMandates` it is an objection to any
- * further hand-over (see recordObjection). Returns the other submissions it changed.
+ * on (its scope is cleared: it covers nothing any more), the submission ends as
+ * "zurückgezogen". With `allMandates` it is an objection to any further hand-over (see
+ * recordObjection). Returns the other submissions it changed.
  */
 export async function withdrawSubmission(
   submissionId: number,
@@ -272,7 +273,7 @@ export async function withdrawSubmission(
     const now = new Date();
     const [row] = await tx
       .update(submissions)
-      .set({ withdrawnAt: at, withdrawalNote: note, status: "zurueckgezogen", updatedAt: now })
+      .set({ withdrawnAt: at, withdrawalNote: note, consentScope: null, status: "zurueckgezogen", updatedAt: now })
       .where(and(eq(submissions.id, submissionId), isNull(submissions.withdrawnAt)))
       .returning({ candidateId: submissions.candidateId });
     if (!row) return null;
@@ -285,11 +286,13 @@ export async function withdrawSubmission(
  * Records consent for one submission (by hand or from a signed consent form). A withdrawal of
  * this submission is lifted, and so is the candidate's objection when the consent is dated on
  * or after it: an explicit new consent is the candidate changing their mind. The caller checks
- * the date first (renewedConsentError). Returns the lifted objection, if any.
+ * the date first (renewedConsentError). `scope` says what it covers; a named consent recorded
+ * on top of an anonymous one (e.g. from the portal) replaces it. Returns the lifted objection,
+ * if any.
  */
 export async function giveSubmissionConsent(
   submissionId: number,
-  consent: { at: Date; method: string; note: string | null },
+  consent: { at: Date; method: string; note: string | null; scope: ConsentScope },
 ): Promise<{ status: string; withdrawalLifted: { at: Date; note: string | null } | null; objectionLifted: { at: Date; note: string | null } | null } | null> {
   const db = await getDb();
   return db.transaction(async (tx) => {
@@ -317,6 +320,7 @@ export async function giveSubmissionConsent(
         consentAt: consent.at,
         consentMethod: consent.method,
         consentNote: consent.note,
+        consentScope: consent.scope,
         withdrawnAt: null,
         withdrawalNote: null,
         status,
@@ -337,7 +341,9 @@ export async function giveSubmissionConsent(
  * Stores a status change. For a status that puts the profile in front of the client
  * (`toClient`), the update only happens while the submission is not withdrawn and the
  * candidate has no objection, so a withdrawal arriving in the meantime (e.g. in the portal)
- * wins. The first hand-over also stores the candidate's own firm at this moment
+ * wins. A first hand-over of the dossier with the name also needs a consent that covers it
+ * (consent_scope "namentlich"), so a change of variant or scope in the meantime wins as well.
+ * The first hand-over also stores the candidate's own firm at this moment
  * (subcontractor_company_id, a snapshot that stays when the candidate's firm changes later).
  * Returns false when nothing was updated.
  */
@@ -360,6 +366,9 @@ export async function markSubmissionStatus(
         values.toClient ? isNull(submissions.withdrawnAt) : undefined,
         values.toClient
           ? sql`not exists (select 1 from ${candidates} where ${candidates.id} = ${submissions.candidateId} and ${candidates.objectionAt} is not null)`
+          : undefined,
+        values.toClient
+          ? or(isNotNull(submissions.submittedAt), ne(submissions.profileVariant, "namentlich"), eq(submissions.consentScope, "namentlich"))
           : undefined,
       ),
     )

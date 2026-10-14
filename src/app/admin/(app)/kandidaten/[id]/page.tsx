@@ -109,7 +109,7 @@ export default async function CandidatePage({ params }: PageProps<"/admin/kandid
 
   const dossierLinks = [
     { label: "PDF, anonymisiert", description: "Ohne Namen und Kontaktdaten", href: dossierHref(id, { format: "pdf", variant: "anonym" }) },
-    { label: "PDF, mit Namen", description: "Name und Wohnort, ohne Kontaktdaten", href: dossierHref(id, { format: "pdf", variant: "namentlich" }) },
+    { label: "PDF, mit Namen", description: "Name, Wohnort und eigene Firma, ohne Kontaktdaten", href: dossierHref(id, { format: "pdf", variant: "namentlich" }) },
     { label: "Word, anonymisiert", description: "Zum Anpassen vor dem Versand", href: dossierHref(id, { format: "docx", variant: "anonym" }) },
     { label: "Word, mit Namen", description: "Zum Anpassen vor dem Versand", href: dossierHref(id, { format: "docx", variant: "namentlich" }) },
   ];

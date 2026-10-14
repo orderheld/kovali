@@ -34,7 +34,14 @@ describe("consentSchema", () => {
   });
 
   it("accepts an e-mail consent without a note", () => {
-    expect(parseForm(consentSchema, { consentDate: "2026-10-13", consentMethod: "email" }).ok).toBe(true);
+    expect(parseForm(consentSchema, { consentDate: "2026-10-13", consentMethod: "email", consentScope: "anonym" }).ok).toBe(true);
+  });
+
+  it("requires what the consent covers: the anonymised dossier or the one with the name", () => {
+    const named = parseForm(consentSchema, { consentDate: "2026-10-13", consentMethod: "schriftlich", consentScope: "namentlich" });
+    expect(named.ok && named.data.consentScope).toBe("namentlich");
+    expect(errorsOf(parseForm(consentSchema, { consentDate: "2026-10-13", consentMethod: "email" }))).toHaveProperty("consentScope");
+    expect(errorsOf(parseForm(consentSchema, { consentDate: "2026-10-13", consentMethod: "email", consentScope: "alles" }))).toHaveProperty("consentScope");
   });
 
   it("requires the form of consent and only offers the ones recorded by hand", () => {

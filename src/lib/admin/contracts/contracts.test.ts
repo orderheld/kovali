@@ -244,18 +244,38 @@ describe.skipIf(!dbUrl)("contract numbers in the database", () => {
 describe.skipIf(!dbUrl)("signed consent forms in the database", () => {
   const pool = new Pool({ connectionString: dbUrl, max: 4 });
   const db = drizzle(pool, { schema });
-  const { candidates, mandates, submissions } = schema;
+  const { candidates, companies, mandates, submissions } = schema;
   const row = async (id: number) => (await pool.query("select * from submissions where id = $1", [id])).rows[0];
   const objection = async (id: number) => (await pool.query("select objection_at, objection_note from candidates where id = $1", [id])).rows[0];
+  // Every mandate below belongs to company 1 (the recipient of the forms); company 2 is another firm.
+  const form = (number: string, candidateId: number, mandateId: number, signedOn: string, over: { companyId?: number | null; variant?: string } = {}) => ({
+    number,
+    candidateId,
+    mandateId,
+    signedOn,
+    companyId: 1,
+    variant: "anonym",
+    ...over,
+  });
 
   beforeAll(async () => {
     await pool.query("drop schema public cascade; create schema public;");
     for (const m of migrations) await pool.query(m.sql);
+    await db.insert(companies).values([
+      { name: "Muster Consulting", kind: "auftraggeber" },
+      { name: "Andere Beispiel AG", kind: "auftraggeber" },
+    ]);
     await db.insert(candidates).values([
       { firstName: "Lea", lastName: "Probst" },
       { firstName: "Jonas", lastName: "Fiktiv" },
     ]);
-    await db.insert(mandates).values([{ title: "Cloud Architekt" }, { title: "Testmanager" }, { title: "Scrum Master" }]);
+    await db.insert(mandates).values([
+      { title: "Cloud Architekt", companyId: 1 },
+      { title: "Testmanager", companyId: 1 },
+      { title: "Scrum Master", companyId: 1 },
+      { title: "Data Engineer", companyId: 1 },
+      { title: "Product Owner", companyId: 1 },
+    ]);
   });
 
   afterAll(async () => {
@@ -263,14 +283,16 @@ describe.skipIf(!dbUrl)("signed consent forms in the database", () => {
   });
 
   it("records the signed form as consent with the method «vertrag», never over an existing one", async () => {
-    expect(await applySignedConsent(db, { number: "V-2026-0001", candidateId: 1, mandateId: 1, signedOn: "2026-10-05" })).toEqual({
+    expect(await applySignedConsent(db, form("V-2026-0001", 1, 1, "2026-10-05"))).toEqual({
       applied: false,
       reason: "no_submission",
     });
     const [{ id }] = await db.insert(submissions).values({ candidateId: 1, mandateId: 1, status: "einwilligung_offen" }).returning({ id: submissions.id });
-    expect(await applySignedConsent(db, { number: "V-2026-0001", candidateId: 1, mandateId: 1, signedOn: "2026-10-05" })).toEqual({
+    expect(await applySignedConsent(db, form("V-2026-0001", 1, 1, "2026-10-05"))).toEqual({
       applied: true,
       submissionId: id,
+      scope: "anonym",
+      widened: false,
       withdrawalLifted: null,
       objectionLifted: null,
     });
@@ -278,14 +300,70 @@ describe.skipIf(!dbUrl)("signed consent forms in the database", () => {
       consent_at: new Date("2026-10-05T12:00:00Z"),
       consent_method: "vertrag",
       consent_note: "Einwilligung V-2026-0001",
+      consent_scope: "anonym",
       status: "vorgemerkt",
     });
-    expect(await applySignedConsent(db, { number: "V-2026-0002", candidateId: 1, mandateId: 1, signedOn: "2026-10-06" })).toEqual({
+    expect(await applySignedConsent(db, form("V-2026-0002", 1, 1, "2026-10-06"))).toEqual({
       applied: false,
       reason: "consent_exists",
       submissionId: id,
     });
     expect((await row(id)).consent_note).toBe("Einwilligung V-2026-0001");
+  });
+
+  it("does not take over a form for another recipient or for the anonymised profile of a named submission", async () => {
+    const [{ id }] = await db
+      .insert(submissions)
+      .values({ candidateId: 2, mandateId: 4, status: "einwilligung_offen", profileVariant: "namentlich" })
+      .returning({ id: submissions.id });
+    expect(await applySignedConsent(db, form("V-2026-0010", 2, 4, "2026-10-05", { companyId: 2, variant: "namentlich" }))).toEqual({
+      applied: false,
+      reason: "scope_mismatch",
+      submissionId: id,
+      recipient: true,
+      variant: false,
+    });
+    expect(await applySignedConsent(db, form("V-2026-0011", 2, 4, "2026-10-05", { companyId: null, variant: "namentlich" }))).toMatchObject({
+      reason: "scope_mismatch",
+      recipient: true,
+    });
+    expect(await applySignedConsent(db, form("V-2026-0012", 2, 4, "2026-10-05"))).toEqual({
+      applied: false,
+      reason: "scope_mismatch",
+      submissionId: id,
+      recipient: false,
+      variant: true,
+    });
+    expect(await row(id)).toMatchObject({ consent_at: null, consent_scope: null, status: "einwilligung_offen" });
+    expect(await applySignedConsent(db, form("V-2026-0013", 2, 4, "2026-10-06", { variant: "namentlich" }))).toMatchObject({
+      applied: true,
+      scope: "namentlich",
+      widened: false,
+    });
+    expect(await row(id)).toMatchObject({ consent_method: "vertrag", consent_scope: "namentlich", status: "vorgemerkt" });
+  });
+
+  it("widens a consent for the anonymised dossier only with a form signed for the name", async () => {
+    const [{ id }] = await db
+      .insert(submissions)
+      .values({ candidateId: 2, mandateId: 5, status: "vorgemerkt", consentAt: new Date("2026-10-01T09:00:00Z"), consentMethod: "portal", consentScope: "anonym" })
+      .returning({ id: submissions.id });
+    expect(await applySignedConsent(db, form("V-2026-0020", 2, 5, "2026-10-07"))).toMatchObject({ reason: "consent_exists" });
+    expect(await applySignedConsent(db, form("V-2026-0021", 2, 5, "2026-10-08", { variant: "namentlich" }))).toEqual({
+      applied: true,
+      submissionId: id,
+      scope: "namentlich",
+      widened: true,
+      withdrawalLifted: null,
+      objectionLifted: null,
+    });
+    expect(await row(id)).toMatchObject({
+      consent_at: new Date("2026-10-08T12:00:00Z"),
+      consent_method: "vertrag",
+      consent_note: "Einwilligung V-2026-0021",
+      consent_scope: "namentlich",
+    });
+    expect(await applySignedConsent(db, form("V-2026-0022", 2, 5, "2026-10-09", { variant: "namentlich" }))).toMatchObject({ reason: "consent_exists" });
   });
 
   it("lifts a withdrawal only when the form was signed on a later day", async () => {
@@ -295,16 +373,18 @@ describe.skipIf(!dbUrl)("signed consent forms in the database", () => {
       .values({ candidateId: 1, mandateId: 2, status: "zurueckgezogen", consentAt: new Date("2026-10-01T12:00:00Z"), consentMethod: "email", withdrawnAt, withdrawalNote: "E-Mail" })
       .returning({ id: submissions.id });
     for (const signedOn of ["2026-10-09", "2026-10-10"]) {
-      expect(await applySignedConsent(db, { number: "V-2026-0003", candidateId: 1, mandateId: 2, signedOn })).toEqual({
+      expect(await applySignedConsent(db, form("V-2026-0003", 1, 2, signedOn))).toEqual({
         applied: false,
         reason: "withdrawn_later",
         submissionId: id,
         withdrawnAt,
       });
     }
-    expect(await applySignedConsent(db, { number: "V-2026-0003", candidateId: 1, mandateId: 2, signedOn: "2026-10-11" })).toEqual({
+    expect(await applySignedConsent(db, form("V-2026-0003", 1, 2, "2026-10-11"))).toEqual({
       applied: true,
       submissionId: id,
+      scope: "anonym",
+      widened: false,
       withdrawalLifted: { at: withdrawnAt, note: "E-Mail" },
       objectionLifted: null,
     });
@@ -318,14 +398,14 @@ describe.skipIf(!dbUrl)("signed consent forms in the database", () => {
       .insert(submissions)
       .values({ candidateId: 2, mandateId: 3, status: "zurueckgezogen", withdrawnAt: objectionAt, withdrawalNote: "Schriftlich" })
       .returning({ id: submissions.id });
-    expect(await applySignedConsent(db, { number: "V-2026-0004", candidateId: 2, mandateId: 3, signedOn: "2026-10-12" })).toEqual({
+    expect(await applySignedConsent(db, form("V-2026-0004", 2, 3, "2026-10-12"))).toEqual({
       applied: false,
       reason: "objection_later",
       submissionId: id,
       objectionAt,
     });
     expect((await objection(2)).objection_at).toEqual(objectionAt);
-    expect(await applySignedConsent(db, { number: "V-2026-0004", candidateId: 2, mandateId: 3, signedOn: "2026-10-13" })).toMatchObject({
+    expect(await applySignedConsent(db, form("V-2026-0004", 2, 3, "2026-10-13"))).toMatchObject({
       applied: true,
       withdrawalLifted: { at: objectionAt, note: "Schriftlich" },
       objectionLifted: { at: objectionAt, note: "Schriftlich" },
@@ -421,6 +501,22 @@ describe("contract templates", () => {
     expect(text).toContain("kein Entgelt");
   });
 
+  it("never bans or penalises hiring a presented specialist in the Rahmenvertrag, also for old stored data", () => {
+    const carveOut = "Eine Anstellung der Fachperson durch die Auftraggeberin oder eine Endkundin fällt nicht unter dieses Verbot.";
+    // Contracts stored before the option was removed still carry includeHiring: true.
+    for (const data of [contractTemplates.rahmenvertrag.defaults, { ...contractTemplates.rahmenvertrag.defaults, includeHiring: true }, { includeHiring: "on" }]) {
+      const doc = buildContractDocument({ template: "rahmenvertrag", data }, ctx());
+      const text = docText(doc);
+      expect(text).not.toContain("anzustellen");
+      expect(text).not.toMatch(/Stellenausschreibung/);
+      expect(text).toContain(carveOut);
+      const ban = doc.blocks.filter((b) => b.type === "paragraph" && b.number?.startsWith("9.")).map((b) => inlineText((b as { text: string }).text));
+      expect(ban.join(" ")).toContain("weder direkt noch über Dritte mit Dienstleistungen zu beauftragen");
+      expect(ban.filter((t) => /Anstellung/.test(t))).toEqual([carveOut]);
+    }
+    expect(Object.keys(contractTemplates.rahmenvertrag.defaults)).not.toContain("includeHiring");
+  });
+
   it("keeps the cross-references of the Subunternehmervertrag and Beratungsvertrag stable", () => {
     const sub = headingNumbers(buildContractDocument({ template: "subunternehmer", data: samples.subunternehmer.data }, samples.subunternehmer.ctx));
     expect(sub.get("2")).toBe("Einsatz");
@@ -460,6 +556,22 @@ describe("contract templates", () => {
     expect(text).toContain("24 Monate");
     const electronic = buildContractDocument({ template: "einwilligung", data: { consentForm: "elektronisch" } }, samples.einwilligung.ctx);
     expect(electronic.blocks.some((b) => b.type === "signatures")).toBe(false);
+    expect(docText(electronic)).toContain("Die Bestätigung dieser Einwilligung bewahrt KOVALI nur als Nachweis");
+  });
+
+  it("lists in the consent everything the dossier shows, and keeps the signed form only as proof", () => {
+    const anon = docText(buildContractDocument({ template: "einwilligung", data: samples.einwilligung.data }, samples.einwilligung.ctx));
+    // Old stored forms may still carry incAvailability: false; availability is listed anyway.
+    const old = docText(buildContractDocument({ template: "einwilligung", data: { ...samples.einwilligung.data, incAvailability: false } }, samples.einwilligung.ctx));
+    for (const text of [anon, old]) expect(text).toContain("Verfügbarkeit, mögliches Pensum und bevorzugter Einsatzort");
+    expect(anon).toContain("ohne den Namen der Firma");
+    expect(anon).toContain("Nicht weitergegeben werden Adresse, E-Mail-Adresse, Telefonnummer, Geburtsdatum, Nationalität und Arbeitsbewilligung");
+    expect(anon).toContain("Das unterzeichnete Formular bewahrt KOVALI nur als Nachweis der Einwilligung auf, bis allfällige Ansprüche aus der Weitergabe verjährt sind, längstens 10 Jahre.");
+    expect(anon).not.toMatch(/958f/);
+    const named = docText(buildContractDocument({ template: "einwilligung", data: { ...samples.einwilligung.data, variant: "namentlich" } }, samples.einwilligung.ctx));
+    expect(named).toContain("mit Vor- und Nachnamen und Wohnort der betroffenen Person sowie dem Namen der Firma");
+    expect(named).toContain("Nicht weitergegeben werden Strasse und Hausnummer,");
+    expect(Object.keys(contractTemplates.einwilligung.defaults)).not.toContain("incAvailability");
   });
 
   it("requires a recipient and a mandate for the consent", () => {

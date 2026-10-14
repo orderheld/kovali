@@ -87,6 +87,13 @@ describe.skipIf(!url)("database schema", () => {
       /submissions_withdrawal_note_needs_date/,
     );
     await expect(client.query("update candidates set objection_note = 'E-Mail' where id = 1")).rejects.toThrow(/candidates_objection_note_needs_date/);
+    // What a consent covers exists only with a consent, and only as one of the two dossiers.
+    await expect(client.query("insert into submissions (mandate_id, candidate_id, consent_at, consent_scope) values (1, 1, now(), 'alles')")).rejects.toThrow(
+      /submissions_consent_scope_check/,
+    );
+    await expect(client.query("insert into submissions (mandate_id, candidate_id, consent_scope) values (1, 1, 'anonym')")).rejects.toThrow(
+      /submissions_consent_scope_needs_consent/,
+    );
     // A withdrawal after a hand-over keeps the consent it was based on.
     await client.query(
       "insert into companies (name, kind) values ('Muster GmbH', 'subunternehmer'); " +
@@ -142,6 +149,59 @@ describe.skipIf(!url)("database schema", () => {
       { consent: true, consent_method: "muendlich", consent_note: "Telefon 13.10.2026", withdrawn: null, withdrawal_note: null },
       { consent: true, consent_method: "vertrag", consent_note: "Einwilligung V-2026-0003", withdrawn: null, withdrawal_note: null },
       { consent: true, consent_method: "email", consent_note: null, withdrawn: null, withdrawal_note: null },
+    ]);
+  });
+
+  it("gives existing consents their scope and existing contracts their sending date", async () => {
+    await client.query("drop schema public cascade; create schema public;");
+    const scopeColumns = migrations.findIndex((m) => m.id === "0003_consent_scope_contract_sent");
+    expect(scopeColumns).toBeGreaterThan(0);
+    for (const m of migrations.slice(0, scopeColumns)) await client.query(m.sql);
+    await client.query("insert into candidates (first_name, last_name) values ('Test', 'Person')");
+    await client.query("insert into mandates (title) select 'Mandat ' || n from generate_series(1, 6) n");
+    const legacy: [string | null, string, string | null][] = [
+      // consent method, dossier variant, withdrawn
+      ["portal", "namentlich", null],
+      ["portal", "anonym", null],
+      ["email", "namentlich", null],
+      ["vertrag", "anonym", null],
+      ["email", "namentlich", "now()"],
+      [null, "namentlich", null],
+    ];
+    for (const [i, [method, variant, withdrawnAt]] of legacy.entries()) {
+      await client.query(
+        `insert into submissions (mandate_id, candidate_id, consent_at, consent_method, profile_variant, withdrawn_at) values ($1, 1, ${method ? "now()" : "null"}, $2, $3, ${withdrawnAt ?? "null"})`,
+        [i + 1, method, variant],
+      );
+    }
+    const sentOn = "2026-09-01T08:00:00Z";
+    const changedOn = "2026-09-20T08:00:00Z";
+    await client.query(
+      `insert into contracts (number, template, title, status, updated_at) values
+         ('V-2026-0001', 'nda', 'Versendet', 'versendet', $1),
+         ('V-2026-0002', 'nda', 'Wieder geöffnet', 'entwurf', $1),
+         ('V-2026-0003', 'nda', 'Versendet ohne Protokoll', 'versendet', $1),
+         ('V-2026-0004', 'nda', 'Nie versendet', 'entwurf', $1)`,
+      [changedOn],
+    );
+    await client.query(
+      `insert into audit_log (at, action, entity, entity_id, summary) values
+         ($1, 'update', 'contract', 1, 'Vertrag V-2026-0001: Status versendet'),
+         ($1, 'update', 'contract', 2, 'Vertrag V-2026-0002: Status versendet'),
+         ($2, 'update', 'contract', 2, 'Vertrag V-2026-0002: Status entwurf'),
+         ($2, 'update', 'contract', 4, 'Vertrag V-2026-0004: Status entwurf')`,
+      [sentOn, changedOn],
+    );
+    await client.query(migrations[scopeColumns].sql);
+    const { rows } = await client.query<{ consent_scope: string | null }>("select consent_scope from submissions order by mandate_id");
+    // Portal consents never covered the name; a withdrawn consent covers nothing.
+    expect(rows.map((r) => r.consent_scope)).toEqual(["anonym", "anonym", "namentlich", "anonym", null, null]);
+    const contracts = await client.query<{ number: string; sent_at: Date | null }>("select number, sent_at from contracts order by number");
+    expect(contracts.rows.map((r) => [r.number, r.sent_at?.toISOString() ?? null])).toEqual([
+      ["V-2026-0001", new Date(sentOn).toISOString()],
+      ["V-2026-0002", new Date(sentOn).toISOString()],
+      ["V-2026-0003", new Date(changedOn).toISOString()],
+      ["V-2026-0004", null],
     ]);
   });
 });

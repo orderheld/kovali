@@ -12,8 +12,29 @@ export interface SubmissionConsent {
   consentAt: Date | null;
   consentMethod?: string | null;
   consentNote?: string | null;
+  /** profileVariants: what the consent covers ("anonym" or "namentlich"). */
+  consentScope?: string | null;
   withdrawnAt?: Date | null;
   withdrawalNote?: string | null;
+}
+
+/** What a consent covers: the anonymised dossier only, or also the dossier with the name. */
+export type ConsentScope = "anonym" | "namentlich";
+
+/**
+ * Does the consent cover a dossier of this variant? Any consent covers the anonymised dossier;
+ * the dossier with the name needs a consent recorded for it (a portal consent never is one: the
+ * portal promises to ask again before the name is passed on).
+ */
+export function consentCovers(s: Pick<SubmissionConsent, "consentScope">, variant: string): boolean {
+  return variant !== "namentlich" || s.consentScope === "namentlich";
+}
+
+/** "für das anonymisierte Dossier" or "für das Dossier mit Namen", null without a scope. */
+export function consentScopeText(scope: string | null | undefined): string | null {
+  if (scope === "namentlich") return "für das Dossier mit Namen";
+  if (scope === "anonym") return "für das anonymisierte Dossier";
+  return null;
 }
 
 /** "erteilt": a profile may leave KOVALI; "widerrufen": withdrawn or declined; "fehlt": never given. */

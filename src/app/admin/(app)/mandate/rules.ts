@@ -1,6 +1,10 @@
+import { consentCovers } from "@/lib/admin/consent";
 import { formatChf, formatDate, formatNumber, formatPercent, todayIso } from "@/lib/admin/format";
 import { mandateStatuses, openMandateStatuses, type Tone } from "@/lib/admin/options";
-import { HOURS_PER_DAY, margin, toDaily, toHourly, type MonthlyExample } from "@/lib/admin/rates";
+import { b2bMargin, VAT_RATE_PERCENT } from "@/lib/admin/payroll";
+import { HOURS_PER_DAY, type MonthlyExample } from "@/lib/admin/rates";
+
+export { defaultSubmissionRates } from "@/lib/admin/rates";
 
 /**
  * Pure rules of the mandate module: list groups, deadline urgency, when a mandate counts as
@@ -120,6 +124,9 @@ export const CONSENT_WITHDRAWN =
 export const OBJECTION_ACTIVE =
   "Die Fachperson hat jeder weiteren Weitergabe widersprochen. Erst eine neue, ausdrückliche Einwilligung für ein Mandat hebt den Widerspruch auf.";
 
+export const CONSENT_ANONYMOUS_ONLY =
+  "Die Einwilligung gilt nur für das anonymisierte Dossier. Frag die Fachperson, ob du ihr Profil mit Namen weitergeben darfst, und erfasse diese Einwilligung, oder schlage sie anonymisiert vor.";
+
 /** The consent of this submission was withdrawn (or the candidate declined the mandate). */
 export function isWithdrawn(s: { withdrawnAt?: Date | null }): boolean {
   return Boolean(s.withdrawnAt);
@@ -145,11 +152,21 @@ export function renewedConsentError(consentDate: string, blockers: { withdrawnAt
  * records the submission date and needs the candidate's consent for this mandate (the database
  * enforces the same rule with submissions_consent_before_submit) and a recipient company.
  * After a withdrawal, or while the candidate objects to any hand-over, no status may bring the
- * profile back to the client until consent is recorded again. Earlier dates stay: once a
- * profile has left KOVALI, that remains a fact even if the status goes back.
+ * profile back to the client until consent is recorded again. A dossier with the name needs a
+ * consent that covers it (consentCovers): a portal consent covers the anonymised one only.
+ * Earlier dates stay: once a profile has left KOVALI, that remains a fact even if the status
+ * goes back.
  */
 export function submissionStatusChange(
-  current: { consentAt: Date | null; withdrawnAt?: Date | null; objectionAt?: Date | null; submittedAt: Date | null; recipientCompanyId?: number | null },
+  current: {
+    consentAt: Date | null;
+    consentScope?: string | null;
+    profileVariant?: string;
+    withdrawnAt?: Date | null;
+    objectionAt?: Date | null;
+    submittedAt: Date | null;
+    recipientCompanyId?: number | null;
+  },
   nextStatus: string,
   now: Date,
 ): SubmissionChange {
@@ -158,6 +175,7 @@ export function submissionStatusChange(
   if (submits && isWithdrawn(current)) return { ok: false, error: CONSENT_WITHDRAWN };
   if (!submits || current.submittedAt) return { ok: true, submittedAt: current.submittedAt };
   if (!current.consentAt) return { ok: false, error: CONSENT_MISSING };
+  if (!consentCovers(current, current.profileVariant ?? "anonym")) return { ok: false, error: CONSENT_ANONYMOUS_ONLY };
   // Every hand-over needs a known recipient, so the record says who received the profile.
   if (current.recipientCompanyId === null) return { ok: false, error: RECIPIENT_MISSING };
   return { ok: true, submittedAt: now };
@@ -173,21 +191,6 @@ export function consentTimestamp(date: string, today: string, now: Date): Date |
   return new Date(`${date}T12:00:00Z`);
 }
 
-const round2 = (n: number) => Math.round(n * 100) / 100;
-
-/**
- * Starting rates of a new submission: the mandate's selling rate and the candidate's own rate
- * as buying rate, converted to the mandate's unit (hour or day).
- */
-export function defaultSubmissionRates(
-  mandate: { rateSell: number | null; rateUnit: string | null },
-  candidate: { rateAmount: number | null; rateUnit: string | null },
-): { rateSell: number | null; rateBuy: number | null; rateUnit: "stunde" | "tag" } {
-  const unit = mandate.rateUnit === "tag" || (!mandate.rateUnit && candidate.rateUnit === "tag") ? "tag" : "stunde";
-  const buy = unit === "tag" ? toDaily(candidate.rateAmount, candidate.rateUnit) : toHourly(candidate.rateAmount, candidate.rateUnit);
-  return { rateSell: mandate.rateSell ?? null, rateBuy: buy === null ? null : round2(buy), rateUnit: unit };
-}
-
 // --- Margins ---------------------------------------------------------------------
 
 export interface MarginInfo {
@@ -196,19 +199,53 @@ export interface MarginInfo {
   /** red: KOVALI loses money; amber: under 10 %; green otherwise. */
   tone: Extract<Tone, "red" | "amber" | "green">;
   text: string;
+  /** The subcontractor's VAT counts as cost (KOVALI cannot reclaim it). */
+  includesVat: boolean;
 }
 
-/** Margin per hour with a warning colour; the buying rate may use another unit (portal rate). */
+/**
+ * VAT situation for margins. Without its own VAT number (kovaliParty().vatNumber) KOVALI cannot
+ * reclaim the VAT its subcontractor charges, so that VAT is a cost. No record says whether a
+ * subcontractor charges VAT, so a firm is assumed to (the cautious figure).
+ */
+export interface MarginVat {
+  kovaliVatRegistered: boolean;
+  subcontractorCharges?: boolean;
+}
+
+export const MARGIN_VAT_NOTE = "Einkauf inkl. nicht abziehbarer MWST des Subunternehmens";
+
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
+/**
+ * Margin per hour with a warning colour; the buying rate may use another unit (portal rate).
+ * With `vat` the subcontractor's VAT that KOVALI cannot reclaim is part of the cost, as in the
+ * Rechner (b2bMargin).
+ */
 export function marginInfo(
   sell: number | null | undefined,
   buy: number | null | undefined,
   sellUnit: string | null | undefined,
   buyUnit: string | null | undefined = sellUnit,
+  vat?: MarginVat,
 ): MarginInfo | null {
-  const m = margin(sell, buy, sellUnit, buyUnit);
+  if (sell === null || sell === undefined || buy === null || buy === undefined) return null;
+  const unit = (u: string | null | undefined) => (u === "tag" ? "tag" : "stunde");
+  const m = b2bMargin({
+    sell,
+    sellUnit: unit(sellUnit),
+    buy,
+    buyUnit: unit(buyUnit),
+    workloadPercent: 100,
+    vat: vat ? { kovaliRegistered: vat.kovaliVatRegistered, subcontractorCharges: vat.subcontractorCharges ?? true, ratePercent: VAT_RATE_PERCENT } : undefined,
+  });
   if (!m) return null;
-  const tone = m.amount < 0 ? "red" : m.percent < 10 ? "amber" : "green";
-  return { ...m, tone, text: `${formatChf(m.amount)} pro Stunde · ${formatPercent(m.percent)}` };
+  const amount = round2(m.perHour);
+  const percent = round2(m.percent);
+  const includesVat = m.vatCostHourly > 0;
+  const tone = amount < 0 ? "red" : percent < 10 ? "amber" : "green";
+  const text = `${formatChf(amount)} pro Stunde · ${formatPercent(percent)}${includesVat ? ` (${MARGIN_VAT_NOTE})` : ""}`;
+  return { amount, percent, tone, text, includesVat };
 }
 
 /** "CHF 145.00 pro Stunde", or "CHF 145 / h" in tight spots such as tables (cents only when there are any). */

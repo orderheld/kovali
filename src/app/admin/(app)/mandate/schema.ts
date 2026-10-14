@@ -94,6 +94,8 @@ export const consentSchema = z
     consentDate: isoDate(),
     consentMethod: f.enum(consentMethodValues, "Bitte wählen, wie die Einwilligung erteilt wurde."),
     consentNote: f.optText(300),
+    /** For which dossier the candidate agreed: anonymised only, or with the name. */
+    consentScope: f.enum(valuesOf(profileVariants), "Bitte wählen, wofür die Einwilligung gilt."),
   })
   // A verbal consent is only documented with a note of when and how it was given.
   .refine((d) => d.consentMethod !== "muendlich" || Boolean(d.consentNote), {

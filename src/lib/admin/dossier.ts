@@ -1,6 +1,7 @@
+import { consentCovers } from "./consent";
 import type { Candidate, ExperienceEntry, LanguageSkill } from "./db/schema";
 import { displayNo, formatChf, formatDate, formatLongDate, todayIso } from "./format";
-import { disciplines, labelOf, languageLevels, rateUnits, remoteOptions, seniorities, workPermits } from "./options";
+import { disciplines, labelOf, languageLevels, rateUnits, remoteOptions, seniorities } from "./options";
 import { kovaliParty } from "./party";
 import { exportFileName, type Block, type DocModel, type Rich } from "./render/model";
 
@@ -9,10 +10,12 @@ import { exportFileName, type Block, type DocModel, type Rich } from "./render/m
  * Pure: the route handler loads the data, this module decides what a firm may see.
  *
  * Two variants. The anonymised one carries no name and no personal data, only the display
- * number ("Profil K-0042"). The named one shows name and city, but never e-mail, phone, street
- * or birth date: KOVALI stays the intermediary. Free texts are scrubbed of the candidate's
- * contact data (and, when anonymised, of the name), because summaries and project
- * descriptions are typed by hand and may contain them.
+ * number ("Profil K-0042"). The named one shows name, city and the candidate's own firm, but
+ * never e-mail, phone, street, birth date, nationality or work permit: KOVALI stays the
+ * intermediary, and the dossier holds only what the Einwilligung (contracts/templates/
+ * einwilligung.ts) lists. Free texts are scrubbed of the candidate's contact data (and, when
+ * anonymised, of the name and the own firm), because summaries and project descriptions are
+ * typed by hand and may contain them.
  *
  * The content is assembled once (DossierContent) and then laid out by a template, so
  * firm-specific layouts (Coopers, Adnovum, GHR) can be added later without touching the rules.
@@ -34,8 +37,6 @@ export type DossierCandidate = Pick<
   | "street"
   | "postalCode"
   | "city"
-  | "nationality"
-  | "workPermit"
   | "headline"
   | "summary"
   | "disciplines"
@@ -64,9 +65,19 @@ export interface DossierSubmission {
   consentAt: Date | null;
   /** Consent withdrawn: the dossier is a draft, whatever the consent date says. */
   withdrawnAt?: Date | null;
+  /** What the consent covers; a dossier with the name needs "namentlich" (consent.ts). */
+  consentScope?: string | null;
   /** Rate offered to the firm (selling rate). The candidate's own rate never appears. */
   rateSell: number | null;
   rateUnit: string | null;
+}
+
+/** The candidate's own firm (a companies row fits). */
+export interface DossierFirm {
+  name: string;
+  legalName?: string | null;
+  /** "CHE-123.456.789" */
+  uid?: string | null;
 }
 
 export interface DossierOptions {
@@ -75,9 +86,10 @@ export interface DossierOptions {
   submission?: DossierSubmission | null;
   /**
    * The candidate's own firm. Profiles are only passed on through it (as subcontractor of
-   * KOVALI); the named variant shows its name, the anonymised one only that it exists.
+   * KOVALI); the named variant shows its name, the anonymised one only that it exists and
+   * removes its name and UID from the free texts.
    */
-  company?: { name: string } | null;
+  company?: DossierFirm | null;
   /** The candidate objects to any hand-over (candidates.objection_at): a mandate dossier is a draft. */
   objection?: boolean;
   template?: DossierTemplate;
@@ -89,6 +101,7 @@ export const DRAFT_REASON_CONSENT = "Einwilligung der Kandidatin/des Kandidaten 
 export const DRAFT_REASON_WITHDRAWN = "Einwilligung der Kandidatin/des Kandidaten für dieses Mandat widerrufen.";
 export const DRAFT_REASON_OBJECTION = "Die Kandidatin/der Kandidat hat jeder Weitergabe widersprochen.";
 export const DRAFT_REASON_FIRM = "Keine eigene Firma (Subunternehmen) erfasst.";
+export const DRAFT_REASON_SCOPE = "Die Einwilligung gilt nur für das anonymisierte Dossier, nicht für das Dossier mit Namen.";
 export const DRAFT_NOTICE = `${DRAFT_REASON_CONSENT} Nicht weitergeben.`;
 export const CONDITIONS_ON_REQUEST = "Konditionen auf Anfrage";
 
@@ -191,11 +204,44 @@ function wordPattern(word: string): RegExp {
   return new RegExp(`(?<![\\p{L}\\p{N}])${escapeRegExp(word)}(?:['’]?s)?(?![\\p{L}\\p{N}])`, "giu");
 }
 
+const OWN_FIRM = "eigene Firma";
+const LEGAL_FORM = /[\s,]*\b(?:GmbH|AG|Sàrl|Sarl|SA|Sagl|Ltd\.?|LLC|Inc\.?|KLG|KG)$/iu;
+
 /**
- * Removes the candidate's contact data from a free text, and in the anonymised variant also
- * the name (replaced by the profile number, so sentences stay readable).
+ * The spellings of a name people type, always in the same order: as stored, "Mueller" for
+ * "Müller" (and "Jose" for "José"), and "Muller". Pairs of first and last name use the same
+ * spelling for both.
  */
-export function makeScrubber(c: DossierCandidate, variant: DossierVariant): (text: string) => string {
+function nameSpellings(name: string): [string, string, string] {
+  const plain = (s: string) => s.normalize("NFD").replace(/\p{M}/gu, "");
+  const transliterated = name
+    .replace(/Ä/g, "Ae")
+    .replace(/Ö/g, "Oe")
+    .replace(/Ü/g, "Ue")
+    .replace(/ä/g, "ae")
+    .replace(/ö/g, "oe")
+    .replace(/ü/g, "ue")
+    .replace(/ß/g, "ss");
+  return [name, plain(transliterated), plain(name).replace(/ß/g, "ss")];
+}
+
+function nameForms(name: string): string[] {
+  return [...new Set(nameSpellings(name))];
+}
+
+/** "CHE-123.456.789", "CHE123456789 MWST", "123.456.789": the UID in any common spelling. */
+function uidPattern(uid: string | null | undefined): RegExp | null {
+  const digits = (uid ?? "").replace(/\D/g, "");
+  if (digits.length !== 9) return null;
+  return new RegExp(`(?:CHE[\\s.-]*)?(?<!\\d)${digits.split("").join("[\\s.'’-]*")}(?!\\d)(?:\\s*(?:MWST|TVA|IVA))?`, "gi");
+}
+
+/**
+ * Removes the candidate's contact data from a free text. In the anonymised variant it also
+ * removes the name (replaced by the profile number, so sentences stay readable) and the own
+ * firm (name and UID; a one-person GmbH names its owner in the commercial register).
+ */
+export function makeScrubber(c: DossierCandidate, variant: DossierVariant, firm?: DossierFirm | null): (text: string) => string {
   const rules: [RegExp, string][] = [[EMAIL, REMOVED]];
   const phone = phonePattern(c.phone);
   if (phone) rules.push([phone, REMOVED]);
@@ -207,10 +253,31 @@ export function makeScrubber(c: DossierCandidate, variant: DossierVariant): (tex
   }
   if (variant === "anonym") {
     const label = displayNo.candidate(c.id);
-    const first = c.firstName.trim();
-    const last = c.lastName.trim();
+    const byLength = (a: string, b: string) => b.length - a.length;
+    const firsts = nameForms(c.firstName.trim());
+    const lasts = nameForms(c.lastName.trim());
+    const lastSpellings = nameSpellings(c.lastName.trim());
+    const full = [
+      ...new Set(
+        nameSpellings(c.firstName.trim()).flatMap((first, i) => {
+          const last = lastSpellings[i];
+          return [`${first} ${last}`, `${last} ${first}`, `${last}, ${first}`];
+        }),
+      ),
+    ];
+    const personal = new Set([...full, ...lasts, ...firsts].map((n) => n.toLowerCase()));
+
+    // The firm before the person: "Beispiel Consulting GmbH" is the firm, not "K-0042
+    // Consulting GmbH". Also without its legal form ("Muster Analytics" for "Muster Analytics
+    // GmbH"), unless what is left is short or just the person's name ("Beispiel GmbH").
+    const firmNames = [firm?.legalName, firm?.name].map((n) => n?.trim() ?? "").filter((n) => n.length >= 2 && !personal.has(n.toLowerCase()));
+    const cores = firmNames.map((n) => n.replace(LEGAL_FORM, "").trim()).filter((n) => n.length >= 4 && !personal.has(n.toLowerCase()));
+    const uid = uidPattern(firm?.uid);
+    if (uid) rules.push([uid, REMOVED]);
+    for (const name of [...new Set([...firmNames, ...cores].flatMap(nameForms))].sort(byLength)) rules.push([wordPattern(name), OWN_FIRM]);
+
     // Longest forms first, so "Anna Beispiel" becomes one "K-0042", not two.
-    for (const name of [`${first} ${last}`, `${last} ${first}`, `${last}, ${first}`, last, first]) {
+    for (const name of [...full.sort(byLength), ...lasts, ...firsts]) {
       if (name.replace(/[\s,]/g, "").length >= 2) rules.push([wordPattern(name), label]);
     }
   }
@@ -247,18 +314,25 @@ function list<T>(value: unknown): T[] {
 
 /**
  * Why a dossier for a mandate may not leave KOVALI yet: an objection, a withdrawn or missing
- * consent for this mandate, or no own firm. Empty when it may be passed on.
+ * consent for this mandate, a consent that covers only the anonymised dossier while this one
+ * carries the name, or no own firm. Empty when it may be passed on.
  */
-export function mandateDraftReasons(opts: Pick<DossierOptions, "submission" | "company" | "objection">): string[] {
+export function mandateDraftReasons(opts: Pick<DossierOptions, "variant" | "submission" | "company" | "objection">): string[] {
   const s = opts.submission;
-  const consent = s?.withdrawnAt ? DRAFT_REASON_WITHDRAWN : s?.consentAt ? null : DRAFT_REASON_CONSENT;
+  const consent = s?.withdrawnAt
+    ? DRAFT_REASON_WITHDRAWN
+    : !s?.consentAt
+      ? DRAFT_REASON_CONSENT
+      : consentCovers(s, opts.variant)
+        ? null
+        : DRAFT_REASON_SCOPE;
   return [opts.objection ? DRAFT_REASON_OBJECTION : null, consent, opts.company ? null : DRAFT_REASON_FIRM].filter((r) => r !== null);
 }
 
 export function dossierContent(c: DossierCandidate, opts: DossierOptions): DossierContent {
   const today = opts.today ?? todayIso();
   const named = opts.variant === "namentlich";
-  const scrub = makeScrubber(c, opts.variant);
+  const scrub = makeScrubber(c, opts.variant, opts.company);
   const clean = (s: string | null | undefined) => (s?.trim() ? scrub(s.trim()) : null);
   const cleanList = (items: readonly string[] | null | undefined) => list<string>(items).map((s) => scrub(String(s).trim())).filter(Boolean);
   const number = displayNo.candidate(c.id);
@@ -284,10 +358,8 @@ export function dossierContent(c: DossierCandidate, opts: DossierOptions): Dossi
       .map((l) => scrub(languageLine(l)))
       .join(", "),
   );
-  if (named) {
-    add("Arbeitsbewilligung", c.workPermit ? labelOf(workPermits, c.workPermit) : null);
-    add("Nationalität", c.nationality);
-  }
+  // No nationality or work permit: a subcontract through the candidate's own firm does not
+  // need them, and the Einwilligung does not list them.
 
   const rate = opts.submission?.rateSell !== null && opts.submission?.rateSell !== undefined ? formatRate(opts.submission.rateSell, opts.submission.rateUnit) : null;
 
@@ -315,7 +387,9 @@ export function dossierContent(c: DossierCandidate, opts: DossierOptions): Dossi
     certifications: cleanList(c.certifications),
     conditions: rate ? `${rate}, zzgl. MWST falls anwendbar` : CONDITIONS_ON_REQUEST,
     asOf: formatLongDate(today),
-    footer: `Vertraulich. Vorgestellt durch KOVALI (${kovaliParty().name}). Weitergabe an Dritte nur mit Zustimmung von KOVALI.`,
+    // Onward disclosure (also to an end client) rests on the candidate's consent, not on
+    // KOVALI's approval. One line next to the page number in the PDF: keep it this short.
+    footer: `Vertraulich. Vorgestellt durch KOVALI (${kovaliParty().name}). Weitergabe an Dritte nur mit Einwilligung der Fachperson.`,
   };
 }
 

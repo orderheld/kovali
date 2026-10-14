@@ -389,4 +389,32 @@ update submissions
  where consent_at is not null and consent_method is null and consent_note ~ '^(Schriftlich|E-Mail|Mündlich)(:|$)';
 `,
   },
+  {
+    // What a consent covers: the anonymised dossier only, or the dossier with the name. A named
+    // hand-over needs a named consent. Contracts remember when they were first sent, so a sent
+    // contract (and its number) is never deleted, even after it was reopened as a draft.
+    id: "0003_consent_scope_contract_sent",
+    sql: /* sql */ `
+alter table submissions
+  add column consent_scope text check (consent_scope in ('anonym', 'namentlich')),
+  add constraint submissions_consent_scope_needs_consent check (consent_scope is null or consent_at is not null);
+
+-- The portal promises to ask again before the name is passed on: a portal consent covers the
+-- anonymised dossier only. Other consents were recorded for the dossier chosen at the time.
+-- A withdrawn consent has no scope (a withdrawal clears it from now on as well).
+update submissions
+   set consent_scope = case when consent_method = 'portal' then 'anonym' else coalesce(profile_variant, 'anonym') end
+ where consent_at is not null and withdrawn_at is null;
+
+alter table contracts add column sent_at timestamptz;
+
+-- First "versendet" from the audit log; a contract that is sent now counts from its last change.
+update contracts c
+   set sent_at = coalesce(
+         (select min(a.at) from audit_log a
+           where a.entity = 'contract' and a.entity_id = c.id and a.summary like '%: Status versendet'),
+         case when c.status = 'versendet' then c.updated_at end
+       );
+`,
+  },
 ];

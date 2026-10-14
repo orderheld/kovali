@@ -29,6 +29,8 @@ interface PortalContext {
   rateSell: number | null;
   rateUnit: string | null;
   workload: number | null;
+  /** KOVALI has a VAT number; otherwise the subcontractor's VAT is part of the cost. */
+  kovaliVatRegistered: boolean;
 }
 
 function PortalFields({ values, context }: { values: PortalValues; context: PortalContext }) {
@@ -42,7 +44,7 @@ function PortalFields({ values, context }: { values: PortalValues; context: Port
   const mentions = confidentialMentions(live.text, context.confidentialNames);
   const rate = parseAmountInput(live.rate);
   const workloads = [100, ...(context.workload && context.workload < 100 ? [context.workload] : [])];
-  const margin = marginInfo(context.rateSell, rate, context.rateUnit, live.unit);
+  const margin = marginInfo(context.rateSell, rate, context.rateUnit, live.unit, { kovaliVatRegistered: context.kovaliVatRegistered });
 
   return (
     // Reads title, text and rate on every change for the warnings and the example below.
@@ -117,7 +119,7 @@ function PortalFields({ values, context }: { values: PortalValues; context: Port
             )}
           >
             Marge zum Verkaufssatz: {margin.text}
-            {margin.tone === "red" ? " – höher als der Verkaufssatz." : null}
+            {margin.tone === "red" ? (margin.includesVat ? " – KOVALI würde draufzahlen." : " – höher als der Verkaufssatz.") : null}
           </p>
         ) : null}
         {/* The rate is a fee to the candidate's firm (subcontractor), not a wage: so "exkl. MWST", not "brutto". */}

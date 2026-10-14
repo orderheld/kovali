@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  consentCovers,
   consentDetails,
+  consentScopeText,
   consentState,
   consentSummary,
   hasValidConsent,
@@ -48,5 +50,23 @@ describe("consent of a submission", () => {
     expect(statusAfterConsent({ status: "zurueckgezogen", submittedAt: consentAt, withdrawnAt })).toBe("zurueckgezogen");
     // Closed by Ferhat without a withdrawal: stays closed.
     expect(statusAfterConsent({ status: "zurueckgezogen", submittedAt: null, withdrawnAt: null })).toBe("zurueckgezogen");
+  });
+});
+
+describe("what a consent covers", () => {
+  it("covers the dossier with the name only when recorded for it", () => {
+    expect(consentCovers({ consentScope: "anonym" }, "anonym")).toBe(true);
+    expect(consentCovers({ consentScope: "anonym" }, "namentlich")).toBe(false);
+    expect(consentCovers({ consentScope: "namentlich" }, "namentlich")).toBe(true);
+    expect(consentCovers({ consentScope: "namentlich" }, "anonym")).toBe(true);
+    // Unknown scope (e.g. before it was recorded): the anonymised dossier only.
+    expect(consentCovers({ consentScope: null }, "namentlich")).toBe(false);
+    expect(consentCovers({}, "anonym")).toBe(true);
+  });
+
+  it("names the scope", () => {
+    expect(consentScopeText("anonym")).toBe("für das anonymisierte Dossier");
+    expect(consentScopeText("namentlich")).toBe("für das Dossier mit Namen");
+    expect(consentScopeText(null)).toBeNull();
   });
 });
