@@ -78,7 +78,7 @@ export default function DatenschutzPage() {
       <h2>5. Profil und Lebenslauf</h2>
       <p>
         Wenn Sie auf der Seite für Fachleute Ihr Profil senden, werden die von Ihnen eingegebenen Angaben bearbeitet:
-        Name, E-Mail-Adresse, Schwerpunkt, optional Telefonnummer, Verfügbarkeit, bevorzugte Form der Zusammenarbeit,
+        Name, E-Mail-Adresse, Schwerpunkt, optional Telefonnummer, Verfügbarkeit, Form der Zusammenarbeit (eigene GmbH oder AG),
         Link zu einem Online-Profil und Nachricht sowie Ihr Lebenslauf mit den darin enthaltenen Angaben. Zweck ist die
         Prüfung einer Zusammenarbeit in Mandaten von {site.brand}.
       </p>
@@ -88,8 +88,9 @@ export default function DatenschutzPage() {
           Website selbst speichert weder das Profil noch den Lebenslauf.
         </li>
         <li>
-          Ihr Profil wird nur mit Ihrer Zustimmung und nur für ein konkretes Mandat an einen Auftraggeber
-          weitergegeben. {site.brand} vermittelt keine Stellen an Dritte.
+          Ihr Profil wird nur mit Ihrer Zustimmung und nur in einer Offerte von {site.brand} für ein konkretes Mandat
+          verwendet, in dem {site.brand} selbst Auftragnehmer ist. {site.brand} vermittelt keine Stellen an Dritte und
+          verleiht kein Personal.
         </li>
         <li>
           Profile werden höchstens sechs Monate aufbewahrt und danach gelöscht, auf Wunsch jederzeit früher. Entsteht

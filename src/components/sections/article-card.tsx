@@ -1,19 +1,19 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { articleHref } from "@/content/insights";
-import type { Article } from "@/content/types";
+import type { PublishedArticle } from "@/content/types";
 import { formatDate } from "@/lib/utils";
 
-export function ArticleCard({ article, headingLevel = "h3" }: { article: Article; headingLevel?: "h2" | "h3" }) {
+export function ArticleCard({ article, headingLevel = "h3" }: { article: PublishedArticle; headingLevel?: "h2" | "h3" }) {
   const Heading = headingLevel;
   return (
     <article className="group relative flex h-full flex-col rounded-xl border border-line bg-white p-7 transition-colors hover:border-blue/50">
-      <p className="flex items-center gap-3 font-mono text-[0.6875rem] uppercase tracking-[0.12em] text-slate">
-        <span className="text-blue">{article.category}</span>
+      <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate">
+        <span className="font-medium text-blue">{article.category}</span>
         <span aria-hidden>·</span>
         <span>{article.readingMinutes} Min. Lesezeit</span>
       </p>
-      <Heading className="mt-4 text-h3 font-semibold">
+      <Heading className="mt-3 font-sans text-h3 font-semibold">
         <Link href={articleHref(article.slug)} className="after:absolute after:inset-0 after:rounded-xl group-hover:text-blue">
           {article.title}
         </Link>

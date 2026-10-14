@@ -8,7 +8,7 @@ import { pageMetadata } from "@/lib/seo";
 export const metadata = pageMetadata({
   title: "Insights – Ratgeber Business Analysis",
   description:
-    "Ratgeber Business Analysis: Fachbeiträge zu Business Analysis, Requirements Engineering und Test Management aus der Praxis von IT-Projekten in der Schweiz.",
+    "Ratgeber Business Analysis: Fachbeiträge zu Business Analysis, Requirements Engineering und Testmanagement in IT-Projekten in der Schweiz.",
   path: "/insights",
 });
 
@@ -20,9 +20,8 @@ export default function InsightsPage() {
           { name: "Start", path: "/" },
           { name: "Insights", path: "/insights" },
         ]}
-        eyebrow="Insights"
         title="Ratgeber Business Analysis und Requirements Engineering"
-        lead="Fachbeiträge zu Anforderungen, Analyse und Test: verständlich erklärt und aus der Praxis von IT-Projekten in grossen Organisationen."
+        lead="Fachbeiträge zu Anforderungen, Analyse und Test in IT-Projekten."
       />
       <Section labelledBy="beitraege-title">
         <h2 id="beitraege-title" className="sr-only">

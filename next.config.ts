@@ -68,6 +68,13 @@ const nextConfig: NextConfig = {
       { source: "/partner", destination: "/unternehmen", permanent: true },
       // Requirements Engineering is part of the combined service Business Analysis & Requirements Engineering.
       { source: "/leistungen/requirements-engineering", destination: "/leistungen/business-analysis", permanent: true },
+      // "Über uns" became "Warum KOVALI"; "warum-wir" is Ferhat Demir's own word for the page.
+      { source: "/ueber-uns", destination: "/warum-kovali", permanent: true },
+      { source: "/warum-wir", destination: "/warum-kovali", permanent: true },
+      // /leistungen is the IT Consulting page: a short URL for cards and LinkedIn, and the
+      // reserved slug below it, so it never reaches the [slug] route as a 404.
+      { source: "/it-consulting", destination: "/leistungen", permanent: true },
+      { source: "/leistungen/it-consulting", destination: "/leistungen", permanent: true },
     ];
   },
   async headers() {

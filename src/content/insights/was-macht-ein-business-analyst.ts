@@ -5,13 +5,12 @@ export const article: Article = {
   title: "Was macht ein Business Analyst?",
   metaTitle: "Business Analyst: Aufgaben, Ergebnisse und Rolle",
   description:
-    "Welche Aufgaben hat ein Business Analyst? Ziele klären, Prozesse analysieren, Anforderungen erheben und die Abnahme begleiten: ein Überblick aus der Praxis.",
+    "Welche Aufgaben hat ein Business Analyst? Ziele klären, Prozesse analysieren, Anforderungen erheben und die Abnahme begleiten: ein Überblick über die Rolle.",
   keyword: "Business Analyst Aufgaben",
   category: "Grundlagen",
   publishedAt: "2026-10-13",
-  readingMinutes: 5,
   excerpt:
-    "Ein Business Analyst klärt, welches Problem ein Vorhaben lösen soll und welche Lösung dem Unternehmen tatsächlich nützt. Der Beitrag beschreibt Aufgaben, Ergebnisse und Abgrenzungen aus der Praxis.",
+    "Ein Business Analyst klärt, welches Problem ein Vorhaben lösen soll und welche Lösung dem Unternehmen tatsächlich nützt. Der Beitrag beschreibt Aufgaben, Ergebnisse und Abgrenzungen der Rolle.",
   relatedServices: ["business-analysis", "test-management"],
   blocks: [
     { type: "h2", id: "rolle-im-kern", text: "Die Rolle im Kern" },
@@ -21,7 +20,7 @@ export const article: Article = {
     },
     {
       type: "p",
-      text: "Im Alltag heisst das: Ein Business Analyst klärt zuerst das «Warum» und das «Was», bevor andere über das «Wie» entscheiden. Er arbeitet nicht nur am Projektanfang, sondern begleitet ein Vorhaben oft bis zur Einführung. Je nach Organisation heisst die Rolle auch Business Engineer, Fachanalyst oder IT-Business-Analyst.",
+      text: "Im Alltag heisst das: Ein Business Analyst klärt zuerst das «Warum» und das «Was», bevor andere über das «Wie» entscheiden. Oft begleitet er ein Vorhaben vom Projektanfang bis zur Einführung. Je nach Organisation heisst die Rolle auch Business Engineer, Fachanalyst oder IT-Business-Analyst.",
     },
     { type: "h2", id: "zentrale-aufgaben", text: "Die zentralen Aufgaben" },
     {
@@ -56,7 +55,7 @@ export const article: Article = {
     { type: "h3", text: "Umsetzung und Abnahme begleiten" },
     {
       type: "p",
-      text: "Während der Entwicklung beantwortet der Business Analyst fachliche Fragen, klärt Abweichungen und führt Änderungen an den Anforderungen nach. Er arbeitet eng mit dem Test Management zusammen, damit die Testfälle die fachlichen Erwartungen abdecken. Nach der Einführung prüft er, ob die ursprünglichen Ziele erreicht wurden.",
+      text: "Während der Entwicklung beantwortet der Business Analyst fachliche Fragen, klärt Abweichungen und führt Änderungen an den Anforderungen nach. Er arbeitet eng mit dem Testmanagement zusammen, damit die Testfälle die fachlichen Erwartungen abdecken. Nach der Einführung prüft er, ob die ursprünglichen Ziele erreicht wurden.",
     },
     { type: "h2", id: "typische-ergebnisse", text: "Typische Ergebnisse" },
     {

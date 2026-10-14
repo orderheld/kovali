@@ -1,27 +1,22 @@
-import { BadgeCheck } from "lucide-react";
 import { certifications } from "@/content/company";
 import { cn } from "@/lib/utils";
 
-export function Certifications({
-  stacked = false,
-  headingLevel: Heading = "h3",
-}: {
-  stacked?: boolean;
-  /** Use h4 when the cards sit below an h3. */
-  headingLevel?: "h3" | "h4";
-}) {
+/**
+ * Ferhat Demir's certificates as definition rows: short name and full credential on the
+ * left, what it means for the client on the right. No cards, no badge icons.
+ */
+export function Certifications({ className }: { className?: string }) {
   return (
-    <ul className={cn("grid gap-5", !stacked && "md:grid-cols-2")}>
+    <dl className={cn("divide-y divide-line border-y border-line", className)}>
       {certifications.map((c) => (
-        <li key={c.id} className="flex gap-5 rounded-xl border border-line bg-white p-7">
-          <BadgeCheck aria-hidden className="size-8 shrink-0 text-blue" strokeWidth={1.5} />
-          <div>
-            <p className="font-mono text-xs uppercase tracking-[0.12em] text-blue">{c.short}</p>
-            <Heading className="mt-2 text-lg font-semibold leading-snug">{c.name}</Heading>
-            <p className="mt-2 text-sm leading-relaxed text-slate">{c.text}</p>
-          </div>
-        </li>
+        <div key={c.id} className="grid gap-2 py-6 sm:grid-cols-[12rem_1fr] sm:gap-8">
+          <dt className="font-semibold text-ink">
+            {c.short}
+            <span className="mt-1 block text-sm font-normal leading-snug text-slate">{c.credential}</span>
+          </dt>
+          <dd className="max-w-2xl leading-relaxed text-slate">{c.text}</dd>
+        </div>
       ))}
-    </ul>
+    </dl>
   );
 }

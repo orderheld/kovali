@@ -37,7 +37,7 @@ export const site = {
   tagline: "Business & Technology Consulting",
   claim: "From Requirements to Value.",
   description:
-    "KOVALI ist ein Schweizer Partner für Business Analysis, Requirements Engineering, Application Management und Test Management in komplexen IT-Projekten.",
+    "KOVALI bietet IT Consulting in der Schweiz: Business Analysis, Requirements Engineering, Testmanagement und Application Management für IT-Projekte.",
   locale: "de-CH",
 
   /** Active logo direction: "signature" | "tech" | "minimal" (see brand/README.md). */
@@ -107,6 +107,40 @@ export const site = {
     },
   },
 
+  /**
+   * Prices and terms (spec 4.6). The hourly range is shown even while unconfirmed (the site
+   * is not indexed before launch); every other clause appears on the site only once its
+   * `confirmed` is true. Changing the range is a one-line edit of `hourly.value`.
+   */
+  offer: {
+    hourly: {
+      value: { min: 100, max: 190 },
+      confirmed: false,
+      note: "Spanne von Ferhat Demir wählen (A 100–190, 115–180 oder 95–195).",
+    } as Confirmable<{ min: number; max: number }>,
+    hoursPerDay: { value: 8, confirmed: false, note: "Tagessatz = 8 oder 8,4 Stunden?" } as Confirmable<number>,
+    paymentDays: { value: 30, confirmed: false, note: "Zahlungsfrist in Tagen." } as Confirmable<number>,
+    costCap: { value: true, confirmed: false, note: "Kostendach für Teilmandate anbieten?" } as Confirmable<boolean>,
+    /** Both sentences about the first call (/unternehmen, /preise) are built from these values. */
+    firstCall: {
+      value: { minutes: 30, free: true },
+      confirmed: false,
+      note: "Erstgespräch rund 30 Minuten und kostenlos?",
+    } as Confirmable<{ minutes: number; free: boolean }>,
+    responseWorkingDays: {
+      value: 2,
+      confirmed: false,
+      note: "Antwort «in der Regel innert zwei Arbeitstagen» versprechen?",
+    } as Confirmable<number>,
+    customerProtection: {
+      value: true,
+      confirmed: false,
+      note: "Endkunden von Beratungen nicht auf eigene Rechnung ansprechen?",
+    } as Confirmable<boolean>,
+    /** Rate used in the worked budget example on /preise; not a confirmable fact. */
+    exampleRate: 140,
+  },
+
   /** Regions in which the services are offered. */
   areaServed: ["Schweiz"],
   languages: ["Deutsch", "Französisch", "Englisch"],
@@ -144,8 +178,39 @@ export function unconfirmedFields(): { field: string; value: unknown; note?: str
     ["Handelsregister (legal.commercialRegister)", site.legal.commercialRegister],
     ["E-Mail (contact.email)", site.contact.email],
     ["Telefon (contact.phone)", site.contact.phone],
+    ["Preisspanne pro Stunde (offer.hourly)", site.offer.hourly],
+    ["Stunden pro Tagessatz (offer.hoursPerDay)", site.offer.hoursPerDay],
+    ["Zahlungsfrist in Tagen (offer.paymentDays)", site.offer.paymentDays],
+    ["Kostendach für Teilmandate (offer.costCap)", site.offer.costCap],
+    ["Erstgespräch (offer.firstCall)", site.offer.firstCall],
+    ["Antwortzeit in Arbeitstagen (offer.responseWorkingDays)", site.offer.responseWorkingDays],
+    ["Kundenschutz (offer.customerProtection)", site.offer.customerProtection],
   ];
   return entries
     .filter(([, c]) => !c.confirmed)
-    .map(([field, c]) => ({ field, value: c.value, note: c.note }));
+    .map(([field, c]) => ({
+      field,
+      // Objects such as the price range print readably in the launch check.
+      value: c.value !== null && typeof c.value === "object" ? JSON.stringify(c.value) : c.value,
+      note: c.note,
+    }));
+}
+
+const numberWords = ["null", "einem", "zwei", "drei", "vier", "fünf"];
+
+/**
+ * ", in der Regel innert zwei Arbeitstagen" once the response time is confirmed, otherwise
+ * an empty string. Append directly after the sentence that names Ferhat Demir's reply.
+ */
+export function responseClause(): string {
+  const { value, confirmed } = site.offer.responseWorkingDays;
+  if (!confirmed) return "";
+  const days = value === 1 ? "einem Arbeitstag" : `${numberWords[value] ?? value} Arbeitstagen`;
+  return `, in der Regel innert ${days}`;
+}
+
+/** VAT wording next to every price: "allfälliger" until a VAT number is confirmed (spec 4.6). */
+export function vatClause(): string {
+  const vat = site.legal.vatNumber;
+  return vat.confirmed && vat.value ? "zuzüglich 8,1 % MWST" : "zuzüglich allfälliger MWST";
 }

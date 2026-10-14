@@ -7,7 +7,6 @@ import { JsonLd } from "@/components/seo/json-ld";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { Container } from "@/components/ui/container";
 import { Section } from "@/components/ui/section";
-import { site } from "@/config/site";
 import { articleHref, articles, getArticle } from "@/content/insights";
 import { articleJsonLd, breadcrumbJsonLd, pageMetadata } from "@/lib/seo";
 import { formatDate } from "@/lib/utils";
@@ -47,18 +46,14 @@ export default async function ArticlePage({ params }: PageProps<"/insights/[slug
   return (
     <>
       <article>
-        <header className="border-b border-line bg-mist">
-          <Container className="pb-14 pt-10 md:pb-16 md:pt-12">
+        <header className="border-b border-paper-line bg-paper">
+          <Container className="pb-14 pt-8 md:pb-20 md:pt-10">
             <Breadcrumbs items={crumbs} />
-            <div className="mt-12 max-w-3xl md:mt-16">
-              <p className="font-mono text-xs uppercase tracking-[0.12em] text-blue">{article.category}</p>
-              <h1 className="mt-4 text-h1 font-semibold">{article.title}</h1>
+            <div className="mt-10 max-w-3xl md:mt-14">
+              <p className="text-sm font-medium text-blue">{article.category}</p>
+              <h1 className="mt-4 text-h1 font-medium text-ink">{article.title}</h1>
               <p className="mt-6 text-lead text-slate">{article.excerpt}</p>
               <p className="mt-8 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate">
-                <span>
-                  Von <span className="font-medium text-ink">{site.contact.person}</span>
-                </span>
-                <span aria-hidden>·</span>
                 <time dateTime={article.publishedAt}>{formatDate(article.publishedAt)}</time>
                 {article.updatedAt ? (
                   <>
@@ -77,7 +72,7 @@ export default async function ArticlePage({ params }: PageProps<"/insights/[slug
 
         <Container className="grid gap-12 py-16 md:py-20 lg:grid-cols-12 lg:gap-8">
           <nav aria-labelledby="toc-title" className="self-start lg:sticky lg:top-28 lg:order-2 lg:col-span-3 lg:col-start-10">
-            <p id="toc-title" className="font-mono text-xs uppercase tracking-[0.12em] text-slate">
+            <p id="toc-title" className="text-sm font-medium text-slate">
               Inhalt
             </p>
             <ol className="mt-4 space-y-2.5 border-l border-line text-[0.9375rem]">
@@ -96,15 +91,14 @@ export default async function ArticlePage({ params }: PageProps<"/insights/[slug
         </Container>
       </article>
 
-      <Section tone="mist" labelledBy="passend-title" className="md:py-20">
-        <p className="eyebrow">Passende Leistungen</p>
-        <h2 id="passend-title" className="mt-4 text-h2 font-semibold">
-          Unterstützung für Ihr Vorhaben
+      <Section tone="paper" space="tight" labelledBy="passend-title">
+        <h2 id="passend-title" className="text-h2 font-medium text-ink">
+          Passende Leistungen
         </h2>
         <ServiceList only={article.relatedServices} className="mt-10" />
         {more.length ? (
           <>
-            <h2 className="mt-20 text-2xl font-semibold tracking-tight">Weitere Beiträge</h2>
+            <h2 className="mt-20 text-[1.75rem] font-medium leading-tight text-ink">Weitere Beiträge</h2>
             <ul className="mt-8 grid gap-5 md:grid-cols-2">
               {more.map((a) => (
                 <li key={a.slug}>

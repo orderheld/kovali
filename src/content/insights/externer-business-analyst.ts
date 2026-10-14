@@ -9,7 +9,6 @@ export const article: Article = {
   keyword: "Externer Business Analyst",
   category: "Praxis",
   publishedAt: "2026-10-13",
-  readingMinutes: 5,
   excerpt:
     "Ein externer Business Analyst bringt Zeit, Methodik und eine neutrale Sicht in ein Vorhaben. Der Beitrag zeigt, wann sich das lohnt, worauf Sie achten sollten und wie Sie ein Mandat gut vorbereiten.",
   relatedServices: ["business-analysis", "test-management"],
@@ -104,10 +103,10 @@ export const article: Article = {
       type: "p",
       text: "Sie beauftragen eine selbstständige Fachperson oder ein Beratungsunternehmen direkt. Der Vertrag regelt Leistung, Ergebnis oder Aufwand, Honorar, Laufzeit, Vertraulichkeit und die Rechte an den Arbeitsergebnissen. Dieser Weg eignet sich, wenn Sie die Person bereits kennen oder gezielt ein bestimmtes Profil suchen.",
     },
-    { type: "h3", text: "Über einen Beratungs- oder Contracting-Anbieter" },
+    { type: "h3", text: "Über eine Beratung oder einen IT-Dienstleister" },
     {
       type: "p",
-      text: "Ein Beratungs- oder Contracting-Anbieter schlägt passende Profile vor, übernimmt Vertragsabwicklung und Administration und organisiert bei Ausfällen in der Regel Ersatz. Für Unternehmen mit zentralem Einkauf oder bestehenden Rahmenverträgen ist das oft der einfachere Weg. Der Anbieter ist dann Ihr Vertragspartner, die Fachperson arbeitet in Ihrem Projekt.",
+      text: "Sie beauftragen eine Beratung oder einen IT-Dienstleister. Dieses Unternehmen übernimmt das Mandat in eigener Verantwortung und regelt Vertrag und Administration. Für Unternehmen mit zentralem Einkauf oder bestehenden Rahmenverträgen ist das oft der einfachere Weg. Ihr Vertragspartner ist dann dieses Unternehmen.",
     },
     { type: "h3", text: "Auswahl der Fachperson" },
     {
@@ -121,7 +120,7 @@ export const article: Article = {
     { type: "h2", id: "unterstuetzung", text: "Unterstützung durch KOVALI" },
     {
       type: "p",
-      text: "KOVALI übernimmt Mandate in [Business Analysis](/leistungen/business-analysis) und begleitet Vorhaben auf Wunsch bis ins [Test Management](/leistungen/test-management), damit die fachlichen Anforderungen auch in der Abnahme geprüft werden. Wenn Sie ein Vorhaben planen, können Sie uns Ihr Briefing über die [Kontaktseite](/kontakt) zustellen oder ein erstes Gespräch vereinbaren.",
+      text: "KOVALI übernimmt Mandate in [Business Analysis](/leistungen/business-analysis) und begleitet Vorhaben auf Wunsch bis ins [Testmanagement](/leistungen/test-management), damit die fachlichen Anforderungen auch in der Abnahme geprüft werden. Wenn Sie ein Vorhaben planen, können Sie uns Ihr Briefing über die [Kontaktseite](/kontakt) zustellen oder ein erstes Gespräch vereinbaren.",
     },
   ],
 };

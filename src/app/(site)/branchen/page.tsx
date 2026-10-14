@@ -11,6 +11,10 @@ export const metadata = pageMetadata({
   path: "/branchen",
 });
 
+/**
+ * Branchen (spec 3.7): the industries from Ferhat Demir's own practice, then the target
+ * markets KOVALI addresses (no experience is claimed there).
+ */
 export default function BranchenPage() {
   return (
     <>
@@ -19,38 +23,37 @@ export default function BranchenPage() {
           { name: "Start", path: "/" },
           { name: "Branchen", path: "/branchen" },
         ]}
-        eyebrow="Branchen"
-        title="IT Business Analyst für öffentliche Verwaltung und komplexe Organisationen"
-        lead="Grosse Organisationen haben viele Anspruchsgruppen, gewachsene Systemlandschaften und hohe Anforderungen an Nachvollziehbarkeit. Genau dort liegt die Erfahrung, auf der KOVALI aufbaut."
+        title="Business Analysis und Test für Verwaltung, Logistik und Zahlungsverkehr"
+        lead="In der öffentlichen Verwaltung, in der Logistik und im Detailhandel mit Zahlungsverkehr hat Ferhat Demir, Geschäftsführer von KOVALI, Anforderungen erhoben, Schnittstellen spezifiziert und Tests durchgeführt."
       />
 
       <Section labelledBy="erfahrung-title">
         <SectionHeader
           id="erfahrung-title"
-          eyebrow="Erfahrung"
-          title="Branchen mit Praxiserfahrung"
-          text="Abläufe, Fachbegriffe und typische Vorgaben dieser Branchen sind bekannt. Das verkürzt die Einarbeitung, von der Erhebung bis zum Test."
+          title="Aus der Praxis von Ferhat Demir"
+          text="In diesen Branchen hat Ferhat Demir gearbeitet. Abläufe, Fachbegriffe und typische Vorgaben kennt er aus eigener Erfahrung, das verkürzt die Einarbeitung."
         />
         <div className="mt-12">
-          <IndustryCards kind="experience" detailed label={false} />
+          <IndustryCards kind="experience" labelledBy="erfahrung-title" />
         </div>
       </Section>
 
-      <Section tone="mist" labelledBy="zielmaerkte-title">
+      <Section tone="paper" labelledBy="zielmaerkte-title">
         <SectionHeader
           id="zielmaerkte-title"
-          eyebrow="Zielmärkte"
-          title="Weitere Branchen mit übertragbaren Anforderungen"
-          text="Regulierte Branchen stellen ähnliche Anforderungen: viele Schnittstellen, strenge Vorgaben und belastbare Tests. Hier setzt KOVALI Methodik und Erfahrung aus vergleichbaren Umgebungen ein."
+          title="Weitere Zielmärkte"
+          text="Banken, Versicherungen und IT-Dienstleister spricht KOVALI gezielt an: Zahlungsverkehr, Datenschutz und Regressionstests über viele Systeme sind dort Alltag."
         />
         <div className="mt-12">
-          <IndustryCards kind="target" detailed label={false} />
+          <IndustryCards kind="target" variant="list" labelledBy="zielmaerkte-title" />
         </div>
       </Section>
 
       <CtaBand
         title="Ihre Branche ist nicht aufgeführt?"
-        text="Die Methoden der Business Analysis und des Testens sind branchenübergreifend. Schildern Sie Ihr Vorhaben, und Sie erhalten eine ehrliche Einschätzung zur Passung."
+        text="Business Analysis und Test funktionieren branchenübergreifend. Schildern Sie Ihr Vorhaben. Ferhat Demir sagt Ihnen, ob KOVALI dafür passt."
+        primary={{ label: "Vorhaben schildern", href: "/kontakt" }}
+        secondary={null}
       />
     </>
   );
