@@ -88,7 +88,7 @@ export const article: Article = {
     { type: "h2", id: "ueberschneidungen", text: "Wo sich die Disziplinen überschneiden" },
     {
       type: "p",
-      text: "In der Praxis lassen sich beide Disziplinen selten sauber trennen. Die Anforderungsanalyse ist ein Kernbereich des BABOK Guide, und gutes Requirements Engineering beginnt ebenfalls mit Zielen und Stakeholdern. Viele Fachleute arbeiten mit beiden Methodenkoffern und tragen je nach Organisation den einen oder anderen Titel.",
+      text: "In der Praxis lassen sich beide Disziplinen selten sauber trennen. Die Anforderungsanalyse ist ein Kernbereich des BABOK Guide, und gutes Requirements Engineering beginnt ebenfalls mit Zielen und Stakeholdern. Viele Analystinnen und Analysten arbeiten mit beiden Methodenkoffern und tragen je nach Organisation den einen oder anderen Titel.",
     },
     {
       type: "p",

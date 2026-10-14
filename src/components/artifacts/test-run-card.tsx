@@ -18,7 +18,7 @@ export function TestRunCard({ run = testRun, className }: { run?: TestRunSample;
           </li>
         ))}
       </ul>
-      <p className="border-t border-line bg-[#fffdfa] px-4 py-3 text-[0.8125rem] leading-snug text-slate">
+      <p className="border-t border-line bg-cloud px-4 py-3 text-[0.8125rem] leading-snug text-slate">
         <span className="font-mono text-xs font-medium text-fail">{run.defect.id}</span> {run.defect.text}
       </p>
     </ArtifactFrame>

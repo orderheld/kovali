@@ -18,9 +18,13 @@ export const metadata = pageMetadata({
   path: "/",
 });
 
-/** Home: 7 blocks (spec 3.1). Tones: paper, white, white (rule), paper, white, navy-800, paper. */
+/**
+ * Home: 7 blocks (spec 3.1). Tones: night hero, white person block, cloud IT Consulting,
+ * night work samples, white reasons, cloud partner block with a blue rule, night CTA into the
+ * footer. Only the closing CTA band carries the arm lines.
+ */
 export default function HomePage() {
-  const { services, reasons, specialistsBand } = home;
+  const { services, reasons, partnerBand } = home;
 
   return (
     <>
@@ -28,11 +32,11 @@ export default function HomePage() {
 
       <PersonBlock id="ferhat-demir" />
 
-      <Section rule labelledBy="it-consulting-title">
+      <Section tone="cloud" labelledBy="it-consulting-title">
         <div className="grid gap-12 lg:grid-cols-12 lg:gap-8">
           <div className="self-start lg:sticky lg:top-28 lg:col-span-5">
             <SectionHeader id="it-consulting-title" title={services.title} text={services.text} />
-            <ButtonLink href={services.overview.href} variant="secondary" className="mt-8 border-field">
+            <ButtonLink href={services.overview.href} variant="secondary" arrow className="mt-9">
               {services.overview.label}
             </ButtonLink>
           </div>
@@ -51,8 +55,14 @@ export default function HomePage() {
           </div>
           <div className="lg:col-span-8">
             <ul className="border-b border-line">
-              {reasons.items.map((r) => (
-                <li key={r.title} className="grid gap-2 border-t border-line py-7 sm:grid-cols-[15rem_1fr] sm:gap-8">
+              {reasons.items.map((r, i) => (
+                <li
+                  key={r.title}
+                  className="grid gap-2 border-t border-line py-8 sm:grid-cols-[3rem_14rem_1fr] sm:gap-x-6"
+                >
+                  <span aria-hidden className="font-mono text-xs leading-7 text-blue">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
                   <h3 className="text-h3 font-semibold">{r.title}</h3>
                   <p className="leading-relaxed text-slate">{r.text}</p>
                 </li>
@@ -69,23 +79,26 @@ export default function HomePage() {
         </div>
       </Section>
 
-      <Section tone="navy" space="tight" className="bg-navy-800" labelledBy="fachleute-band-title">
-        <div className="grid gap-8 lg:grid-cols-12 lg:items-end lg:gap-8">
+      <Section tone="cloud" space="tight" labelledBy="partner-band-title">
+        <div className="grid gap-8 border-l-2 border-blue pl-6 sm:pl-8 lg:grid-cols-12 lg:items-end lg:gap-8">
           <div className="lg:col-span-8">
-            <h2 id="fachleute-band-title" className="max-w-3xl text-2xl font-medium leading-snug md:text-[1.75rem]">
-              {specialistsBand.title}
+            <h2
+              id="partner-band-title"
+              className="max-w-3xl text-[1.75rem] font-semibold leading-tight tracking-[-0.025em] text-ink md:text-[2.125rem]"
+            >
+              {partnerBand.title}
             </h2>
-            <p className="mt-4 max-w-2xl leading-relaxed text-white/75">{specialistsBand.text}</p>
+            <p className="mt-4 max-w-2xl text-lg leading-relaxed text-slate">{partnerBand.text}</p>
           </div>
           <div className="flex flex-wrap items-center gap-x-6 gap-y-4 lg:col-span-4 lg:justify-end">
-            <ButtonLink href={specialistsBand.primary.href} variant="inverse" arrow>
-              {specialistsBand.primary.label}
+            <ButtonLink href={partnerBand.primary.href} arrow>
+              {partnerBand.primary.label}
             </ButtonLink>
             <Link
-              href={specialistsBand.secondary.href}
-              className="font-medium text-white/85 underline-offset-4 hover:text-white hover:underline"
+              href={partnerBand.secondary.href}
+              className="font-medium text-blue underline decoration-blue/40 underline-offset-4 transition-colors hover:decoration-blue"
             >
-              {specialistsBand.secondary.label}
+              {partnerBand.secondary.label}
             </Link>
           </div>
         </div>

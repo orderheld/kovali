@@ -76,7 +76,7 @@ export const article: Article = {
     },
     {
       type: "p",
-      text: "Entscheidend ist nicht der Umfang der Dokumentation, sondern ob die Beteiligten damit arbeiten können. Ein schlankes, aktuelles Backlog ist nützlicher als ein umfangreiches Pflichtenheft, das nach wenigen Monaten niemand mehr liest.",
+      text: "Die Dokumentation muss für die Beteiligten brauchbar sein. Ein laufend gepflegtes Backlog eignet sich dafür oft besser als ein umfangreiches Pflichtenheft.",
     },
     {
       type: "callout",

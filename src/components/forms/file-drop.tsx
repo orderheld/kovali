@@ -18,7 +18,6 @@ export function FileDrop({
   label,
   accept,
   formats,
-  required,
   optional,
   hint,
   error,
@@ -31,7 +30,6 @@ export function FileDrop({
   accept: string;
   /** Shown in the drop zone, e.g. "PDF, höchstens 4 MB". */
   formats: string;
-  required?: boolean;
   optional?: boolean;
   hint?: string;
   error?: string;
@@ -71,7 +69,6 @@ export function FileDrop({
     <div>
       <p id={`${id}-label`} className="mb-2 block text-[0.9375rem] font-medium text-ink">
         {label}
-        {required ? <span aria-hidden className="text-blue"> *</span> : null}
         {optional ? <span className="font-normal text-slate"> (optional)</span> : null}
       </p>
       <div className="relative">
@@ -81,7 +78,6 @@ export function FileDrop({
           name={id}
           type="file"
           accept={accept}
-          required={required}
           aria-labelledby={`${id}-label ${id}-zone`}
           aria-describedby={[hintId, errorId].filter(Boolean).join(" ") || undefined}
           aria-invalid={error ? true : undefined}

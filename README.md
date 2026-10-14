@@ -46,12 +46,11 @@ src/
   app/                    Root-Layout, sitemap.ts, robots.ts, manifest.ts, Icons, OG-Bild, 404
     (site)/               Öffentliche Website (statisch vorgerendert, eigenes Layout mit Header und Footer)
       kontakt/actions.ts  Server Action des Kontaktformulars (Unternehmen)
-      fachleute/actions.ts Server Action des Profilformulars (Fachleute, Lebenslauf als PDF)
     api/cron/retention/   Täglicher Lösch-Job für gespeicherte Anfragen (nur mit Neon)
   components/             Layout, Abschnitte, UI-Bausteine, Logo
   config/site.ts          Firmen-, Kontakt- und Rechtsangaben, aktive Logo-Richtung
-  content/                Alle Texte: Leistungen, Branchen, Unternehmen, Fachleute, Insights
-  lib/                    SEO und strukturierte Daten, Kontakt- und Profilformular, Hilfsfunktionen
+  content/                Alle Texte: Leistungen, Branchen, Unternehmen, Insights
+  lib/                    SEO und strukturierte Daten, Kontaktformular, Hilfsfunktionen
 brand/                    Logo-Generator und alle drei Logo-Richtungen als SVG
 db/schema.sql             Tabelle für die optionale Speicherung in Neon
 docs/                     Go-live-Anleitung, Redaktionsplan
@@ -73,7 +72,7 @@ docs/                     Go-live-Anleitung, Redaktionsplan
 - Keine Angaben aus dem Lebenslauf von Ferhat Demir: keine früheren Arbeitgeber, Projekt- oder Systemnamen, Zeiträume, Funktionsbezeichnungen, Sprachniveaus oder Zertifikatsjahre. Die Website stellt KOVALI und seine Leistungen vor, nicht den Werdegang.
 - Banken, Versicherungen und IT-Dienstleister sind Zielmärkte, keine Referenzbranchen.
 - Keine Angaben zu Verleih- oder Vermittlungsbewilligungen.
-- Profile von Fachleuten dienen nur der Mitarbeit in Mandaten von KOVALI. Keine Vermittlung an Dritte und kein Personalverleih (beides wäre bewilligungspflichtig), keine ausgeschriebenen Stellen behaupten.
+- Die Website richtet sich nur an Unternehmen: Beratungen, IT-Dienstleister und Endkunden. Kein Personalverleih und keine Stellenvermittlung (beides wäre bewilligungspflichtig), keine ausgeschriebenen Stellen behaupten.
 - Keine Kundenlogos oder Referenzen ohne eigenes Mandat und schriftliche Freigabe.
 
 ## Kontaktformular
@@ -84,21 +83,14 @@ Ablauf in `src/app/(site)/kontakt/actions.ts`:
 2. Validierung aller Felder auf dem Server (Zod, `src/lib/contact/schema.ts`) und des optionalen Anforderungsprofils (PDF oder Word bis 4 MB, geprüft am Dateiinhalt, `src/lib/uploads.ts`)
 3. Rate Limit pro Absender (gesalzener IP-Hash, im Speicher und optional in Neon)
 4. Referenznummer erzeugen, E-Mail über Resend senden (Reply-To an die Absenderin oder den Absender)
-5. Optional in Neon speichern, mit Versandstatus `sent` oder `failed` (nur die Textfelder; ein hochgeladenes Anforderungsprofil geht nur als E-Mail-Anhang mit)
+5. Optional in Neon speichern, mit Versandstatus `sent` oder `failed` (nur die Textfelder; ein hochgeladenes Anforderungsprofil geht nur als E-Mail-Anhang mit). Die Tabelle hat eine Spalte `service`: die gewählte Leistung, `mehrere` oder `offen`. Laufzeit, Pensum, Voraussetzungen und bei mehreren Leistungen deren Liste stehen am Anfang von `message`.
 6. Erfolgs- oder Fehlermeldung mit Referenz; bei Fehlern mit Hinweis auf `info@kovali.ch`
 
+Das Formular richtet sich an Unternehmen: Pflicht sind Art der Anfrage, Beschreibung, Unternehmen, Name, E-Mail und die Einwilligung. Freiwillig sind Leistungen (Mehrfachauswahl), Beginn, Laufzeit, Pensum, Arbeitsmodell, Einsatzort, Voraussetzungen, Telefon, Nachricht und das Anforderungsprofil.
+
 API-Schlüssel werden nur auf dem Server gelesen (`src/lib/env.ts`, `server-only`). Das Formular funktioniert auch ohne JavaScript.
-Ohne Resend-Variablen zeigt die Produktion statt der Formulare die E-Mail-Adresse. Preview-Deployments ohne Resend laufen automatisch im Testmodus (`CONTACT_DRY_RUN`): Die Formulare sind sichtbar, prüfen alles und versenden nichts.
+Ohne Resend-Variablen zeigt die Produktion statt des Formulars die E-Mail-Adresse. Preview-Deployments ohne Resend laufen automatisch im Testmodus (`CONTACT_DRY_RUN`): Das Formular ist sichtbar, prüft alles und versendet nichts.
 Vorauswahl per Link: `/kontakt?leistung=business-analysis` oder `/kontakt?anfrage=contracting`.
-
-## Profilformular (Für Fachleute)
-
-Ablauf in `src/app/(site)/fachleute/actions.ts`, mit denselben Schutzmechanismen wie das Kontaktformular:
-
-1. Honeypot, Mindest-Ausfüllzeit und Rate Limit
-2. Validierung der Felder (`src/lib/profile/schema.ts`) und des Lebenslaufs (`src/lib/profile/cv.ts`): genau eine PDF-Datei bis 4 MB, geprüft am Dateiinhalt
-3. Versand über Resend mit dem Lebenslauf als Anhang an `CONTACT_TO_EMAIL`
-4. Die Website speichert weder Profil noch Lebenslauf, auch nicht in Neon. Aufbewahrung höchstens sechs Monate im Postfach (siehe Datenschutzerklärung).
 
 Wegen des Uploads ist `serverActions.bodySizeLimit` in `next.config.ts` auf 4.5 MB gesetzt, die Obergrenze von Vercel für Anfragen.
 

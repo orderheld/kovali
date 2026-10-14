@@ -2,10 +2,10 @@ import Link from "next/link";
 import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-/** Form controls shared by the contact form and the profile form. */
+/** Form controls of the contact form. */
 
 export const inputClass =
-  "block w-full rounded-md border border-field bg-white px-3.5 py-3 text-base text-ink shadow-[inset_0_1px_0_rgb(11_23_51/0.03)] transition-colors placeholder:text-hint hover:border-slate focus:border-blue focus:outline-none focus:ring-2 focus:ring-blue/20 aria-[invalid=true]:border-red-600 aria-[invalid=true]:focus:ring-red-600/20";
+  "block w-full rounded-lg border border-field bg-white px-3.5 py-3 text-base text-ink shadow-[inset_0_1px_0_rgb(11_23_51/0.03)] transition-colors placeholder:text-hint hover:border-slate focus:border-blue focus:outline-none focus:ring-2 focus:ring-blue/20 aria-[invalid=true]:border-red-600 aria-[invalid=true]:focus:ring-red-600/20";
 
 export interface ControlProps {
   id: string;
@@ -78,12 +78,12 @@ export function FormStep({
 }) {
   return (
     <fieldset className="space-y-6">
-      <legend className="mb-6 flex items-center gap-3 text-lg font-semibold text-ink">
+      <legend className="mb-6 flex items-center gap-3 text-lg font-semibold tracking-[-0.015em] text-ink">
         <span
           aria-hidden
-          className="flex size-7 shrink-0 items-center justify-center rounded-full bg-navy text-[0.8125rem] font-medium tabular-nums text-white"
+          className="flex h-7 shrink-0 items-center justify-center rounded-md bg-night px-2 font-mono text-xs font-medium tabular-nums text-electric"
         >
-          {number}
+          {String(number).padStart(2, "0")}
         </span>
         {title}
       </legend>
@@ -182,6 +182,17 @@ export function ChoiceTiles({ options, defaultValue, ...group }: ChoiceProps) {
   );
 }
 
+/**
+ * Pill label around a visually hidden radio or checkbox. In forced-colors mode (Windows high
+ * contrast) the blue fill is replaced, so a checked chip takes the system Highlight colours.
+ */
+const chipClass = cn(
+  "cursor-pointer rounded-[1.25rem] border bg-white px-4 py-2 text-left text-[0.9375rem] text-ink transition-colors hover:border-slate",
+  "has-checked:border-blue has-checked:bg-blue has-checked:text-white",
+  "has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-blue",
+  "forced-colors:has-checked:forced-color-adjust-none forced-colors:has-checked:border-[color:Highlight] forced-colors:has-checked:bg-[color:Highlight] forced-colors:has-checked:text-[color:HighlightText]",
+);
+
 /** Single choice as compact pills, for short option lists. */
 export function ChoiceChips({ options, defaultValue, ...group }: ChoiceProps) {
   return (
@@ -191,9 +202,7 @@ export function ChoiceChips({ options, defaultValue, ...group }: ChoiceProps) {
           <label
             key={o.value}
             className={cn(
-              "cursor-pointer rounded-[1.25rem] border bg-white px-4 py-2 text-left text-[0.9375rem] text-ink transition-colors hover:border-slate",
-              "has-checked:border-blue has-checked:bg-blue has-checked:text-white",
-              "has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-blue",
+              chipClass,
               group.error ? "border-red-600/60" : "border-field",
             )}
           >
@@ -203,6 +212,38 @@ export function ChoiceChips({ options, defaultValue, ...group }: ChoiceProps) {
               value={o.value}
               required={group.required}
               defaultChecked={defaultValue === o.value}
+              className="sr-only"
+            />
+            {o.label}
+          </label>
+        ))}
+      </div>
+    </ChoiceGroup>
+  );
+}
+
+/** Multiple choice as compact pills. Native checkboxes: each checked one is sent under the same name. */
+export function MultiChoiceChips({
+  options,
+  defaultValues = [],
+  ...group
+}: Omit<ChoiceProps, "defaultValue"> & { defaultValues?: readonly string[] }) {
+  return (
+    <ChoiceGroup {...group}>
+      <div className="flex flex-wrap gap-2">
+        {options.map((o) => (
+          <label
+            key={o.value}
+            className={cn(
+              chipClass,
+              group.error ? "border-red-600/60" : "border-field",
+            )}
+          >
+            <input
+              type="checkbox"
+              name={group.name}
+              value={o.value}
+              defaultChecked={defaultValues.includes(o.value)}
               className="sr-only"
             />
             {o.label}
@@ -292,14 +333,14 @@ export function SuccessPanel({
   reference: string;
 }) {
   return (
-    <div role="status" className="rounded-xl border border-paper-line bg-paper p-8 md:p-10">
+    <div role="status" className="rounded-xl border border-cloud-line bg-cloud p-8 md:p-10">
       <CheckCircle2 aria-hidden className="size-9 text-blue" strokeWidth={1.75} />
-      <h2 ref={headingRef} tabIndex={-1} className="mt-5 text-2xl font-semibold tracking-tight focus:outline-none">
+      <h2 ref={headingRef} tabIndex={-1} className="mt-5 text-2xl font-semibold tracking-[-0.02em] focus:outline-none">
         {title}
       </h2>
       <p className="mt-3 leading-relaxed text-slate">{text}</p>
       <p className="mt-6 text-sm tabular-nums text-ink">
-        Referenz: <span className="font-semibold">{reference}</span>
+        Referenz: <span className="font-mono font-semibold">{reference}</span>
       </p>
       <p className="mt-8">
         <Link href="/" className="font-medium text-blue hover:underline">
@@ -350,7 +391,7 @@ export function SubmitRow({ pending, label, pendingLabel }: { pending: boolean; 
         <button
           type="submit"
           disabled={pending}
-          className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-blue px-7 font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-70"
+          className="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-blue px-7 font-medium text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_1px_2px_rgb(11_23_51/0.2),0_8px_20px_-10px_rgb(20_91_206/0.7)] transition-colors hover:bg-blue-700 disabled:opacity-70"
         >
           {pending ? <Loader2 aria-hidden className="size-4 animate-spin" /> : null}
           {pending ? pendingLabel : label}

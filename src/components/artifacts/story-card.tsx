@@ -21,15 +21,15 @@ export function StoryCard({
   return (
     <ArtifactFrame id={story.id} kind="User Story" caption={`User Story «${story.title}» mit Akzeptanzkriterien`} className={className}>
       <div className={cn("px-5 pb-5 pt-[1.125rem]", overlap && "lg:pb-14")}>
-        <p className="text-[1.0625rem] font-semibold tracking-[-0.01em] text-ink">{story.title}</p>
+        <p className="text-[1.0625rem] font-semibold tracking-[-0.015em] text-ink">{story.title}</p>
         <p className="mt-2 text-[0.9375rem] leading-relaxed text-slate">
           Als <strong className="font-semibold text-ink">{story.role}</strong> möchte ich {story.want},{" "}
           <strong className="font-semibold text-ink">damit</strong> {story.benefit}.
         </p>
-        <p className="mt-4 text-xs font-medium text-ink">Akzeptanzkriterien</p>
+        <p className="mt-4 font-mono text-[0.6875rem] font-medium uppercase tracking-[0.08em] text-slate">Akzeptanzkriterien</p>
         <pre
           lang="de"
-          className="mt-2 whitespace-pre-wrap rounded-md border border-paper-line bg-paper px-3.5 py-3 font-mono text-[0.78rem] leading-[1.75] text-navy-800"
+          className="mt-2 whitespace-pre-wrap rounded-lg bg-night px-3.5 py-3.5 font-mono text-[0.72rem] sm:px-4 sm:text-[0.78rem] leading-[1.75] text-white/85 shadow-[inset_0_0_0_1px_rgb(143_201_255/0.12)]"
         >
           {story.criteria.map((line, i) => {
             const m = KEYWORDS.exec(line);
@@ -42,7 +42,7 @@ export function StoryCard({
                 {m ? (
                   <>
                     {m[1]}
-                    <span className="font-medium text-blue">{m[2]}</span>
+                    <span className="font-medium text-electric">{m[2]}</span>
                     {m[3]}
                   </>
                 ) : (
@@ -57,7 +57,7 @@ export function StoryCard({
           {story.links.map((id, i) => (
             <span key={id}>
               {i > 0 ? " · " : null}
-              <span className="font-mono text-ink">{id}</span>
+              <span className="font-mono text-blue">{id}</span>
             </span>
           ))}
         </p>

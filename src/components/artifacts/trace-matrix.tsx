@@ -27,13 +27,13 @@ export function TraceMatrix({
           <caption className="sr-only">{trace.caption} (fiktives Beispiel)</caption>
           <thead>
             <tr>
-              <th scope="col" className="bg-mist px-2.5 py-2 text-xs font-medium text-slate first:pl-4 sm:px-3.5">
+              <th scope="col" className="bg-cloud px-2.5 py-2 font-mono text-[0.6875rem] font-medium uppercase tracking-[0.06em] text-slate first:pl-4 sm:px-3.5">
                 Anforderung
               </th>
-              <th scope="col" className="bg-mist px-2.5 py-2 text-xs font-medium text-slate first:pl-4 sm:px-3.5">
+              <th scope="col" className="bg-cloud px-2.5 py-2 font-mono text-[0.6875rem] font-medium uppercase tracking-[0.06em] text-slate first:pl-4 sm:px-3.5">
                 Testfall
               </th>
-              <th scope="col" className="bg-mist px-2.5 py-2 text-xs font-medium text-slate first:pl-4 sm:px-3.5">
+              <th scope="col" className="bg-cloud px-2.5 py-2 font-mono text-[0.6875rem] font-medium uppercase tracking-[0.06em] text-slate first:pl-4 sm:px-3.5">
                 Ergebnis
               </th>
             </tr>
@@ -60,7 +60,7 @@ export function TraceMatrix({
       {defectNote !== "never" ? (
         <p
           className={cn(
-            "border-t border-line bg-[#fffdfa] px-4 py-3 text-[0.8125rem] leading-snug text-slate",
+            "border-t border-line bg-cloud px-4 py-3 text-[0.8125rem] leading-snug text-slate",
             defectNote === "mobile" && "lg:hidden",
           )}
         >

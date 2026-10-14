@@ -55,7 +55,7 @@ Beim Wechsel zur GmbH: `legal.form` auf `"gmbh"` setzen, Firmenname, UID und Han
 
 5. **Deploy** auslösen. Die Funktionsregion ist in `vercel.json` auf Frankfurt (`fra1`) gesetzt.
 6. Suchmaschinen indexieren nur die Produktion auf der eigenen Domain. Preview-Deployments und die Adresse `*.vercel.app` tragen ein `noindex`-Tag, bis eine eigene Domain verbunden und neu deployt ist.
-7. Solange `RESEND_API_KEY`, `CONTACT_TO_EMAIL` und `CONTACT_FROM_EMAIL` fehlen, zeigen die Kontaktseite und die Seite für Fachleute statt der Formulare die E-Mail-Adresse. Die Formulare erscheinen nach dem nächsten Deployment mit diesen Variablen.
+7. Solange `RESEND_API_KEY`, `CONTACT_TO_EMAIL` und `CONTACT_FROM_EMAIL` fehlen, zeigt die Kontaktseite statt des Formulars die E-Mail-Adresse. Das Formular erscheint nach dem nächsten Deployment mit diesen Variablen.
 
 ## 3. Domain bei cyon verbinden
 
@@ -128,16 +128,15 @@ Das Formular sendet jede Anfrage über [Resend](https://resend.com) an `info@kov
 - [ ] Markenrecherche für «KOVALI» beim IGE ([swissreg.ch](https://www.swissreg.ch)), bevor Logo und Domain auf Drucksachen erscheinen.
 - [ ] Zusammenarbeitsmodelle (Subunternehmen, Teilmandat) rechtlich prüfen lassen. Die Website erwähnt ausdrücklich, dass Personalverleih und Arbeitsvermittlung derzeit nicht angeboten werden.
 - [ ] Die drei Insights-Artikel fachlich gegenlesen.
-- [ ] Optional: Porträtfoto für Startseite, Warum KOVALI, Kontakt (siehe `src/content/company.ts` `founder.portrait`).
+- [x] Porträtfoto für Startseite, Warum KOVALI, Für Unternehmen und Kontakt: freigestelltes Bild in `src/assets/ferhat-demir.webp` (Avatar: `ferhat-demir-avatar.webp`), eingebunden über `founder.portrait` in `src/content/company.ts`.
 
 ## 8. Abnahmetest nach Go-live
 
 - [ ] `https://kovali.ch` leitet auf `https://www.kovali.ch` um, Schloss-Symbol im Browser.
 - [ ] Alle Seiten in der Hauptnavigation und im Footer öffnen, auch auf dem Smartphone.
-- [ ] Kontaktformular: leer absenden (Fehlermeldungen erscheinen), dann vollständig ausfüllen. Die E-Mail kommt bei `info@kovali.ch` an, «Antworten» geht an die eingegebene Adresse, Spam-Ordner prüfen.
+- [ ] Kontaktformular: leer absenden (Fehlermeldungen erscheinen, auch für das Unternehmen), dann vollständig ausfüllen, mit zwei Leistungen, Laufzeit, Pensum und Voraussetzungen. Die E-Mail mit allen Angaben kommt bei `info@kovali.ch` an, «Antworten» geht an die eingegebene Adresse, Spam-Ordner prüfen.
 - [ ] Link von einer Leistungsseite («… anfragen») öffnet das Formular mit vorausgewählter Leistung.
-- [ ] Profilformular auf `/fachleute`: mit einem PDF-Lebenslauf absenden. Die E-Mail mit dem PDF im Anhang kommt an. Eine Word-Datei oder ein PDF über 4 MB wird abgelehnt.
-- [ ] `/partner` leitet auf `/unternehmen` um.
+- [ ] `/partner` und `/fachleute` leiten auf `/unternehmen` um.
 - [ ] `/ueber-uns` und `/warum-wir` leiten auf `/warum-kovali` um, `/it-consulting` auf `/leistungen`.
 - [ ] `https://www.kovali.ch/sitemap.xml` und `/robots.txt` sind erreichbar.
 - [ ] Vorschau beim Teilen prüfen, z. B. mit dem [LinkedIn Post Inspector](https://www.linkedin.com/post-inspector/).
