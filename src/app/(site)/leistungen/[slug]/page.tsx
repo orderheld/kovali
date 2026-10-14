@@ -1,6 +1,7 @@
 import { Fragment } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { DarkBackdrop } from "@/components/brand/motifs";
 import { CheckList, Tick } from "@/components/sections/check-list";
 import { CtaBand } from "@/components/sections/cta-band";
 import { PageHero } from "@/components/sections/page-hero";
@@ -51,10 +52,10 @@ export default async function ServicePage({ params }: PageProps<"/leistungen/[sl
         title={service.h1}
         lead={service.intro}
       >
-        <ButtonLink href={contactHref} arrow>
+        <ButtonLink href={contactHref} variant="inverse" arrow>
           {service.cta}
         </ButtonLink>
-        <ButtonLink href="/leistungen" variant="secondary" className="border-field bg-transparent">
+        <ButtonLink href="/leistungen" variant="outline-inverse">
           IT Consulting im Überblick
         </ButtonLink>
       </PageHero>
@@ -65,13 +66,14 @@ export default async function ServicePage({ params }: PageProps<"/leistungen/[sl
             <SectionHeader id="aufgaben-title" title={service.tasksTitle} />
             <CheckList items={service.tasks} className="mt-10" />
           </div>
-          <div className="self-start rounded-[10px] bg-paper p-8 lg:col-span-5">
-            <h3 className="text-lg font-semibold text-ink">Typische Ergebnisse</h3>
-            <ul className="mt-6 space-y-4">
+          <div className="on-dark relative isolate self-start overflow-hidden rounded-2xl bg-night p-8 text-white shadow-[0_30px_60px_-30px_rgb(6_11_24/0.6)] lg:col-span-5">
+            <DarkBackdrop variant="panel" arms={false} />
+            <h3 className="relative font-mono text-xs font-medium uppercase tracking-[0.08em] text-sky">Typische Ergebnisse</h3>
+            <ul className="relative mt-6 space-y-4">
               {service.deliverables.map((d) => (
                 <li
                   key={d}
-                  className="flex gap-3 border-b border-paper-line pb-4 leading-snug text-ink last:border-0 last:pb-0"
+                  className="flex gap-3 border-b border-white/10 pb-4 leading-snug text-white/90 last:border-0 last:pb-0"
                 >
                   <Tick />
                   {d}
@@ -82,28 +84,30 @@ export default async function ServicePage({ params }: PageProps<"/leistungen/[sl
         </div>
       </Section>
 
-      <Section rule labelledBy="ausgangslagen-title">
+      <Section tone="cloud" labelledBy="ausgangslagen-title">
         <SectionHeader id="ausgangslagen-title" title="Typische Ausgangslagen" />
         <ul className="mt-12 grid gap-x-10 md:grid-cols-2">
-          {service.situations.map((situation) => (
+          {service.situations.map((situation, i) => (
             <li
               key={situation}
-              className="flex gap-3 border-t border-line py-6 text-lg leading-relaxed text-ink"
+              className="flex gap-4 border-t border-cloud-line py-6 text-lg leading-relaxed text-ink"
             >
-              <Tick className="mt-[0.75em]" />
+              <span aria-hidden className="pt-1.5 font-mono text-xs text-blue">
+                {String(i + 1).padStart(2, "0")}
+              </span>
               {situation}
             </li>
           ))}
         </ul>
       </Section>
 
-      <Section tone="paper" space="tight" labelledBy="kontext-title">
+      <Section space="tight" labelledBy="kontext-title">
         <h2 id="kontext-title" className="sr-only">
           Branchen und Werkzeuge
         </h2>
-        <dl className="divide-y divide-paper-line border-y border-paper-line">
+        <dl className="divide-y divide-line border-y border-line">
           <div className="grid gap-2 py-6 sm:grid-cols-[14rem_1fr] sm:gap-8">
-            <dt className="font-semibold text-ink">Branchen</dt>
+            <dt className="font-mono text-xs font-medium uppercase leading-6 tracking-[0.08em] text-blue">Branchen</dt>
             <dd className="leading-relaxed text-slate">
               {industries.map((industry, i) => (
                 <Fragment key={industry.id}>
@@ -120,13 +124,21 @@ export default async function ServicePage({ params }: PageProps<"/leistungen/[sl
             </dd>
           </div>
           <div className="grid gap-2 py-6 sm:grid-cols-[14rem_1fr] sm:gap-8">
-            <dt className="font-semibold text-ink">Methoden und Werkzeuge</dt>
-            <dd className="leading-relaxed text-slate">{service.methods.join(", ")}</dd>
+            <dt className="font-mono text-xs font-medium uppercase leading-6 tracking-[0.08em] text-blue">Methoden und Werkzeuge</dt>
+            <dd>
+              <ul className="flex flex-wrap gap-2">
+                {service.methods.map((m) => (
+                  <li key={m} className="rounded-md border border-line bg-cloud px-2.5 py-1 font-mono text-[0.8125rem] text-ink">
+                    {m}
+                  </li>
+                ))}
+              </ul>
+            </dd>
           </div>
         </dl>
       </Section>
 
-      <Section labelledBy="faq-title">
+      <Section tone="cloud" labelledBy="faq-title">
         <div className="grid gap-12 lg:grid-cols-12 lg:gap-8">
           <div className="lg:col-span-4">
             <SectionHeader id="faq-title" title={service.faqTitle} />
@@ -137,9 +149,9 @@ export default async function ServicePage({ params }: PageProps<"/leistungen/[sl
         </div>
       </Section>
 
-      <Section tone="paper" space="tight" labelledBy="weitere-title">
+      <Section space="tight" labelledBy="weitere-title">
         <SectionHeader id="weitere-title" title="Weitere Disziplinen im IT Consulting" />
-        <ServiceList only={others} className="mt-10" />
+        <ServiceList only={others} layout="cards" className="mt-10" />
       </Section>
 
       <CtaBand

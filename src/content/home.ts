@@ -41,14 +41,14 @@ export const home = {
     link: { label: "Alle Gründe", href: "/warum-kovali" },
   },
   /**
-   * Band for specialists (navy). KOVALI works with specialists only through their own GmbH
-   * or AG as its subcontractor (addendum 3): no placement, no staff leasing.
+   * Band for consultancies and IT service providers that bring KOVALI into a client mandate
+   * as subcontractor (navy). The site addresses companies only (Ferhat Demir, 14.10.2026).
    */
-  specialistsBand: {
-    title: "Sie arbeiten mit Ihrer eigenen GmbH oder AG in Business Analysis oder im Test?",
-    text: "Senden Sie Ihr Profil für Mandate, in denen Ihre Firma als Subunternehmen von KOVALI arbeitet. Verwendet wird es nur mit Ihrer Zustimmung und nur für ein konkretes Mandat.",
-    primary: { label: "Profil senden", href: "/fachleute#profil" },
-    secondary: { label: "Mehr für Fachleute", href: "/fachleute" },
+  partnerBand: {
+    title: "Für Beratungen und IT-Dienstleister",
+    text: "KOVALI übernimmt offene Aufgaben in Business Analysis und Test als Subunternehmen im Mandat Ihres Kunden. Der Vertrag mit Ihrem Kunden bleibt bei Ihnen.",
+    primary: { label: "Anfrage senden", href: "/kontakt?anfrage=contracting" },
+    secondary: { label: "Zusammenarbeit im Detail", href: "/unternehmen" },
   },
 } as const;
 

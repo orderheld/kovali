@@ -126,14 +126,6 @@ export const business = {
     ] satisfies TitledText[],
   },
 
-  /** Panel for specialists next to the contact person (spec addendum 3: own GmbH or AG only). */
-  specialistsPanel: {
-    label: "Für Fachleute",
-    title: "Sie arbeiten mit Ihrer eigenen GmbH oder AG in Business Analysis oder im Test?",
-    text: "Senden Sie Ihr Profil für kommende Mandate. Ihre Firma arbeitet darin als Subunternehmen von KOVALI.",
-    link: { label: "Zur Seite für Fachleute", href: "/fachleute" },
-  },
-
   faqTitle: "Fragen von Unternehmen",
   faq: [
     {
@@ -157,7 +149,7 @@ export const business = {
     {
       question: "Welche Angaben braucht KOVALI für eine erste Einschätzung?",
       answer:
-        "Aufgabe, Zeitraum, Pensum, Einsatzort und die wichtigsten fachlichen oder technischen Anforderungen. Ein vorhandenes Anforderungsprofil können Sie direkt in die Anfrage kopieren.",
+        "Aufgabe, Zeitraum, Pensum, Einsatzort und die wichtigsten Voraussetzungen. Ein vorhandenes Anforderungsprofil können Sie als PDF oder Word-Datei an die Anfrage anhängen.",
     },
   ] satisfies FaqItem[],
 

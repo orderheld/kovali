@@ -117,6 +117,7 @@ export function personJsonLd() {
     jobTitle: company.founder.role,
     worksFor: { "@id": ORG_ID },
     url: absoluteUrl("/warum-kovali"),
+    image: absoluteUrl(company.founder.portrait.src),
     knowsLanguage: ["de", "fr", "en"],
     hasCredential: company.certifications.map((c) => ({
       "@type": "EducationalOccupationalCredential",

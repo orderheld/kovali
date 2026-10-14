@@ -16,7 +16,7 @@ export const article: Article = {
     { type: "h2", id: "wann-sinnvoll", text: "Wann ein externer Business Analyst sinnvoll ist" },
     {
       type: "p",
-      text: "Viele Unternehmen haben interne Fachleute, die Prozesse und Systeme gut kennen. Für die Analysearbeit in einem Projekt fehlt ihnen aber oft die Zeit, weil das Tagesgeschäft weiterläuft. Ein externer Business Analyst kann diese Lücke für eine begrenzte Dauer schliessen. Welche Aufgaben die Rolle umfasst, beschreibt der Beitrag [Was macht ein Business Analyst?](/insights/was-macht-ein-business-analyst).",
+      text: "Viele Unternehmen haben interne Mitarbeitende, die Prozesse und Systeme gut kennen. Für die Analysearbeit in einem Projekt fehlt ihnen aber oft die Zeit, weil das Tagesgeschäft weiterläuft. Ein externer Business Analyst kann diese Lücke für eine begrenzte Dauer schliessen. Welche Aufgaben die Rolle umfasst, beschreibt der Beitrag [Was macht ein Business Analyst?](/insights/was-macht-ein-business-analyst).",
     },
     { type: "p", text: "Typische Situationen sind:" },
     {
@@ -38,7 +38,7 @@ export const article: Article = {
     { type: "h3", text: "Aussensicht und Neutralität" },
     {
       type: "p",
-      text: "Wer nicht Teil der Organisation ist, stellt Fragen, die intern niemand mehr stellt. Ein Externer ist keiner Abteilung verpflichtet und kann Optionen gleichwertig darstellen. Das erleichtert Entscheidungen, wenn Interessen auseinandergehen.",
+      text: "Ein Externer kennt die internen Gewohnheiten nicht und fragt deshalb auch nach Dingen, die intern als geklärt gelten. Ein Externer ist keiner Abteilung verpflichtet und kann Optionen gleichwertig darstellen. Das erleichtert Entscheidungen, wenn Interessen auseinandergehen.",
     },
     { type: "h3", text: "Methodik aus anderen Vorhaben" },
     {
@@ -61,7 +61,7 @@ export const article: Article = {
         "Wissenstransfer planen: Ergebnisse, Modelle und Entscheidungsgrundlagen gehören dem Unternehmen und müssen nachvollziehbar abgelegt sein. Legen Sie früh fest, wer das Wissen nach Ende des Mandats übernimmt.",
         "Einbindung sicherstellen: Ohne Zugang zu Fachpersonen, Systemen und Dokumenten bleibt die Analyse oberflächlich. Reservieren Sie die Zeit der Schlüsselpersonen verbindlich.",
         "Rollen klar abgrenzen: Klären Sie, wer entscheidet, wer priorisiert und wer Anforderungen freigibt. Der externe Business Analyst bereitet vor, entscheidet aber nicht anstelle des Auftraggebers.",
-        "Einarbeitung einrechnen: Auch erfahrene Fachleute brauchen Zeit, um Fachgebiet, Systemlandschaft und Organisation kennenzulernen.",
+        "Einarbeitung einrechnen: Auch ein erfahrener Business Analyst braucht Zeit, um Fachgebiet, Systemlandschaft und Organisation kennenzulernen.",
         "Kontinuität sichern: Ein Personenwechsel mitten im Vorhaben kostet Zeit. Vereinbaren Sie, wie Stellvertretung und Übergaben geregelt sind.",
       ],
     },
@@ -90,7 +90,7 @@ export const article: Article = {
     },
     {
       type: "callout",
-      title: "Ergebnis statt Präsenz beschreiben",
+      title: "Das erwartete Ergebnis beschreiben",
       text: "Halten Sie im Briefing fest, was am Ende vorliegen soll, nicht nur wie viele Tage jemand im Einsatz ist. Ein klar beschriebenes Ergebnis erleichtert die Steuerung des Mandats und die Abnahme.",
     },
     { type: "h2", id: "beauftragung-schweiz", text: "Beauftragung in der Schweiz" },

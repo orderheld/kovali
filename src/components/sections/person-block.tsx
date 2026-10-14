@@ -22,7 +22,7 @@ function Figure({ value }: { value: string }) {
   return (
     <>
       {plus ? value.slice(0, -1) : value}
-      {plus ? <span className="ml-0.5 align-[0.95em] text-[0.45em] text-blue">+</span> : null}
+      {plus ? <span className="ml-1 align-[0.85em] text-[0.42em] font-medium text-blue">+</span> : null}
     </>
   );
 }
@@ -73,39 +73,35 @@ export function PersonBlock({
 
   return (
     <Section id={id} tone={tone} rule={rule} space="loose" labelledBy={h2Id} className={cn("scroll-mt-20", className)}>
-      <div className="grid gap-10 lg:grid-cols-12 lg:items-start lg:gap-8">
-        <div className="hidden lg:sticky lg:top-28 lg:col-span-5 lg:block">
-          <Portrait size="lg" />
+      <div className="grid gap-12 lg:grid-cols-12 lg:items-start lg:gap-8">
+        <div className="lg:sticky lg:top-28 lg:col-span-5">
+          <Portrait size="lg" className="max-w-[24rem] sm:max-w-[26rem] lg:max-w-[28rem]" />
         </div>
 
-        <div className="lg:col-span-6 lg:col-start-7">
-          <div className="flex items-center gap-5 lg:block">
-            <Portrait size="sm" className="lg:hidden" />
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-blue">{label}</p>
-              <h2 id={h2Id} className="mt-3 scroll-mt-28 text-h2 font-medium">
-                {title}
-              </h2>
-            </div>
-          </div>
+        <div className="lg:col-span-6 lg:col-start-7 lg:pt-4">
+          <p className="eyebrow">{label}</p>
+          <h2 id={h2Id} className="mt-5 scroll-mt-28 text-h2 font-semibold text-ink">
+            {title}
+          </h2>
 
-          <div className="mt-5 max-w-[34rem] space-y-4 text-lg leading-relaxed text-slate">
+          <div className="mt-6 max-w-[34rem] space-y-4 text-lg leading-relaxed text-slate">
             {texts.map((p) => (
               <p key={p}>{p}</p>
             ))}
           </div>
 
-          <dl className="mt-10 grid grid-cols-2 gap-6 border-t border-line pt-7">
+          <dl className="mt-10 grid grid-cols-2 gap-6 border-t border-line pt-8">
             {founder.experience.map((e) => (
-              <div key={e.label} className="flex flex-col">
+              <div key={e.label} className="relative flex flex-col">
+                <span aria-hidden className="absolute -top-[2.0625rem] left-0 h-0.5 w-10 bg-blue" />
                 <dt className="order-2 mt-3 max-w-56 hyphens-auto text-[0.9375rem] leading-snug text-slate">{e.label}</dt>
-                <dd className="order-1 font-display text-numeral font-light lining-nums tabular-nums text-navy">
+                <dd className="order-1 text-numeral font-semibold lining-nums tabular-nums text-ink">
                   <Figure value={e.value} />
                 </dd>
               </div>
             ))}
           </dl>
-          <p className="mt-5 text-[0.8125rem] text-slate">{founder.experienceNote}</p>
+          <p className="mt-6 font-mono text-[0.75rem] leading-relaxed text-slate">{founder.experienceNote}</p>
 
           {credentialLine ? <p className="mt-6 max-w-[34rem] leading-relaxed text-slate">{credentialLine}</p> : null}
 
@@ -126,15 +122,15 @@ export function PersonBlock({
 
       {full ? (
         <>
-          <dl className="mt-14 grid gap-6 border-t border-line pt-8 md:grid-cols-3">
+          <dl className="mt-16 grid gap-x-8 gap-y-6 border-t border-line pt-8 md:grid-cols-3">
             {founder.facts.map((f) => (
               <div key={f.label}>
-                <dt className="text-sm font-medium text-ink">{f.label}</dt>
-                <dd className="mt-1.5 text-slate">{f.value}</dd>
+                <dt className="font-mono text-xs font-medium uppercase tracking-[0.08em] text-blue">{f.label}</dt>
+                <dd className="mt-2 leading-relaxed text-ink">{f.value}</dd>
               </div>
             ))}
           </dl>
-          <h3 className="mt-14 text-h3 font-semibold">{certificatesTitle}</h3>
+          <h3 className="mt-16 text-h3 font-semibold">{certificatesTitle}</h3>
           <Certifications className="mt-6" />
         </>
       ) : null}

@@ -25,13 +25,6 @@ export function formatDate(iso: string): string {
   return `${d}. ${months[m - 1]} ${y}`;
 }
 
-const numberWords = ["null", "ein", "zwei", "drei", "vier", "fünf", "sechs", "sieben", "acht", "neun", "zehn", "elf", "zwölf"];
-
-/** Numbers up to twelve as a word in running text, larger ones as digits: 6 → "sechs", 24 → "24". */
-export function numberWord(n: number): string {
-  return numberWords[n] ?? String(n);
-}
-
 const chfNumber = new Intl.NumberFormat("de-CH", { maximumFractionDigits: 0 });
 
 /** Swiss number format with the apostrophe as thousands separator, e.g. 112’000. */

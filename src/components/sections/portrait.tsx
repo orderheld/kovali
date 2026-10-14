@@ -1,122 +1,109 @@
 import Image from "next/image";
+import { ArmLines, CornerMarks } from "@/components/brand/motifs";
 import { founder } from "@/content/company";
 import { cn } from "@/lib/utils";
 
-export type PortraitSize = "lg" | "sm" | "avatar";
+export type PortraitSize = "lg" | "md" | "avatar";
 
 const PHOTO_ALT = `${founder.name}, ${founder.role} von KOVALI`;
 
+/** Round avatar sizes. md: CTA signature and contact cards; avatar: hero byline. */
+const round: Record<Exclude<PortraitSize, "lg">, { box: string; sizes: string }> = {
+  md: { box: "size-16 sm:size-[4.5rem]", sizes: "4.5rem" },
+  avatar: { box: "size-11", sizes: "2.75rem" },
+};
+
 /**
- * Ferhat Demir's portrait. Reads `founder.portrait` (company.ts): with a photo it renders
- * next/image, without one a designed "FD" monogram, a final state rather than a placeholder
- * (no silhouette, no camera icon, no "Foto folgt").
+ * Ferhat Demir's portrait: a cutout with transparent background on a composed dark frame
+ * (ink base, corporate-to-electric glow behind head and shoulders, faint grid, the logo's
+ * 48-degree arms, a mono name label).
  *
- * - lg: 4:5 figure with caption (person block)
- * - sm: 5.5 × 6.875 rem tile (CTA signature, contact cards, mobile person block)
- * - avatar: 3 rem circle (hero byline)
+ * - lg: 4:5 frame (person block, contact card). Names the person in its alt text.
+ * - md: round avatar of 4.5 rem (CTA signature, contact page).
+ * - avatar: round avatar of 2.75 rem (hero byline).
  *
- * sm and avatar are decorative next to the visible name (alt ""); lg names the person.
+ * md and avatar sit next to the visible name, so they are decorative (alt "").
  */
 export function Portrait({
   size = "lg",
   caption = true,
+  eager = false,
   className,
+  sizes = "(min-width: 1024px) 28rem, (min-width: 640px) 24rem, 90vw",
 }: {
   size?: PortraitSize;
-  /** lg only: show name and title (inside the tile without photo, below the photo with one). */
+  /** lg only: mono label with name and title at the bottom of the frame. */
   caption?: boolean;
+  /** Load at once (above the fold). */
+  eager?: boolean;
   className?: string;
+  /** lg only: the `sizes` attribute for the responsive image. */
+  sizes?: string;
 }) {
-  const photo = founder.portrait;
-
-  if (size === "avatar") {
-    return photo ? (
-      <Image
-        src={photo}
-        alt=""
-        sizes="3rem"
-        loading="eager"
-        placeholder="blur"
-        className={cn("size-12 shrink-0 rounded-full object-cover", className)}
-      />
-    ) : (
+  if (size !== "lg") {
+    const r = round[size];
+    return (
       <span
-        aria-hidden
         className={cn(
-          "grid size-12 shrink-0 place-items-center rounded-full bg-navy text-[0.9375rem] font-medium text-white",
+          "relative inline-block shrink-0 overflow-hidden rounded-full bg-night ring-1 ring-electric/35 ring-offset-0",
+          "bg-[radial-gradient(circle_at_50%_38%,#1f7bea_0%,#145bce_28%,#0b1733_62%,#060b18_100%)]",
+          r.box,
           className,
         )}
       >
-        FD
+        <Image
+          src={founder.avatar}
+          alt=""
+          fill
+          sizes={r.sizes}
+          loading={eager ? "eager" : "lazy"}
+          className="object-cover"
+        />
       </span>
-    );
-  }
-
-  if (size === "sm") {
-    return (
-      <span
-        aria-hidden={photo ? undefined : true}
-        className={cn(
-          "relative grid h-[6.875rem] w-[5.5rem] shrink-0 place-items-center overflow-hidden rounded-[4px] bg-paper-2",
-          className,
-        )}
-      >
-        {photo ? (
-          <Image src={photo} alt="" fill sizes="5.5rem" placeholder="blur" className="object-cover" />
-        ) : (
-          <span className="font-display text-[2.75rem] font-extralight leading-none tracking-[-0.05em] text-navy">FD</span>
-        )}
-      </span>
-    );
-  }
-
-  const nameplate = caption ? (
-    <>
-      <span className="block text-base font-semibold text-ink">{founder.name}</span>
-      {founder.role}
-    </>
-  ) : null;
-
-  if (photo) {
-    return (
-      <figure className={cn("w-full max-w-[26rem]", className)}>
-        <div className="relative aspect-[4/5] overflow-hidden rounded-[4px] bg-paper-2">
-          <Image
-            src={photo}
-            alt={PHOTO_ALT}
-            fill
-            sizes="(min-width: 1024px) 26rem, 100vw"
-            placeholder="blur"
-            className="object-cover"
-          />
-        </div>
-        {nameplate ? <figcaption className="mt-4 text-sm text-slate">{nameplate}</figcaption> : null}
-      </figure>
     );
   }
 
   return (
-    <figure
-      className={cn("relative aspect-[4/5] w-full max-w-[26rem] overflow-hidden rounded-[4px] bg-paper-2", className)}
-    >
-      <span
-        aria-hidden
-        className="absolute left-7 top-5 font-display text-[clamp(6rem,4rem+6vw,10rem)] font-extralight leading-none tracking-[-0.05em] text-navy"
-      >
-        FD
-      </span>
-      {/* Two hairlines at 48°, the angle of the logo's arms. */}
-      <svg
-        aria-hidden
-        viewBox="0 0 400 500"
-        preserveAspectRatio="none"
-        className="absolute inset-0 size-full"
-        fill="none"
-      >
-        <path d="M120 500 L420 160" stroke="#145bce" strokeOpacity="0.35" strokeWidth="1" vectorEffect="non-scaling-stroke" />
-        <path d="M200 500 L420 255" stroke="#35a9ff" strokeOpacity="0.45" strokeWidth="1" vectorEffect="non-scaling-stroke" />
-      </svg>
-      {nameplate ? <figcaption className="absolute bottom-6 left-7 text-sm text-slate">{nameplate}</figcaption> : null}
+    <figure className={cn("relative w-full max-w-[28rem]", className)}>
+      <div className="relative isolate aspect-[4/5] overflow-hidden rounded-2xl bg-night shadow-[0_30px_80px_-30px_rgb(6_11_24/0.55)] ring-1 ring-night/10">
+        {/* Base: ink at the top, near-black at the bottom. */}
+        <div aria-hidden className="absolute inset-0 bg-[linear-gradient(180deg,#0b1733_0%,#081026_55%,#060b18_100%)]" />
+        <div
+          aria-hidden
+          className="tech-grid absolute inset-0 [--grid-color:rgb(143_201_255/0.09)] [--grid-size:36px] [mask-image:radial-gradient(ellipse_80%_65%_at_50%_30%,black_30%,transparent_80%)]"
+        />
+        {/* Glow behind head and shoulders: corporate blue into electric. */}
+        <div
+          aria-hidden
+          className="absolute left-1/2 top-[34%] aspect-square w-[115%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgb(53_169_255/0.55)_0%,rgb(31_123_234/0.42)_24%,rgb(20_91_206/0.2)_44%,transparent_66%)]"
+        />
+        <ArmLines className="absolute bottom-[18%] left-[-6%] h-[70%] w-full opacity-90" />
+        <Image
+          src={founder.portrait}
+          alt={PHOTO_ALT}
+          sizes={sizes}
+          loading={eager ? "eager" : "lazy"}
+          className="absolute inset-x-0 top-[6%] h-auto w-full max-w-none drop-shadow-[0_0_1px_rgb(143_201_255/0.5)]"
+        />
+        {/* Fade into the frame at the bottom, so the label sits on a dark surface. */}
+        <div
+          aria-hidden
+          className="absolute inset-x-0 bottom-0 h-[34%] bg-[linear-gradient(to_top,#060b18_0%,rgb(6_11_24/0.92)_30%,rgb(6_11_24/0.55)_62%,transparent_100%)]"
+        />
+        <CornerMarks className="inset-4" />
+      </div>
+      {caption ? (
+        <figcaption className="absolute inset-x-6 bottom-6 flex items-end justify-between gap-4 font-mono text-[0.75rem] uppercase leading-5 tracking-[0.08em]">
+          <span>
+            <span className="block font-medium text-white">{founder.name}</span>
+            <span className="block text-sky">{founder.role}</span>
+          </span>
+          <span aria-hidden className="mb-1.5 flex items-center gap-1.5 text-[0.6875rem] text-white/60">
+            <span className="size-1.5 rounded-full bg-electric shadow-[0_0_8px_rgb(53_169_255/0.9)]" />
+            KOVALI
+          </span>
+        </figcaption>
+      ) : null}
     </figure>
   );
 }

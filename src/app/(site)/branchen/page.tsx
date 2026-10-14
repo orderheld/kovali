@@ -27,7 +27,7 @@ export default function BranchenPage() {
         lead="In der öffentlichen Verwaltung, in der Logistik und im Detailhandel mit Zahlungsverkehr hat Ferhat Demir, Geschäftsführer von KOVALI, Anforderungen erhoben, Schnittstellen spezifiziert und Tests durchgeführt."
       />
 
-      <Section labelledBy="erfahrung-title">
+      <Section tone="cloud" labelledBy="erfahrung-title">
         <SectionHeader
           id="erfahrung-title"
           title="Aus der Praxis von Ferhat Demir"
@@ -38,7 +38,7 @@ export default function BranchenPage() {
         </div>
       </Section>
 
-      <Section tone="paper" labelledBy="zielmaerkte-title">
+      <Section labelledBy="zielmaerkte-title">
         <SectionHeader
           id="zielmaerkte-title"
           title="Weitere Zielmärkte"
