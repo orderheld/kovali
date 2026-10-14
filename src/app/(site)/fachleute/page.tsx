@@ -1,4 +1,5 @@
-import { Info, Mail } from "lucide-react";
+import { Mail } from "lucide-react";
+import { Tick } from "@/components/sections/check-list";
 import { PageHero } from "@/components/sections/page-hero";
 import { JsonLd } from "@/components/seo/json-ld";
 import { ButtonLink, buttonClasses } from "@/components/ui/button";
@@ -13,13 +14,16 @@ import { ProfileForm } from "./profile-form";
 export const metadata = pageMetadata({
   title: "Für Fachleute – Mitarbeit in IT-Mandaten",
   description:
-    "Business Analysis, Requirements Engineering, Application Management oder Test: Senden Sie Ihr Profil für die Mitarbeit in IT-Mandaten von KOVALI. Persönliche Prüfung.",
+    "Sie arbeiten mit Ihrer eigenen GmbH oder AG in Business Analysis, Requirements Engineering, Application Management oder Test? Senden Sie Ihr Profil an KOVALI.",
   path: "/fachleute",
 });
 
 /** Same rule as on /kontakt: the upload form only appears when profiles can be delivered. */
 const formActive = isEmailConfigured() || serverEnv.dryRun;
 
+/*
+ * No prices on this page: rates must never read as rates for specialists (spec 4.1).
+ */
 export default function FachleutePage() {
   const email = site.contact.email.value;
   return (
@@ -29,7 +33,6 @@ export default function FachleutePage() {
           { name: "Start", path: "/" },
           { name: "Für Fachleute", path: "/fachleute" },
         ]}
-        eyebrow="Für Fachleute"
         title="Mitarbeit in IT-Mandaten"
         lead={specialists.intro}
       >
@@ -39,34 +42,33 @@ export default function FachleutePage() {
       </PageHero>
 
       <Section labelledBy="schwerpunkte-title">
-        <SectionHeader
-          id="schwerpunkte-title"
-          eyebrow="Schwerpunkte"
-          title="Diese Profile sind gefragt"
-          text="Gesucht sind erfahrene Fachleute für Mandate von Beratungen, IT-Dienstleistern und Unternehmen in der ganzen Schweiz."
-        />
-        <ul className="mt-12 grid gap-px overflow-hidden rounded-xl border border-line bg-line sm:grid-cols-2 lg:grid-cols-3">
+        <SectionHeader id="schwerpunkte-title" title={specialists.focusTitle} text={specialists.focusText} />
+        <ul className="mt-12 grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
           {specialists.focus.map((f) => (
-            <li key={f.title} className="bg-white p-7">
+            <li key={f.title} className="border-t border-line pt-6">
               <h3 className="text-h3 font-semibold">{f.title}</h3>
               <p className="mt-2 leading-relaxed text-slate">{f.text}</p>
             </li>
           ))}
-          <li className="bg-mist p-7">
+          <li className="border-t border-line pt-6">
             <h3 className="text-h3 font-semibold">Anderer Schwerpunkt</h3>
             <p className="mt-2 leading-relaxed text-slate">
-              Sie arbeiten an der Schnittstelle von Fachbereich und IT? Beschreiben Sie Ihren Schwerpunkt im Formular.
+              Sie arbeiten an der Schnittstelle von Fachbereich und IT? Beschreiben Sie Ihren Schwerpunkt{" "}
+              {formActive ? "im Formular" : "in Ihrer E-Mail"}.
             </p>
           </li>
         </ul>
       </Section>
 
-      <Section tone="mist" labelledBy="ablauf-title">
-        <SectionHeader id="ablauf-title" eyebrow="Ablauf" title="So geht es nach Ihrem Profil weiter" />
-        <ol className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <Section tone="paper" labelledBy="ablauf-title">
+        <SectionHeader id="ablauf-title" title={specialists.stepsTitle} />
+        <ol className="mt-12 grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
           {specialists.steps.map((s, i) => (
-            <li key={s.title} className="rounded-xl border border-line bg-white p-7">
-              <span className="flex size-9 items-center justify-center rounded-md bg-navy font-mono text-sm text-white">
+            <li key={s.title} className="border-t border-paper-line pt-6">
+              <span
+                aria-hidden
+                className="flex size-7 items-center justify-center rounded-full border border-line bg-white text-sm font-medium tabular-nums text-blue"
+              >
                 {i + 1}
               </span>
               <h3 className="mt-5 text-h3 font-semibold">{s.title}</h3>
@@ -79,59 +81,58 @@ export default function FachleutePage() {
       <Section id="profil" labelledBy="profil-title" className="scroll-mt-20">
         <div className="grid gap-14 lg:grid-cols-12 lg:gap-8">
           <div className="lg:col-span-7">
-            <h2 id="profil-title" className="text-2xl font-semibold tracking-tight">
+            <h2 id="profil-title" className="text-[2rem] font-medium leading-tight text-ink">
               Profil senden
             </h2>
-            <div className="mt-8">
-              {formActive ? (
+            {formActive ? (
+              <div className="mt-8">
                 <ProfileForm fallbackEmail={email} testMode={serverEnv.dryRun} />
-              ) : (
-                <div className="rounded-xl border border-line bg-mist p-8">
-                  <p className="leading-relaxed text-slate">
-                    Senden Sie Ihren Lebenslauf als PDF per E-Mail. Nennen Sie kurz Ihren Schwerpunkt, Ihre
-                    Verfügbarkeit und ob Sie selbständig arbeiten oder eine Anstellung suchen.
-                  </p>
-                  <a href={`mailto:${email}`} className={buttonClasses({ className: "mt-6" })}>
-                    <Mail aria-hidden className="size-4" />
-                    {email}
-                  </a>
-                </div>
-              )}
-            </div>
+              </div>
+            ) : (
+              <div className="mt-6 max-w-2xl">
+                <p className="text-lg leading-relaxed text-slate">{specialists.emailInstructions}</p>
+                <a href={`mailto:${email}`} className={buttonClasses({ className: "mt-8" })}>
+                  <Mail aria-hidden className="size-4" />
+                  {email}
+                </a>
+              </div>
+            )}
           </div>
 
-          <aside aria-labelledby="hinweise-title" className="space-y-6 lg:col-span-4 lg:col-start-9">
+          {/* A plain div, not an aside: a complementary landmark must not sit inside a section. */}
+          <div className="space-y-6 lg:col-span-4 lg:col-start-9">
             <div className="rounded-xl border border-line p-8">
-              <h2 id="hinweise-title" className="font-mono text-xs uppercase tracking-[0.12em] text-blue">
-                Gut zu wissen
-              </h2>
+              <h2 className="font-sans text-sm font-medium text-blue">{specialists.notesTitle}</h2>
               <ul className="mt-5 space-y-5">
                 {specialists.notes.map((note) => (
                   <li key={note} className="flex gap-3">
-                    <Info aria-hidden className="mt-1 size-4 shrink-0 text-blue" />
+                    <Tick />
                     <span className="leading-relaxed text-slate">{note}</span>
                   </li>
                 ))}
               </ul>
             </div>
-            <div className="rounded-xl bg-navy p-8 text-white">
-              <p className="font-mono text-xs uppercase tracking-[0.12em] text-electric">Fragen vorab</p>
-              <p className="mt-4 leading-relaxed text-white/80">Schreiben Sie an</p>
-              <p className="mt-1 flex items-center gap-3">
-                <Mail aria-hidden className="size-5 text-electric" />
-                <a href={`mailto:${email}`} className="underline-offset-4 hover:underline">
+            <div className="rounded-xl bg-paper p-8">
+              <h2 className="font-sans text-sm font-medium text-blue">Fragen vorab</h2>
+              <p className="mt-4 leading-relaxed text-slate">
+                Schreiben Sie an{" "}
+                <a
+                  href={`mailto:${email}`}
+                  className="text-blue underline decoration-1 underline-offset-[3px] hover:decoration-2"
+                >
                   {email}
                 </a>
+                .
               </p>
             </div>
-          </aside>
+          </div>
         </div>
       </Section>
 
-      <Section tone="mist" labelledBy="faq-title">
+      <Section tone="paper" labelledBy="faq-title">
         <div className="grid gap-12 lg:grid-cols-12 lg:gap-8">
           <div className="lg:col-span-4">
-            <SectionHeader id="faq-title" eyebrow="FAQ" title="Fragen von Fachleuten" />
+            <SectionHeader id="faq-title" title={specialists.faqTitle} />
           </div>
           <div className="lg:col-span-8">
             <Faq items={specialists.faq} />

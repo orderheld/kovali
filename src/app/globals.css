@@ -18,27 +18,58 @@
   --color-line: #dce4ef;
   --color-ink: #0b1733;
 
+  /* Warm light surfaces of the public site. Mist stays for artefact toolbars and file drop zones. */
+  --color-paper: #f7f5f0; /* hero, section and CTA background */
+  --color-paper-2: #efebe3; /* portrait placeholder, quiet panels */
+  --color-paper-line: #e4ded2; /* hairlines on paper, decorative */
+  --color-field: #7c8599; /* input and checkbox borders, 3.70:1 on white (WCAG 1.4.11) */
+  --color-hint: #6b7489; /* placeholder text, 4.68:1 on white */
+
+  /* Test status in the example artefacts, always paired with a glyph and a word. */
+  --color-pass: #1f7a4d;
+  --color-pass-bg: #e8f3ec;
+  --color-fail: #b42318;
+  --color-fail-bg: #fdecea;
+  --color-open: #8a5a00;
+  --color-open-bg: #fbf1dc;
+
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, "SFMono-Regular", monospace;
 
-  --text-display: clamp(2.375rem, 1.6rem + 3.4vw, 4rem);
-  --text-display--line-height: 1.05;
-  --text-display--letter-spacing: -0.03em;
-  --text-h1: clamp(2.125rem, 1.6rem + 2.2vw, 3.25rem);
-  --text-h1--line-height: 1.1;
-  --text-h1--letter-spacing: -0.025em;
-  --text-h2: clamp(1.75rem, 1.4rem + 1.4vw, 2.5rem);
-  --text-h2--line-height: 1.15;
-  --text-h2--letter-spacing: -0.02em;
+  --text-display: clamp(2.5rem, 1.5rem + 4.2vw, 4.5rem);
+  --text-display--line-height: 1.04;
+  --text-display--letter-spacing: -0.02em;
+  --text-h1: clamp(2.25rem, 1.6rem + 2.6vw, 3.5rem);
+  --text-h1--line-height: 1.08;
+  --text-h1--letter-spacing: -0.015em;
+  --text-h2: clamp(1.75rem, 1.3rem + 1.8vw, 2.75rem);
+  --text-h2--line-height: 1.12;
+  --text-h2--letter-spacing: -0.01em;
   --text-h3: 1.25rem;
   --text-h3--line-height: 1.35;
   --text-lead: clamp(1.125rem, 1.05rem + 0.3vw, 1.3125rem);
   --text-lead--line-height: 1.6;
+  /* Large serif numerals (years, prices) and serif statements. */
+  --text-numeral: clamp(4rem, 2.6rem + 5vw, 7rem);
+  --text-numeral--line-height: 0.9;
+  --text-numeral--letter-spacing: -0.03em;
+  --text-statement: clamp(1.375rem, 1.1rem + 1.1vw, 2rem);
+  --text-statement--line-height: 1.35;
 
   --container-site: 75rem;
   --container-prose: 42rem;
 
   --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/*
+ * Newsreader is loaded with next/font in site-chrome.tsx and its variable is set on the
+ * `.site` wrapper, not on :root. `inline` makes `font-display` resolve the variable where it
+ * is used, inside the site. Revert path to a sans display face: point this at
+ * var(--font-geist-sans) and change the `.site` heading rule below accordingly.
+ */
+@theme inline {
+  --font-display: var(--font-newsreader), ui-serif, Georgia, serif;
 }
 
 @layer base {
@@ -66,6 +97,15 @@
     text-wrap: pretty;
   }
 
+  /* Public site only: h1 and h2 in Newsreader. The admin area keeps its own type. */
+  .site :where(h1, h2) {
+    font-family: var(--font-newsreader), ui-serif, Georgia, serif;
+    font-weight: 500;
+    hyphens: auto;
+    /* Last resort where no hyphenation dictionary exists, e.g. "Datenschutzerklärung" at 320 px. */
+    overflow-wrap: break-word;
+  }
+
   ::selection {
     background: color-mix(in srgb, var(--color-electric) 35%, transparent);
   }
@@ -82,35 +122,18 @@
 }
 
 @layer components {
-  /* Small monospace label above headings: "— LEISTUNGEN" */
+  /* Short kicker above a heading, e.g. on the home hero. Plain sans, no rule, no uppercase. */
   .eyebrow {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.75rem;
-    font-family: var(--font-mono);
-    font-size: 0.75rem;
-    line-height: 1rem;
+    font-family: var(--font-sans);
+    font-size: 0.875rem;
+    line-height: 1.25rem;
     font-weight: 500;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
+    text-transform: none;
+    letter-spacing: 0;
     color: var(--color-blue);
-  }
-  .eyebrow::before {
-    content: "";
-    width: 1.5rem;
-    height: 1px;
-    background: currentColor;
   }
   .on-dark .eyebrow {
     color: var(--color-electric);
-  }
-
-  /* Fine technical grid used on dark and light hero surfaces. */
-  .grid-lines {
-    background-image:
-      linear-gradient(to right, var(--grid-color, rgb(220 228 239 / 0.7)) 1px, transparent 1px),
-      linear-gradient(to bottom, var(--grid-color, rgb(220 228 239 / 0.7)) 1px, transparent 1px);
-    background-size: 48px 48px;
   }
 
   /* Article and legal text. */
@@ -123,13 +146,17 @@
   .prose-kovali > * + * {
     margin-top: 1.25em;
   }
+  /* The body starts level with its neighbours (e.g. the table of contents beside an article). */
+  .prose-kovali > :first-child {
+    margin-top: 0;
+  }
   .prose-kovali h2 {
     margin-top: 2.25em;
     color: var(--color-ink);
-    font-size: 1.625rem;
+    font-size: 1.75rem;
     line-height: 1.25;
-    font-weight: 600;
-    letter-spacing: -0.015em;
+    font-weight: 500;
+    letter-spacing: -0.01em;
   }
   .prose-kovali h3 {
     margin-top: 1.75em;
@@ -183,28 +210,22 @@
   }
   .prose-kovali ol > li::marker {
     color: var(--color-blue);
-    font-family: var(--font-mono);
-    font-size: 0.875em;
+    font-weight: 500;
   }
   .prose-kovali li + li {
     margin-top: 0.5em;
   }
 }
 
-/* Hero line animation: requirements flow towards value. Disabled for reduced motion. */
-@keyframes kv-flow {
-  to {
-    stroke-dashoffset: -24;
-  }
-}
-@keyframes kv-draw {
-  from {
-    stroke-dashoffset: var(--kv-len, 400);
-  }
-  to {
-    stroke-dashoffset: 0;
-  }
-}
+/*
+ * Motion: one-shot only, never infinite (WCAG 2.2.2), off for reduced motion.
+ * Content never depends on an animation having run.
+ *   kv-rise   fade and rise, 0.7 s (hero text); stagger with --kv-delay
+ *   kv-line   fade and slide in from the left, 0.4 s (lines of an artefact); --kv-delay
+ *   kv-reveal rise bound to scrolling into view, screen only and only where scroll timelines
+ *             exist. It never changes opacity: content further down stays fully visible in a
+ *             print, a full-page capture or an automated contrast check, none of which scroll
+ */
 @keyframes kv-rise {
   from {
     opacity: 0;
@@ -215,43 +236,61 @@
     transform: none;
   }
 }
-@keyframes kv-pulse {
-  0%,
-  100% {
-    opacity: 0.35;
+@keyframes kv-reveal {
+  from {
+    transform: translateY(20px);
   }
-  50% {
-    opacity: 0.9;
+  to {
+    transform: none;
+  }
+}
+@keyframes kv-line {
+  from {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
   }
 }
 
-.kv-flow {
-  stroke-dasharray: 4 8;
-  animation: kv-flow 1.6s linear infinite;
-}
-.kv-draw {
-  stroke-dasharray: var(--kv-len, 400);
-  animation: kv-draw 1.4s var(--ease-out-soft) both;
-  animation-delay: var(--kv-delay, 0s);
-}
 .kv-rise {
   animation: kv-rise 0.7s var(--ease-out-soft) both;
   animation-delay: var(--kv-delay, 0s);
 }
-.kv-pulse {
-  animation: kv-pulse 2.8s ease-in-out infinite;
+.kv-line {
+  animation: kv-line 0.4s var(--ease-out-soft) both;
   animation-delay: var(--kv-delay, 0s);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .kv-flow,
-  .kv-draw,
-  .kv-rise,
-  .kv-pulse {
-    animation: none !important;
+@supports (animation-timeline: view()) {
+  @media screen and (prefers-reduced-motion: no-preference) {
+    .kv-reveal {
+      animation: kv-reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 40%;
+    }
   }
-  .kv-draw {
-    stroke-dasharray: none;
+}
+
+/* Printed pages show every element in its final state. */
+@media print {
+  .kv-rise,
+  .kv-line,
+  .kv-reveal {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kv-rise,
+  .kv-line,
+  .kv-reveal {
+    animation: none !important;
+    opacity: 1;
   }
   html {
     scroll-behavior: auto;

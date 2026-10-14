@@ -4,11 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { Menu, X, ArrowRight } from "lucide-react";
-import { mainNav, primaryCta } from "@/content/navigation";
+import { mobileNav, primaryCta } from "@/content/navigation";
 import { cn } from "@/lib/utils";
 
-/** The mobile menu has room for Insights, which the desktop header leaves to the footer. */
-const items = [...mainNav, { label: "Insights", href: "/insights" }];
+/** The mobile menu has room for Branchen and Insights, which the desktop header leaves to the footer. */
+const items = mobileNav;
 
 export function MobileNav() {
   const [open, setOpen] = useState(false);
@@ -20,6 +20,10 @@ export function MobileNav() {
     if (!open) return;
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    // The panel covers the page: take main content and footer out of the tab order and the
+    // accessibility tree while it is open, so focus never lands on something hidden behind it.
+    const behind = Array.from(document.querySelectorAll<HTMLElement>("#inhalt, #inhalt ~ footer"));
+    behind.forEach((el) => el.setAttribute("inert", ""));
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setOpen(false);
@@ -29,6 +33,7 @@ export function MobileNav() {
     window.addEventListener("keydown", onKey);
     return () => {
       document.body.style.overflow = previous;
+      behind.forEach((el) => el.removeAttribute("inert"));
       window.removeEventListener("keydown", onKey);
     };
   }, [open]);
@@ -43,7 +48,7 @@ export function MobileNav() {
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((v) => !v)}
-        className="-mr-2 inline-flex size-11 items-center justify-center rounded-md text-ink hover:bg-mist"
+        className="-mr-2 inline-flex size-11 items-center justify-center rounded-md text-ink hover:bg-paper"
       >
         <span className="sr-only">{open ? "Menü schliessen" : "Menü öffnen"}</span>
         {open ? <X aria-hidden className="size-6" /> : <Menu aria-hidden className="size-6" />}
@@ -69,7 +74,7 @@ export function MobileNav() {
                     )}
                   >
                     {item.label}
-                    <ArrowRight aria-hidden className="size-4 text-slate/60" />
+                    <ArrowRight aria-hidden className="size-4 text-slate" />
                   </Link>
                 </li>
               );

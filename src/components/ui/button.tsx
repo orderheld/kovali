@@ -6,7 +6,7 @@ type Variant = "primary" | "secondary" | "inverse" | "outline-inverse" | "text";
 type Size = "md" | "sm";
 
 const base =
-  "group inline-flex items-center justify-center gap-2 rounded-md font-medium whitespace-nowrap transition-colors duration-200 disabled:pointer-events-none disabled:opacity-60";
+  "group inline-flex items-center justify-center gap-2 rounded-md text-center font-medium max-w-full whitespace-normal sm:whitespace-nowrap transition-colors duration-200 disabled:pointer-events-none disabled:opacity-60";
 
 const variants: Record<Variant, string> = {
   primary: "bg-blue text-white hover:bg-blue-700",
@@ -17,8 +17,9 @@ const variants: Record<Variant, string> = {
 };
 
 const sizes: Record<Size, string> = {
-  md: "h-12 px-6 text-[0.9375rem]",
-  sm: "h-10 px-4 text-sm",
+  // Minimum heights: a long label may wrap below 640 px instead of overflowing the screen.
+  md: "min-h-12 px-6 py-2.5 text-[0.9375rem]",
+  sm: "min-h-10 px-4 py-2 text-sm",
 };
 
 export function buttonClasses({

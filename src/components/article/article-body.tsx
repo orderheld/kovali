@@ -35,7 +35,7 @@ export function ArticleBody({ blocks }: { blocks: ArticleBlock[] }) {
           }
           case "callout":
             return (
-              <div key={i} role="note" className="!mt-10 rounded-xl border-l-4 border-blue bg-mist px-6 py-5">
+              <div key={i} role="note" className="!mt-10 rounded-xl border-l-4 border-blue bg-paper px-6 py-5">
                 <p className="font-semibold text-ink">{block.title}</p>
                 <p className="mt-2">
                   <RichText text={block.text} />

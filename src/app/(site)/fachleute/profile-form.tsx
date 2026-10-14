@@ -18,6 +18,7 @@ import {
 import {
   CV_MAX_BYTES,
   CV_MAX_LABEL,
+  ENGAGEMENT_LABEL,
   availabilityOptions,
   engagementOptions,
   focusOptions,
@@ -32,7 +33,7 @@ const FIELD_LABELS: Record<ProfileField, string> = {
   phone: "Telefon",
   focus: "Schwerpunkt",
   availability: "Verfügbar ab",
-  engagement: "Bevorzugte Zusammenarbeit",
+  engagement: ENGAGEMENT_LABEL,
   profileUrl: "Profil-Link",
   cv: "Lebenslauf",
   message: "Nachricht",
@@ -68,7 +69,7 @@ export function ProfileForm({ fallbackEmail, testMode = false }: { fallbackEmail
       <SuccessPanel
         headingRef={successRef}
         title="Vielen Dank für Ihr Profil"
-        text="Ihr Profil ist angekommen. Wir prüfen es persönlich und melden uns, wenn ein passendes Mandat ansteht."
+        text="Ihr Profil ist angekommen. Ferhat Demir liest es und meldet sich, wenn ein passendes Mandat ansteht."
         reference={state.reference}
       />
     );
@@ -149,8 +150,9 @@ export function ProfileForm({ fallbackEmail, testMode = false }: { fallbackEmail
         />
         <ChoiceChips
           name="engagement"
-          legend="Bevorzugte Zusammenarbeit"
-          optional
+          legend={ENGAGEMENT_LABEL}
+          required
+          hint="KOVALI vergibt Mandate nur an Firmen: Ihre GmbH oder AG arbeitet als Subunternehmen von KOVALI."
           options={engagementOptions}
           defaultValue={v("engagement")}
           error={errors.engagement}
@@ -180,7 +182,7 @@ export function ProfileForm({ fallbackEmail, testMode = false }: { fallbackEmail
 
       <div className="space-y-7">
         <Consent
-          text="dass mein Profil zur Prüfung einer Zusammenarbeit verwendet und höchstens sechs Monate aufbewahrt wird. Eine Weitergabe an Auftraggeber erfolgt nur mit meiner Zustimmung."
+          text="dass mein Profil zur Prüfung einer Zusammenarbeit verwendet und höchstens sechs Monate aufbewahrt wird. In einer Offerte von KOVALI für ein konkretes Mandat, in dem KOVALI Auftragnehmer ist, wird es nur mit meiner Zustimmung verwendet."
           defaultChecked={v("consent") === "on"}
           error={errors.consent}
         />
