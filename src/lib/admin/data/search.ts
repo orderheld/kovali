@@ -2,7 +2,7 @@ import "server-only";
 import { asc, count, desc, eq, ilike, or, sql, type Column, type SQL } from "drizzle-orm";
 import { getDb } from "../db/client";
 import { candidates, companies, contacts, contracts, documents, mandates, submissions } from "../db/schema";
-import { outerColumn } from "../privacy";
+import { outerColumn } from "./query";
 import { likePattern } from "./query";
 
 /**

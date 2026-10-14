@@ -3,7 +3,7 @@ import { and, asc, count, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import { getDb } from "../db/client";
 import { companies, contacts, mandates } from "../db/schema";
 import { openMandateStatuses } from "../options";
-import { likePattern, PAGE_SIZE } from "./query";
+import { likePattern, outerColumn, PAGE_SIZE } from "./query";
 
 export async function listCompanies({ q, kind, page }: { q?: string; kind?: string; page: number }) {
   const db = await getDb();
@@ -21,8 +21,8 @@ export async function listCompanies({ q, kind, page }: { q?: string; kind?: stri
         kind: companies.kind,
         city: companies.city,
         status: companies.status,
-        contacts: sql<number>`(select count(*) from ${contacts} where ${contacts.companyId} = ${companies.id})`.mapWith(Number),
-        openMandates: sql<number>`(select count(*) from ${mandates} where ${mandates.companyId} = ${companies.id} and ${inArray(mandates.status, [...openMandateStatuses])})`.mapWith(Number),
+        contacts: sql<number>`(select count(*) from ${contacts} where ${contacts.companyId} = ${outerColumn(companies.id)})`.mapWith(Number),
+        openMandates: sql<number>`(select count(*) from ${mandates} where ${mandates.companyId} = ${outerColumn(companies.id)} and ${inArray(mandates.status, [...openMandateStatuses])})`.mapWith(Number),
       })
       .from(companies)
       .where(where)

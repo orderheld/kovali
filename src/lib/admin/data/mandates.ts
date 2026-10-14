@@ -3,7 +3,7 @@ import { and, asc, count, desc, eq, ilike, inArray, ne, or, sql, type SQL } from
 import { getDb } from "../db/client";
 import { candidates, companies, contacts, mandates, submissions } from "../db/schema";
 import { openMandateStatuses } from "../options";
-import { likePattern, PAGE_SIZE } from "./query";
+import { likePattern, outerColumn, PAGE_SIZE } from "./query";
 
 /** Queries of the mandate module (list, pipeline, detail, matching pool). */
 
@@ -50,7 +50,7 @@ const listColumns = {
   nextStep: mandates.nextStep,
   nextStepAt: mandates.nextStepAt,
   closedAt: mandates.closedAt,
-  submissionCount: sql<number>`(select count(*) from ${submissions} where ${submissions.mandateId} = ${mandates.id})`.mapWith(Number),
+  submissionCount: sql<number>`(select count(*) from ${submissions} where ${submissions.mandateId} = ${outerColumn(mandates.id)})`.mapWith(Number),
 };
 
 export type MandateListRow = Awaited<ReturnType<typeof listMandates>>["rows"][number];

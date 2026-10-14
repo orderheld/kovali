@@ -1,4 +1,5 @@
-/** Helpers for list pages: search patterns, page numbers and URL building. */
+/** Helpers for list pages: search patterns, page numbers, URL building and SQL fragments. */
+import { getTableName, sql, type Column, type SQL } from "drizzle-orm";
 
 export const PAGE_SIZE = 50;
 
@@ -27,4 +28,12 @@ export function listHref(base: string, params: Record<string, string | number | 
   }
   const s = sp.toString();
   return s ? `${base}?${s}` : base;
+}
+
+/**
+ * Drizzle writes column names without their table in single-table selects, so in a correlated
+ * subquery a plain "id" would point to the inner table. This keeps the outer column qualified.
+ */
+export function outerColumn(column: Column): SQL {
+  return sql`${sql.identifier(getTableName(column.table))}.${sql.identifier(column.name)}`;
 }

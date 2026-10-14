@@ -1,6 +1,7 @@
 import "server-only";
-import { and, asc, count, desc, eq, getTableName, gte, isNotNull, isNull, lt, lte, not, sql, type Column, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, isNotNull, isNull, lt, lte, not, sql } from "drizzle-orm";
 import { logActivity } from "./activities";
+import { outerColumn } from "./data/query";
 import { audit } from "./audit";
 import { getDb } from "./db/client";
 import {
@@ -223,13 +224,6 @@ export async function deleteCandidatePermanently(id: number): Promise<boolean> {
 
 // --- Lists for the Datenschutz pages ------------------------------------------------------------
 
-/**
- * Drizzle writes column names without their table in single-table selects, so in a correlated
- * subquery a plain "id" would point to the inner table. This keeps the outer column qualified.
- */
-export function outerColumn(column: Column): SQL {
-  return sql`${sql.identifier(getTableName(column.table))}.${sql.identifier(column.name)}`;
-}
 
 const listColumns = {
   id: candidates.id,

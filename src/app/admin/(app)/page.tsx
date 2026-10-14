@@ -182,7 +182,7 @@ export default async function DashboardPage() {
             href="/admin/kandidaten?status=aktiv"
             icon={Users}
           />
-          <StatTile label="Vorschläge diesen Monat" value={kpis.submissionsThisMonth} hint="An Auftraggeber weitergegeben" href="/admin/mandate?vorschlaege=monat" icon={Send} />
+          <StatTile label="Vorschläge diesen Monat" value={kpis.submissionsThisMonth} hint="An Auftraggeber weitergegeben" href="/admin/mandate?ansicht=pipeline" icon={Send} />
           <StatTile
             label="Verträge zur Unterschrift"
             value={kpis.contractsAwaitingSignature}
@@ -329,7 +329,7 @@ export default async function DashboardPage() {
               <CardHeader title="Zusammenarbeit" />
               <ul className="divide-y divide-line py-1">
                 <ReviewRow
-                  href="/admin/kandidaten?status=aktiv&firma=ohne"
+                  href="/admin/kandidaten?status=aktiv&firma=nein"
                   label="Aktive Kandidaten ohne eigene Firma"
                   count={kpis.activeWithoutFirm}
                   hint="KOVALI arbeitet nur mit Fachpersonen über ihre GmbH oder AG."

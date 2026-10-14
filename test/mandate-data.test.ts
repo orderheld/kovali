@@ -88,6 +88,22 @@ describe.skipIf(!url)("mandate data", () => {
     expect(await mandatesData.mandateCompanyOptions()).toEqual([{ value: 1, label: "Alpenblick Consulting AG" }]);
   });
 
+  it("counts contacts and open mandates per company in the company list", async () => {
+    const db = await getDb();
+    // Contact ids deliberately differ from company ids: an unqualified "id" in the subquery would match wrongly.
+    await db.insert(schema.contacts).values([
+      { companyId: 2, firstName: "Erste", lastName: "Person" },
+      { companyId: 1, firstName: "Zweite", lastName: "Person" },
+      { companyId: 1, firstName: "Dritte", lastName: "Person" },
+    ]);
+    const { listCompanies } = await import("@/lib/admin/data/companies");
+    const { rows } = await listCompanies({ page: 1 });
+    const byId = new Map(rows.map((r) => [r.id, r]));
+    expect(byId.get(1)).toMatchObject({ contacts: 2, openMandates: 2 });
+    expect(byId.get(2)).toMatchObject({ contacts: 1, openMandates: 0 });
+    expect(byId.get(3)).toMatchObject({ contacts: 0, openMandates: 0 });
+  });
+
   it("passes candidates on only through their own subcontractor firm", async () => {
     const { candidateFirm, subcontractorCheck, NO_OWN_FIRM, SOLE_PROPRIETOR_WARNING } = submissionsData;
     expect(subcontractorCheck(await candidateFirm(1))).toMatchObject({ ok: true, warning: null, firm: { name: "Muster Daten GmbH" } });
