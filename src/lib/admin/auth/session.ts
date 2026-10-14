@@ -94,6 +94,9 @@ export const getAdminSession = cache(async (): Promise<AdminSession | null> => {
  * setup page while the admin area is not configured).
  */
 export async function requireAdmin(): Promise<AdminSession> {
+  // Request time first: without the env vars (e.g. a fresh deployment) the redirect below would
+  // otherwise run at build time and make admin pages static, which breaks their dynamic metadata.
+  await connection();
   if (!isAdminConfigured()) redirect("/admin/einrichtung");
   const session = await getAdminSession();
   if (!session) redirect("/admin/login");
@@ -102,6 +105,7 @@ export async function requireAdmin(): Promise<AdminSession> {
 
 /** For Route Handlers: the session or null (respond with 401). */
 export async function adminSessionForApi(): Promise<AdminSession | null> {
+  await connection();
   if (!isAdminConfigured()) return null;
   return getAdminSession();
 }
