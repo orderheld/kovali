@@ -3,7 +3,7 @@ import { responseClause } from "@/config/site";
 /**
  * Copy for the home page (spec 3.1 with addendum 9 and 3). Ferhat Demir's block reads
  * `founder` (company.ts), the disciplines `services.ts`, "So sieht die Arbeit aus"
- * `work-samples.ts`, the price line `priceTeasers.home` (pricing.ts).
+ * `work-samples.ts`. No prices on the site (Ferhat Demir, 14.10.2026).
  */
 export const home = {
   hero: {
@@ -15,7 +15,7 @@ export const home = {
     /** After "Ferhat Demir, Geschäftsführer · ". */
     byline: "seit über 10 Jahren in der IT",
     primary: { label: "Projekt besprechen", href: "/kontakt" },
-    secondary: { label: "Preise ansehen", href: "/preise" },
+    secondary: { label: "Leistungen ansehen", href: "/leistungen" },
   },
   services: {
     title: "IT Consulting",
@@ -34,8 +34,8 @@ export const home = {
         text: "Jede User Story bekommt Akzeptanzkriterien, bevor programmiert wird. Daran misst der Test später, ob die Story erfüllt ist.",
       },
       {
-        title: "Preise auf der Website",
-        text: "Sie wissen vor dem ersten Gespräch, womit Sie rechnen können.",
+        title: "Standards, die Ihre Teams kennen",
+        text: "Requirements Engineering nach IREB, Softwaretest nach ISTQB. Ferhat Demir ist in beiden zertifiziert.",
       },
     ],
     link: { label: "Alle Gründe", href: "/warum-kovali" },

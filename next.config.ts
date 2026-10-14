@@ -75,6 +75,8 @@ const nextConfig: NextConfig = {
       // reserved slug below it, so it never reaches the [slug] route as a 404.
       { source: "/it-consulting", destination: "/leistungen", permanent: true },
       { source: "/leistungen/it-consulting", destination: "/leistungen", permanent: true },
+      // No prices on the site (Ferhat Demir, 14.10.2026). Temporary, in case a price page returns.
+      { source: "/preise", destination: "/leistungen", permanent: false },
     ];
   },
   async headers() {

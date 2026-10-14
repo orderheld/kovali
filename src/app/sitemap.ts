@@ -21,7 +21,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     page("/leistungen", 0.9),
     ...services.map((s) => page(serviceHref(s.slug), 0.9)),
     page("/warum-kovali", 0.8),
-    page("/preise", 0.8),
     page("/branchen", 0.7),
     page("/unternehmen", 0.8),
     page("/fachleute", 0.7),

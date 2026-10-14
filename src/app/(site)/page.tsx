@@ -6,10 +6,8 @@ import { PersonBlock } from "@/components/sections/person-block";
 import { ServiceList } from "@/components/sections/service-list";
 import { WorkSamples } from "@/components/sections/work-samples";
 import { ButtonLink } from "@/components/ui/button";
-import { RichText } from "@/components/ui/rich-text";
 import { Section, SectionHeader } from "@/components/ui/section";
 import { home } from "@/content/home";
-import { priceTeasers } from "@/content/pricing";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata = pageMetadata({
@@ -34,9 +32,6 @@ export default function HomePage() {
         <div className="grid gap-12 lg:grid-cols-12 lg:gap-8">
           <div className="self-start lg:sticky lg:top-28 lg:col-span-5">
             <SectionHeader id="it-consulting-title" title={services.title} text={services.text} />
-            <p className="mt-6 max-w-2xl text-[0.9375rem] leading-relaxed text-slate">
-              <RichText text={priceTeasers.home} />
-            </p>
             <ButtonLink href={services.overview.href} variant="secondary" className="mt-8 border-field">
               {services.overview.label}
             </ButtonLink>

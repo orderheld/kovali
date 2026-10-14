@@ -1,8 +1,6 @@
-import { site, vatClause } from "@/config/site";
-import { formatChf, formatNumber } from "@/lib/utils";
+import { site } from "@/config/site";
+import { formatNumber } from "@/lib/utils";
 import type { FaqItem, ServiceSlug, TitledText } from "./types";
-
-const { min, max } = site.offer.hourly.value;
 
 /**
  * " Es dauert rund 30 Minuten und ist kostenlos." once Ferhat Demir confirms the first call,
@@ -139,8 +137,9 @@ export const business = {
   faqTitle: "Fragen von Unternehmen",
   faq: [
     {
-      question: "Was kostet ein Einsatz?",
-      answer: `Die Richtwerte liegen bei ${formatChf(min)} bis ${formatNumber(max)} pro Stunde, ${vatClause()}. Den verbindlichen Satz nennt die Offerte. Details und ein Rechenbeispiel finden Sie unter [Preise](/preise).`,
+      question: "Wie wird abgerechnet?",
+      answer:
+        "Nach Aufwand, monatlich nach geleisteten Stunden. Den Stundensatz nennt die schriftliche Offerte. Er hängt von Rolle, Dauer, Pensum und Umfeld ab.",
     },
     {
       question: "Arbeitet KOVALI auch als Subunternehmen?",

@@ -1,4 +1,3 @@
-import { priceFaq } from "./pricing";
 import type { Service, ServiceSlug } from "./types";
 
 /**
@@ -7,7 +6,6 @@ import type { Service, ServiceSlug } from "./types";
  * Test Engineering, Application Management. Business Analysis and Requirements Engineering
  * form one discipline (Ferhat Demir, 13.10.2026).
  * Each entry feeds the lists, its own page (/leistungen/[slug]), metadata and JSON-LD.
- * Every FAQ starts with the shared price question from pricing.ts.
  */
 export const services: Service[] = [
   {
@@ -80,7 +78,6 @@ export const services: Service[] = [
     ],
     faqTitle: "Fragen zu Business Analysis",
     faq: [
-      priceFaq("Business Analysis"),
       {
         question: "Was macht ein Business Analyst in einem IT-Projekt?",
         answer:
@@ -154,7 +151,6 @@ export const services: Service[] = [
     methods: ["ISTQB", "Risikobasiertes Testen", "Jira Xray", "Zephyr", "SAFe", "Scrum"],
     faqTitle: "Fragen zum Testmanagement",
     faq: [
-      priceFaq("Testmanagement"),
       {
         question: "Was macht ein Test Manager?",
         answer:
@@ -216,7 +212,6 @@ export const services: Service[] = [
     methods: ["ISTQB", "Äquivalenzklassen", "Grenzwertanalyse", "SQL", "Jira Xray", "Zephyr", "Scrum", "SAFe"],
     faqTitle: "Fragen zum Test Engineering",
     faq: [
-      priceFaq("Test Engineering"),
       {
         question: "Was ist der Unterschied zwischen Testmanagement und Test Engineering?",
         answer:
@@ -277,7 +272,6 @@ export const services: Service[] = [
     methods: ["Incident Management", "Problem Management", "Change Management", "Release Management", "Kanban", "Jira", "SQL"],
     faqTitle: "Fragen zum Application Management",
     faq: [
-      priceFaq("Application Management"),
       {
         question: "Was umfasst fachliches Application Management?",
         answer:

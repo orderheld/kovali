@@ -6,7 +6,6 @@ import { ServiceList } from "@/components/sections/service-list";
 import { ButtonLink } from "@/components/ui/button";
 import { RichText } from "@/components/ui/rich-text";
 import { Section, SectionHeader } from "@/components/ui/section";
-import { priceTeasers } from "@/content/pricing";
 import { serviceHref } from "@/content/services";
 import type { ProcessNode } from "@/content/work-samples";
 import { pageMetadata } from "@/lib/seo";
@@ -64,8 +63,8 @@ export default function LeistungenPage() {
         <ButtonLink href="/kontakt" arrow>
           Projekt besprechen
         </ButtonLink>
-        <ButtonLink href="/preise" variant="secondary" className="border-field bg-transparent">
-          Preise ansehen
+        <ButtonLink href="/unternehmen" variant="secondary" className="border-field bg-transparent">
+          Zusammenarbeit
         </ButtonLink>
       </PageHero>
 
@@ -110,23 +109,16 @@ export default function LeistungenPage() {
         <ProcessStrip framed={false} horizontalFrom="lg" className="mt-12 px-0 lg:px-0" process={lifecycle} />
       </Section>
 
-      <Section space="tight" labelledBy="preise-title">
+      <Section space="tight" labelledBy="zusammenarbeit-title">
         <div className="grid gap-12 lg:grid-cols-2 lg:gap-16">
-          <div>
-            <h2 id="preise-title" className="text-h2 font-medium text-ink">
-              {priceTeasers.overview.title}
-            </h2>
-            <p className="mt-5 max-w-xl text-lg leading-relaxed text-slate">{priceTeasers.overview.text}</p>
-            <ButtonLink href="/preise" variant="secondary" arrow className="mt-8 border-field">
-              Preise im Detail
-            </ButtonLink>
-          </div>
+          <h2 id="zusammenarbeit-title" className="text-h2 font-medium text-ink">
+            Direkt oder als Subunternehmen
+          </h2>
           <div className="space-y-6 text-lg leading-relaxed text-slate lg:pt-2">
             <p>
               <RichText text="KOVALI arbeitet direkt für Unternehmen und öffentliche Organisationen oder als Subunternehmen für Beratungen und IT-Dienstleister, vor Ort, remote oder hybrid in der ganzen Schweiz. [Zusammenarbeit im Detail](/unternehmen)" />
             </p>
             <p>
-              {/* No years of experience here: they never stand next to prices (spec 4.1). */}
               <RichText text="Geführt wird KOVALI von Ferhat Demir, Geschäftsführer. Er ist Ihr Ansprechpartner, vom ersten Gespräch bis zur Übergabe. [Warum KOVALI](/warum-kovali#geschaeftsleitung)" />
             </p>
           </div>
@@ -135,7 +127,7 @@ export default function LeistungenPage() {
 
       <CtaBand
         title="Welche Aufgabe ist in Ihrem Projekt offen?"
-        text="Beschreiben Sie Aufgabe, Zeitraum und Pensum. Sie erhalten eine Offerte mit verbindlichem Stundensatz."
+        text="Beschreiben Sie Aufgabe, Zeitraum und Pensum. Sie erhalten eine erste Einschätzung und danach eine schriftliche Offerte."
         primary={{ label: "Offerte anfragen", href: "/kontakt" }}
         secondary={null}
       />
