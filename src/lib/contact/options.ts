@@ -4,18 +4,19 @@ import type { ServiceSlug } from "@/content/types";
 
 /** How a company wants to work with KOVALI. What it needs is asked separately (serviceOptions). */
 export const requestTypes = [
-  { value: "contracting", label: "Contracting", description: "Eine Rolle im Mandat Ihres Kunden besetzen, als Subunternehmen." },
+  // The values stay as they are: /unternehmen links to ?anfrage=contracting, and stored requests use them.
+  { value: "contracting", label: "Subunternehmen im Kundenmandat", description: "KOVALI übernimmt eine offene Aufgabe im Mandat Ihres Kunden." },
   { value: "projekt", label: "Projekt oder Teilmandat", description: "Ein abgegrenztes Vorhaben mit klarem Ergebnis." },
-  { value: "kooperation", label: "Kooperation", description: "Regelmässig zusammenarbeiten, zum Beispiel bei grösseren Mandaten." },
+  { value: "kooperation", label: "Wiederkehrende Zusammenarbeit", description: "Sie vergeben regelmässig Aufgaben an KOVALI, zum Beispiel in grösseren Mandaten." },
   { value: "allgemeine-anfrage", label: "Allgemeine Anfrage", description: "Eine Frage oder ein erstes Kennenlernen." },
 ] as const;
 
 // Service names are repeated here (instead of importing all service content) to keep the client bundle small.
 const serviceNames = [
   { value: "business-analysis", label: "Business Analysis & Requirements Engineering" },
-  { value: "application-management", label: "Application Management" },
-  { value: "test-management", label: "Test Management" },
+  { value: "test-management", label: "Testmanagement" },
   { value: "test-engineering", label: "Test Engineering" },
+  { value: "application-management", label: "Application Management" },
 ] as const satisfies readonly { value: ServiceSlug; label: string }[];
 
 export const serviceOptions = [

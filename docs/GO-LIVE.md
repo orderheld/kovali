@@ -128,7 +128,7 @@ Das Formular sendet jede Anfrage über [Resend](https://resend.com) an `info@kov
 - [ ] Markenrecherche für «KOVALI» beim IGE ([swissreg.ch](https://www.swissreg.ch)), bevor Logo und Domain auf Drucksachen erscheinen.
 - [ ] Zusammenarbeitsmodelle (Subunternehmen, Teilmandat) rechtlich prüfen lassen. Die Website erwähnt ausdrücklich, dass Personalverleih und Arbeitsvermittlung derzeit nicht angeboten werden.
 - [ ] Die drei Insights-Artikel fachlich gegenlesen.
-- [ ] Optional: Porträtfoto für «Über uns».
+- [ ] Optional: Porträtfoto für Startseite, Warum KOVALI, Kontakt (siehe `src/content/company.ts` `founder.portrait`).
 
 ## 8. Abnahmetest nach Go-live
 
@@ -138,6 +138,7 @@ Das Formular sendet jede Anfrage über [Resend](https://resend.com) an `info@kov
 - [ ] Link von einer Leistungsseite («… anfragen») öffnet das Formular mit vorausgewählter Leistung.
 - [ ] Profilformular auf `/fachleute`: mit einem PDF-Lebenslauf absenden. Die E-Mail mit dem PDF im Anhang kommt an. Eine Word-Datei oder ein PDF über 4 MB wird abgelehnt.
 - [ ] `/partner` leitet auf `/unternehmen` um.
+- [ ] `/ueber-uns` und `/warum-wir` leiten auf `/warum-kovali` um, `/it-consulting` auf `/leistungen`.
 - [ ] `https://www.kovali.ch/sitemap.xml` und `/robots.txt` sind erreichbar.
 - [ ] Vorschau beim Teilen prüfen, z. B. mit dem [LinkedIn Post Inspector](https://www.linkedin.com/post-inspector/).
 - [ ] Sicherheits-Header prüfen, z. B. mit [securityheaders.com](https://securityheaders.com).

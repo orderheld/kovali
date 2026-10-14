@@ -1,82 +1,64 @@
-/** Copy for the home page. Section content itself comes from services, company and industries. */
+import { responseClause } from "@/config/site";
+
+/**
+ * Copy for the home page (spec 3.1 with addendum 9 and 3). Ferhat Demir's block reads
+ * `founder` (company.ts), the disciplines `services.ts`, "So sieht die Arbeit aus"
+ * `work-samples.ts`, the price line `priceTeasers.home` (pricing.ts).
+ */
 export const home = {
   hero: {
-    eyebrow: "IT Consulting Schweiz",
-    title: "Klarheit in Anforderungen. Sicherheit in der Umsetzung.",
-    lead: "KOVALI unterstützt Beratungen, IT-Dienstleister und Unternehmen in der Schweiz mit Business Analysis, Requirements Engineering, Application Management und Test Management, von der ersten Anforderung bis zur abgenommenen Lösung.",
-    primary: { label: "Zusammenarbeit anfragen", href: "/kontakt" },
-    secondary: { label: "Für Fachleute", href: "/fachleute" },
+    kicker: "IT Consulting",
+    title: "Business Analysis, Requirements Engineering und Test für Ihre IT-Projekte",
+    lead: "KOVALI arbeitet direkt für Unternehmen oder als Subunternehmen für Beratungen und IT-Dienstleister. Vor Ort, remote oder hybrid in der ganzen Schweiz.",
+    /** Accessible name of the list of the four disciplines below the lead. */
+    disciplinesLabel: "Disziplinen im IT Consulting",
+    /** After "Ferhat Demir, Geschäftsführer · ". */
+    byline: "seit über 10 Jahren in der IT",
+    primary: { label: "Projekt besprechen", href: "/kontakt" },
+    secondary: { label: "Preise ansehen", href: "/preise" },
   },
   services: {
-    eyebrow: "Leistungen",
-    title: "Vier Leistungen entlang der Strecke von der Anforderung bis zur Abnahme",
-    text: "Jede Leistung ist einzeln buchbar. Zusammen decken sie den ganzen Weg ab: verstehen, spezifizieren, betreuen und prüfen.",
-  },
-  approach: {
-    eyebrow: "Vorgehen",
-    title: "Konzeption, Value Analysis, Lösungsintegration",
-    text: "Drei Schritte führen von einer Anforderung zu einer Lösung mit nachvollziehbarem Nutzen. Ihre Anfangssilben bilden den Namen KOVALI.",
-  },
-  industries: {
-    eyebrow: "Branchen",
-    title: "Erfahrung aus anspruchsvollen IT-Umgebungen",
-    text: "Branchenkenntnis aus öffentlicher Verwaltung, Logistik und Detailhandel, übertragbar auf weitere regulierte Branchen.",
-  },
-  competencies: {
-    eyebrow: "Kompetenzen",
-    title: "Methoden und Werkzeuge, mit denen KOVALI arbeitet",
+    title: "IT Consulting",
+    text: "Sie vergeben eine einzelne Aufgabe, zum Beispiel Business Analysis für ein laufendes Scrum-Team, oder Analyse und Test im selben Mandat.",
+    overview: { label: "IT Consulting im Überblick", href: "/leistungen" },
   },
   reasons: {
-    eyebrow: "Warum KOVALI",
-    title: "Ein Partner, der Business und IT verbindet",
+    title: "Warum KOVALI",
+    items: [
+      {
+        title: "Ein fester Ansprechpartner",
+        text: "Ferhat Demir liest Ihre Anfrage und bleibt Ihr Ansprechpartner bis zur Übergabe.",
+      },
+      {
+        title: "Anforderungen, die sich testen lassen",
+        text: "Jede User Story bekommt Akzeptanzkriterien, bevor programmiert wird. Daran misst der Test später, ob die Story erfüllt ist.",
+      },
+      {
+        title: "Preise auf der Website",
+        text: "Sie wissen vor dem ersten Gespräch, womit Sie rechnen können.",
+      },
+    ],
+    link: { label: "Alle Gründe", href: "/warum-kovali" },
   },
-  certifications: {
-    eyebrow: "Methodik",
-    title: "Anerkannte Standards als gemeinsame Sprache",
-  },
-  /** The two entries of the site: companies that need a role filled, specialists who send a profile. */
-  entries: {
-    eyebrow: "Zusammenarbeit",
-    title: "Zwei Wege zu KOVALI",
-    text: "Unternehmen fragen Rollen und Projekte an, Fachleute senden ihr Profil. Beides prüfen wir persönlich.",
-    companies: {
-      id: "weg-unternehmen",
-      eyebrow: "Für Unternehmen",
-      title: "Verstärkung für Mandate und Projekte",
-      text: "Beratungen, IT-Dienstleister und Unternehmen besetzen mit KOVALI Rollen in Business Analysis, Requirements Engineering, Application Management und Test.",
-      points: [
-        "Als Subunternehmen im Kundenmandat",
-        "Im abgegrenzten Projekt oder Teilmandat",
-        "Vor Ort, remote oder hybrid",
-        "Auf Deutsch, Französisch und Englisch",
-      ],
-      primary: { label: "Zusammenarbeit anfragen", href: "/kontakt?anfrage=contracting" },
-      secondary: { label: "Mehr für Unternehmen", href: "/unternehmen" },
-    },
-    specialists: {
-      id: "weg-fachleute",
-      eyebrow: "Für Fachleute",
-      title: "Mitarbeit in IT-Mandaten",
-      text: "Sie arbeiten in Business Analysis, Requirements Engineering, Application Management oder im Test? Senden Sie Ihr Profil für kommende Mandate.",
-      points: [
-        "Lebenslauf als PDF hochladen",
-        "Persönliche Prüfung Ihres Profils",
-        "Mandate in der ganzen Schweiz",
-        "Weitergabe nur mit Ihrer Zustimmung",
-      ],
-      primary: { label: "Profil senden", href: "/fachleute#profil" },
-      secondary: { label: "Mehr für Fachleute", href: "/fachleute" },
-    },
-  },
-  insights: {
-    eyebrow: "Insights",
-    title: "Wissen aus der Praxis der Business Analysis",
+  /**
+   * Band for specialists (navy). KOVALI works with specialists only through their own GmbH
+   * or AG as its subcontractor (addendum 3): no placement, no staff leasing.
+   */
+  specialistsBand: {
+    title: "Sie arbeiten mit Ihrer eigenen GmbH oder AG in Business Analysis oder im Test?",
+    text: "Senden Sie Ihr Profil für Mandate, in denen Ihre Firma als Subunternehmen von KOVALI arbeitet. Verwendet wird es nur mit Ihrer Zustimmung und nur für ein konkretes Mandat.",
+    primary: { label: "Profil senden", href: "/fachleute#profil" },
+    secondary: { label: "Mehr für Fachleute", href: "/fachleute" },
   },
 } as const;
 
+/**
+ * Default closing call to action of `CtaBand` (home and every page without its own copy).
+ * The response time appears only once `site.offer.responseWorkingDays` is confirmed.
+ */
 export const contactCta = {
-  title: "Sie suchen Verstärkung oder planen ein IT-Projekt?",
-  text: "Schildern Sie kurz die gesuchte Rolle oder Ihr Vorhaben. Wir prüfen die Anfrage persönlich und melden uns mit einer ersten Einschätzung.",
-  primary: { label: "Zusammenarbeit anfragen", href: "/kontakt" },
-  secondary: { label: "Leistungen ansehen", href: "/leistungen" },
+  title: "Worum geht es in Ihrem Projekt?",
+  text: `Beschreiben Sie kurz Aufgabe, Zeitraum und Pensum. Sie erhalten eine erste Einschätzung von Ferhat Demir${responseClause()}.`,
+  primary: { label: "Projekt beschreiben", href: "/kontakt" },
+  secondary: null,
 } as const;

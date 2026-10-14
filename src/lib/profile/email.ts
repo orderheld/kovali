@@ -3,7 +3,7 @@ import { Resend } from "resend";
 import { escapeHtml, type EmailResult } from "@/lib/contact/email";
 import { labelOf } from "@/lib/contact/options";
 import { serverEnv } from "@/lib/env";
-import { availabilityOptions, engagementOptions, focusOptions } from "./options";
+import { ENGAGEMENT_LABEL, availabilityOptions, engagementOptions, focusOptions } from "./options";
 import type { ProfileInput } from "./schema";
 
 function rows(input: ProfileInput, reference: string): [string, string][] {
@@ -14,7 +14,7 @@ function rows(input: ProfileInput, reference: string): [string, string][] {
     ["E-Mail", input.email],
     ["Telefon", input.phone ?? "–"],
     ["Verfügbar", input.availability ? labelOf(availabilityOptions, input.availability) : "–"],
-    ["Zusammenarbeit", input.engagement ? labelOf(engagementOptions, input.engagement) : "–"],
+    [ENGAGEMENT_LABEL, labelOf(engagementOptions, input.engagement)],
     ["Profil-Link", input.profileUrl ?? "–"],
   ];
 }
@@ -29,7 +29,7 @@ function renderText(input: ProfileInput, reference: string): string {
     input.message ?? "–",
     "",
     "Lebenslauf: im Anhang (PDF)",
-    "Einwilligung Datenschutz: bestätigt (Aufbewahrung höchstens sechs Monate, Weitergabe nur mit Zustimmung)",
+    "Einwilligung Datenschutz: bestätigt (Aufbewahrung höchstens sechs Monate, Verwendung in einer Offerte von KOVALI nur mit Zustimmung)",
   ].join("\n");
 }
 
@@ -44,7 +44,7 @@ function renderHtml(input: ProfileInput, reference: string): string {
 <p style="margin:0 0 16px;font-size:16px;color:#0B1733"><strong>Neues Profil über kovali.ch</strong></p>
 <table style="border-collapse:collapse;font-size:14px">${table}</table>
 <h2 style="font-size:15px;margin:24px 0 8px;color:#0B1733">Nachricht</h2><p style="margin:0;white-space:pre-wrap;color:#0B1733;line-height:1.55">${escapeHtml(input.message ?? "–")}</p>
-<p style="margin:24px 0 0;color:#4A5878;font-size:12px">Lebenslauf im Anhang. Einwilligung Datenschutz: bestätigt (Aufbewahrung höchstens sechs Monate, Weitergabe an Auftraggeber nur mit Zustimmung). Antworten gehen direkt an ${escapeHtml(input.email)}.</p>
+<p style="margin:24px 0 0;color:#4A5878;font-size:12px">Lebenslauf im Anhang. Einwilligung Datenschutz: bestätigt (Aufbewahrung höchstens sechs Monate, Verwendung in einer Offerte von KOVALI nur mit Zustimmung). Antworten gehen direkt an ${escapeHtml(input.email)}.</p>
 </div>`;
 }
 

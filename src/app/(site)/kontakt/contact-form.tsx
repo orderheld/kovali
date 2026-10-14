@@ -97,7 +97,7 @@ export function ContactForm({
       <SuccessPanel
         headingRef={successRef}
         title="Vielen Dank für Ihre Anfrage"
-        text="Ihre Anfrage ist angekommen. Wir prüfen sie persönlich und melden uns mit einer ersten Einschätzung."
+        text="Ihre Anfrage ist angekommen. Ferhat Demir liest sie und meldet sich mit einer ersten Einschätzung."
         reference={state.reference}
       />
     );
@@ -163,7 +163,7 @@ export function ContactForm({
           id="projectDescription"
           label="Beschreibung"
           required
-          hint="Gesuchte Rolle, Aufgaben, Zeitraum und Pensum oder Ausgangslage und Ziel des Projekts. Bitte keine vertraulichen Kundendaten."
+          hint="Aufgabe oder gesuchte Unterstützung, Zeitraum und Pensum oder Ausgangslage und Ziel des Projekts. Bitte keine vertraulichen Kundendaten."
           error={errors.projectDescription}
         >
           {(p) => (
@@ -171,7 +171,7 @@ export function ContactForm({
               {...p}
               name="projectDescription"
               rows={5}
-              placeholder="Zum Beispiel: Business Analyst für die Ablösung einer Fachapplikation, ab März, 80 bis 100 %, Bern und remote."
+              placeholder="Zum Beispiel: Business Analysis für die Ablösung einer Fachapplikation, ab März, 80 bis 100 %, vor Ort und remote."
               defaultValue={v("projectDescription")}
               className={cn(inputClass, "resize-y")}
             />
@@ -199,7 +199,7 @@ export function ContactForm({
             <ChoiceChips name="workMode" legend="Arbeitsmodell" options={workModes} defaultValue={v("workMode")} error={errors.workMode} />
             <Field id="location" label="Einsatzort" error={errors.location}>
               {(p) => (
-                <input {...p} name="location" type="text" placeholder="z. B. Bern" defaultValue={v("location")} className={inputClass} />
+                <input {...p} name="location" type="text" placeholder="z. B. Ort oder Region" defaultValue={v("location")} className={inputClass} />
               )}
             </Field>
             <Field id="message" label="Nachricht" hint="Weitere Fragen, Rahmenbedingungen oder Rückrufwunsch." error={errors.message}>

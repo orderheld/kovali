@@ -1,25 +1,54 @@
-import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ProcessStrip } from "@/components/artifacts/process-strip";
+import { CheckList } from "@/components/sections/check-list";
 import { CtaBand } from "@/components/sections/cta-band";
 import { PageHero } from "@/components/sections/page-hero";
+import { ServiceList } from "@/components/sections/service-list";
 import { ButtonLink } from "@/components/ui/button";
+import { RichText } from "@/components/ui/rich-text";
 import { Section, SectionHeader } from "@/components/ui/section";
-import { business } from "@/content/business";
-import { services, serviceHref } from "@/content/services";
+import { priceTeasers } from "@/content/pricing";
+import { serviceHref } from "@/content/services";
+import type { ProcessNode } from "@/content/work-samples";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata = pageMetadata({
-  title: "Leistungen – Business Analysis Dienstleistungen",
+  title: "IT Consulting Schweiz – Business Analysis und Test",
   description:
-    "Business Analysis Dienstleistungen und Requirements Engineering, Application Management, Test Management und Test Engineering für IT-Projekte in der Schweiz.",
+    "IT Consulting von KOVALI: Business Analysis, Requirements Engineering, Testmanagement, Test Engineering und Application Management in der ganzen Schweiz.",
   path: "/leistungen",
 });
 
-const phases = [
-  { phase: "Verstehen und spezifizieren", slugs: ["business-analysis"] },
-  { phase: "Prüfen und abnehmen", slugs: ["test-management", "test-engineering"] },
-  { phase: "Betreiben und weiterentwickeln", slugs: ["application-management"] },
-] as const;
+const scope = [
+  "Anforderungen mit den Fachbereichen erheben und priorisieren",
+  "Abläufe, Datenflüsse und Schnittstellen fachlich spezifizieren",
+  "Tests planen und bis zur Abnahme steuern",
+  "Business-Applikationen nach dem Go-live fachlich betreuen",
+  "Mitarbeit in Scrum-, Kanban- oder SAFe-Teams und in klassischen Projekten",
+];
+
+/** The disciplines along the life of an application; a real flow, so the strip is not framed as "Beispiel". */
+const lifecycle: { nodes: ProcessNode[] } = {
+  nodes: [
+    {
+      type: "task",
+      label: "Verstehen und spezifizieren",
+      links: [{ label: "Business Analysis & Requirements Engineering", href: serviceHref("business-analysis") }],
+    },
+    {
+      type: "task",
+      label: "Prüfen und abnehmen",
+      links: [
+        { label: "Testmanagement", href: serviceHref("test-management") },
+        { label: "Test Engineering", href: serviceHref("test-engineering") },
+      ],
+    },
+    {
+      type: "task",
+      label: "Betreiben und weiterentwickeln",
+      links: [{ label: "Application Management", href: serviceHref("application-management") }],
+    },
+  ],
+};
 
 export default function LeistungenPage() {
   return (
@@ -29,110 +58,87 @@ export default function LeistungenPage() {
           { name: "Start", path: "/" },
           { name: "Leistungen", path: "/leistungen" },
         ]}
-        eyebrow="Leistungen"
-        title="Business Analysis Dienstleistungen für IT-Projekte"
-        lead="Von der ersten Anforderung bis zur abgenommenen Lösung: KOVALI unterstützt Fachbereiche, IT-Abteilungen und Projektteams dort, wo Anforderungen entstehen, umgesetzt und geprüft werden."
+        title="IT Consulting für Business Analysis und Test"
+        lead="KOVALI übernimmt in Ihrem IT-Projekt eine fest umrissene Aufgabe: Business Analysis und Requirements Engineering, Testmanagement, Test Engineering oder die fachliche Betreuung einer Applikation. Aufgaben und Ergebnisse vereinbaren wir vor dem Start schriftlich."
       >
         <ButtonLink href="/kontakt" arrow>
-          Zusammenarbeit anfragen
+          Projekt besprechen
+        </ButtonLink>
+        <ButtonLink href="/preise" variant="secondary" className="border-field bg-transparent">
+          Preise ansehen
         </ButtonLink>
       </PageHero>
 
-      <Section labelledBy="uebersicht-title">
-        <h2 id="uebersicht-title" className="sr-only">
-          Die vier Leistungen
-        </h2>
-        <ul className="grid gap-5 lg:grid-cols-2">
-          {services.map((s) => (
-            <li key={s.slug} className="group relative flex flex-col rounded-xl border border-line bg-white p-8 transition-colors hover:border-blue/50 md:p-10">
-              <div className="flex items-center justify-between">
-                <span className="font-mono text-sm text-blue">{s.code}</span>
-                <ArrowRight aria-hidden className="size-5 text-slate/50 transition-all group-hover:translate-x-0.5 group-hover:text-blue" />
-              </div>
-              <h3 className="mt-6 text-2xl font-semibold tracking-tight">
-                <Link href={serviceHref(s.slug)} className="after:absolute after:inset-0 after:rounded-xl group-hover:text-blue">
-                  {s.name}
-                </Link>
-              </h3>
-              <p className="mt-3 leading-relaxed text-slate">{s.summary}</p>
-              <ul className="mt-6 flex flex-wrap gap-2">
-                {s.tasks.slice(0, 4).map((t) => (
-                  <li key={t} className="rounded-md bg-mist px-3 py-1.5 text-sm text-ink">
-                    {t}
-                  </li>
-                ))}
-              </ul>
-            </li>
-          ))}
-          <li className="flex flex-col justify-between gap-8 rounded-xl bg-navy p-8 text-white md:p-10 lg:col-span-2 lg:flex-row lg:items-end">
-            <div>
-              <p className="font-mono text-sm text-electric">01–04</p>
-              <h3 className="mt-6 text-2xl font-semibold tracking-tight">Mehrere Leistungen kombinieren</h3>
-              <p className="mt-3 leading-relaxed text-white/75">
-                Viele Vorhaben brauchen Analyse und Test aus einer Hand. Die Leistungen lassen sich kombinieren, damit
-                Anforderungen und Testfälle nahtlos zusammenpassen.
-              </p>
-            </div>
-            <ButtonLink href="/kontakt" variant="inverse" arrow className="shrink-0 self-start lg:self-end">
-              Vorhaben besprechen
-            </ButtonLink>
-          </li>
-        </ul>
+      <Section labelledBy="definition-title">
+        <SectionHeader
+          id="definition-title"
+          layout="split"
+          title="Was IT Consulting bei KOVALI heisst"
+          text="Der Begriff deckt vieles ab, von der Strategieberatung bis zum Laptop-Support. Bei KOVALI ist er eng gefasst: Wir arbeiten dort, wo Fachbereich und IT klären, was eine Applikation können soll, und dort, wo geprüft wird, ob sie es kann."
+        />
+        <div className="mt-14 border-t border-line pt-10 md:mt-16">
+          <h3 className="text-lg font-semibold text-ink">Dazu gehört</h3>
+          <CheckList items={scope} className="mt-6" />
+          <p className="mt-10 max-w-3xl leading-relaxed text-slate">
+            <RichText text="Nicht dazu gehören Programmierung, technischer Betrieb sowie Personalverleih und Stellenvermittlung. [Was KOVALI nicht anbietet](/warum-kovali#abgrenzung)" />
+          </p>
+        </div>
       </Section>
 
-      <Section tone="mist" labelledBy="zusammenspiel-title">
+      <Section rule labelledBy="disziplinen-title">
+        <div className="grid gap-12 lg:grid-cols-12 lg:gap-8">
+          <div className="self-start lg:sticky lg:top-28 lg:col-span-5">
+            <SectionHeader
+              id="disziplinen-title"
+              title="Die Disziplinen im IT Consulting"
+              text="Jede Disziplin ist einzeln buchbar."
+            />
+          </div>
+          <div className="lg:col-span-7">
+            <ServiceList umbrella detailed />
+          </div>
+        </div>
+      </Section>
+
+      <Section tone="paper" labelledBy="zusammenspiel-title">
         <SectionHeader
           id="zusammenspiel-title"
-          eyebrow="Zusammenspiel"
-          title="Eine durchgängige Strecke statt einzelner Übergaben"
-          text="Wer die Anforderungen kennt, testet gezielter. Wer die Tests kennt, formuliert prüfbare Anforderungen. Die Leistungen folgen dem Lebenszyklus einer Lösung."
+          layout="split"
+          title="Analyse und Test im selben Mandat"
+          text="Wenn KOVALI die User Stories schreibt und auch den Test plant, entstehen die Testfälle direkt aus den Akzeptanzkriterien. Das spart eine Übergabe und die Rückfragen, die dabei üblicherweise entstehen. Wer die Applikation danach im Betrieb betreut, kennt die Anforderungen, auf denen sie beruht."
         />
-        <ol className="mt-14 grid gap-px overflow-hidden rounded-xl border border-line bg-line md:grid-cols-3">
-          {phases.map((p, i) => (
-            <li key={p.phase} className="bg-white p-7">
-              <span className="font-mono text-xs text-slate">Phase {i + 1}</span>
-              <h3 className="mt-3 text-lg font-semibold">{p.phase}</h3>
-              <ul className="mt-4 space-y-2">
-                {p.slugs.map((slug) => {
-                  const s = services.find((x) => x.slug === slug)!;
-                  return (
-                    <li key={slug}>
-                      <Link href={serviceHref(slug)} className="text-blue hover:underline">
-                        {s.name}
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            </li>
-          ))}
-        </ol>
+        <ProcessStrip framed={false} horizontalFrom="lg" className="mt-12 px-0 lg:px-0" process={lifecycle} />
       </Section>
 
-      <Section labelledBy="mandate-title">
-        <SectionHeader
-          id="mandate-title"
-          eyebrow="Zusammenarbeit"
-          title="Mandatsformen"
-          text="KOVALI arbeitet direkt für Unternehmen und öffentliche Organisationen oder als Subunternehmen für IT-Dienstleister."
-        />
-        <ul className="mt-12 grid gap-5 md:grid-cols-3">
-          {business.models.map((m) => (
-            <li key={m.title} className="rounded-xl border border-line p-7">
-              <h3 className="text-h3 font-semibold">{m.title}</h3>
-              <p className="mt-3 leading-relaxed text-slate">{m.text}</p>
-            </li>
-          ))}
-        </ul>
-        <p className="mt-8 text-slate">
-          Mehr zur Zusammenarbeit mit Beratungen und IT-Dienstleistern:{" "}
-          <Link href="/unternehmen" className="text-blue underline underline-offset-[3px]">
-            Für Unternehmen
-          </Link>
-        </p>
+      <Section space="tight" labelledBy="preise-title">
+        <div className="grid gap-12 lg:grid-cols-2 lg:gap-16">
+          <div>
+            <h2 id="preise-title" className="text-h2 font-medium text-ink">
+              {priceTeasers.overview.title}
+            </h2>
+            <p className="mt-5 max-w-xl text-lg leading-relaxed text-slate">{priceTeasers.overview.text}</p>
+            <ButtonLink href="/preise" variant="secondary" arrow className="mt-8 border-field">
+              Preise im Detail
+            </ButtonLink>
+          </div>
+          <div className="space-y-6 text-lg leading-relaxed text-slate lg:pt-2">
+            <p>
+              <RichText text="KOVALI arbeitet direkt für Unternehmen und öffentliche Organisationen oder als Subunternehmen für Beratungen und IT-Dienstleister, vor Ort, remote oder hybrid in der ganzen Schweiz. [Zusammenarbeit im Detail](/unternehmen)" />
+            </p>
+            <p>
+              {/* No years of experience here: they never stand next to prices (spec 4.1). */}
+              <RichText text="Geführt wird KOVALI von Ferhat Demir, Geschäftsführer. Er ist Ihr Ansprechpartner, vom ersten Gespräch bis zur Übergabe. [Warum KOVALI](/warum-kovali#geschaeftsleitung)" />
+            </p>
+          </div>
+        </div>
       </Section>
 
-      <CtaBand />
+      <CtaBand
+        title="Welche Aufgabe ist in Ihrem Projekt offen?"
+        text="Beschreiben Sie Aufgabe, Zeitraum und Pensum. Sie erhalten eine Offerte mit verbindlichem Stundensatz."
+        primary={{ label: "Offerte anfragen", href: "/kontakt" }}
+        secondary={null}
+      />
     </>
   );
 }

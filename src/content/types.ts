@@ -30,24 +30,34 @@ export interface FaqItem {
 
 export interface Service {
   slug: ServiceSlug;
-  /** Two-digit position along the chain from requirement to acceptance. */
+  /** Two-digit position in the order of `services` (01–04). Internal only, no longer displayed. */
   code: string;
+  /** Visible name of the discipline, e.g. "Testmanagement" (one word in visible copy). */
   name: string;
-  /** Short line for cards and navigation. */
+  /** Short line for lists and navigation: when the discipline helps and what KOVALI does. */
   summary: string;
+  /** H1 of the discipline page (SEO, keep stable). */
   h1: string;
   metaTitle: string;
   metaDescription: string;
   /** Main keyword this page is optimised for (see concept, keyword mapping). */
   keyword: string;
+  /** Lead of the discipline page. */
   intro: string;
+  /** H2 of the task list, hand-written per discipline (no template strings). */
+  tasksTitle: string;
   tasks: string[];
   deliverables: string[];
-  benefits: TitledText[];
-  scenarios: TitledText[];
+  /** Typical starting points as running sentences in the Sie-form. */
+  situations: string[];
   industries: IndustryId[];
   methods: string[];
+  /** H2 of the FAQ section, hand-written per discipline. */
+  faqTitle: string;
+  /** Discipline-specific questions; the page puts the shared price question (`priceFaq`) first. */
   faq: FaqItem[];
+  /** H2 of the closing call to action, hand-written per discipline. */
+  ctaTitle: string;
   /** Label of the contextual call to action. */
   cta: string;
 }
@@ -59,8 +69,6 @@ export interface Industry {
   kind: "experience" | "target";
   summary: string;
   points: string[];
-  /** What transfers to a target market. Not used for experience entries (no CV details on the site). */
-  basis?: string;
   services: ServiceSlug[];
 }
 
@@ -85,8 +93,12 @@ export interface Article {
   /** ISO date, e.g. "2026-10-13". */
   publishedAt: string;
   updatedAt?: string;
-  readingMinutes: number;
   excerpt: string;
   relatedServices: ServiceSlug[];
   blocks: ArticleBlock[];
+}
+
+/** Article as listed and rendered: the reading time is computed from `blocks` (insights/index.ts). */
+export interface PublishedArticle extends Article {
+  readingMinutes: number;
 }

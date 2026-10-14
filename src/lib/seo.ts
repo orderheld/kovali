@@ -7,6 +7,8 @@ interface PageMetaInput {
   /** Title without the " | KOVALI" suffix (the layout template adds it). */
   title: string;
   description: string;
+  /** Open Graph and Twitter text when it must differ from the meta description. */
+  shareDescription?: string;
   path: string;
   /** Use for the home page, where the template must not apply. */
   absoluteTitle?: boolean;
@@ -31,6 +33,7 @@ const shareImage = {
 export function pageMetadata(input: PageMetaInput): Metadata {
   const url = input.path;
   const ogTitle = input.absoluteTitle ? input.title : `${input.title} | ${site.brand}`;
+  const shareDescription = input.shareDescription ?? input.description;
   return {
     title: input.absoluteTitle ? { absolute: input.title } : input.title,
     description: input.description,
@@ -41,22 +44,24 @@ export function pageMetadata(input: PageMetaInput): Metadata {
       siteName: site.brand,
       locale: "de_CH",
       title: ogTitle,
-      description: input.description,
+      description: shareDescription,
       images: [shareImage],
       ...(input.type === "article"
         ? {
             publishedTime: input.publishedTime,
             modifiedTime: input.modifiedTime ?? input.publishedTime,
-            authors: [site.contact.person],
           }
         : {}),
     },
     twitter: {
       card: "summary_large_image",
       title: ogTitle,
-      description: input.description,
+      description: shareDescription,
       images: [shareImage.url],
     },
+    // Articles carry no personal byline until Ferhat Demir confirms authorship (spec 3.10):
+    // replaces the root layout's author, matching the BlogPosting JSON-LD below.
+    ...(input.type === "article" ? { authors: [{ name: site.brand, url: absoluteUrl("/") }] } : {}),
     ...(input.noindex ? { robots: { index: false, follow: true } } : {}),
   };
 }
@@ -64,7 +69,8 @@ export function pageMetadata(input: PageMetaInput): Metadata {
 /* ---------- Structured data (schema.org). Only facts that are true today. ---------- */
 
 const ORG_ID = `${absoluteUrl("/")}#organization`;
-const PERSON_ID = `${absoluteUrl("/ueber-uns")}#ferhat-demir`;
+/** Ferhat Demir's person block on Warum KOVALI carries the anchor #ferhat-demir (its H2). */
+const PERSON_ID = `${absoluteUrl("/warum-kovali")}#ferhat-demir`;
 const WEBSITE_ID = `${absoluteUrl("/")}#website`;
 
 export function organizationJsonLd() {
@@ -110,7 +116,7 @@ export function personJsonLd() {
     name: company.founder.name,
     jobTitle: company.founder.role,
     worksFor: { "@id": ORG_ID },
-    url: absoluteUrl("/ueber-uns"),
+    url: absoluteUrl("/warum-kovali"),
     knowsLanguage: ["de", "fr", "en"],
     hasCredential: company.certifications.map((c) => ({
       "@type": "EducationalOccupationalCredential",
@@ -172,7 +178,8 @@ export function articleJsonLd(article: Article, path: string) {
     inLanguage: site.locale,
     keywords: article.keyword,
     articleSection: article.category,
-    author: { "@id": PERSON_ID, "@type": "Person", name: company.founder.name },
+    // The organisation until Ferhat Demir approves a personal byline (spec 3.10 and 7.19).
+    author: { "@type": "Organization", "@id": ORG_ID, name: site.brand, url: absoluteUrl("/") },
     publisher: { "@id": ORG_ID },
     image: absoluteUrl("/opengraph-image.png"),
   };

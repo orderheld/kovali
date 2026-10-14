@@ -9,15 +9,14 @@ export const article: Article = {
   keyword: "Unterschied Business Analysis Requirements Engineering",
   category: "Grundlagen",
   publishedAt: "2026-10-13",
-  readingMinutes: 5,
   excerpt:
-    "Business Analysis und Requirements Engineering werden oft gleichgesetzt, setzen aber unterschiedliche Schwerpunkte. Der Beitrag vergleicht beide Disziplinen und zeigt, was das für die Besetzung von Projekten bedeutet.",
+    "Business Analysis und Requirements Engineering werden oft gleichgesetzt, setzen aber unterschiedliche Schwerpunkte. Der Beitrag vergleicht beide Disziplinen und zeigt, was das für die Planung von Projekten bedeutet.",
   relatedServices: ["business-analysis", "test-management"],
   blocks: [
     { type: "h2", id: "gemeinsamer-kern", text: "Zwei Disziplinen mit gemeinsamem Kern" },
     {
       type: "p",
-      text: "Business Analysis und Requirements Engineering werden in Stellenausschreibungen und Projektplänen oft synonym verwendet. Beide befassen sich mit Anforderungen, beide verlangen Gesprächsführung, Modellierung und präzises Formulieren. Trotzdem setzen sie unterschiedliche Schwerpunkte. Wer diese kennt, kann Rollen gezielter besetzen und Lücken im Projekt vermeiden.",
+      text: "Business Analysis und Requirements Engineering werden in Stellenausschreibungen und Projektplänen oft synonym verwendet. Beide befassen sich mit Anforderungen, beide verlangen Gesprächsführung, Modellierung und präzises Formulieren. Trotzdem setzen sie unterschiedliche Schwerpunkte. Wer diese kennt, kann Aufgaben im Projekt gezielter vergeben und Lücken vermeiden.",
     },
     {
       type: "p",
@@ -93,13 +92,13 @@ export const article: Article = {
     },
     {
       type: "p",
-      text: "Relevant wird die Unterscheidung, wenn ein Vorhaben gezielt besetzt werden soll. Ist noch offen, ob und welche Lösung gebraucht wird, liegt der Schwerpunkt auf Business Analysis. Steht die Lösung fest und braucht es eine präzise, prüfbare Grundlage für Entwicklung, Lieferanten oder eine Ausschreibung, liegt er auf Requirements Engineering.",
+      text: "Relevant wird die Unterscheidung, wenn Sie Aufgaben in einem Vorhaben vergeben. Ist noch offen, ob und welche Lösung gebraucht wird, liegt der Schwerpunkt auf Business Analysis. Steht die Lösung fest und braucht es eine präzise, prüfbare Grundlage für Entwicklung, Lieferanten oder eine Ausschreibung, liegt er auf Requirements Engineering.",
     },
     {
       type: "p",
       text: "Fehlt eine der beiden Perspektiven, zeigt sich das meist erst spät. Ohne Business Analysis wird unter Umständen eine Lösung sehr präzise spezifiziert, die das eigentliche Problem nicht löst. Ohne Requirements Engineering ist das Ziel zwar klar, doch unscharfe Anforderungen führen in Entwicklung, Test und Abnahme zu Rückfragen und Nacharbeit.",
     },
-    { type: "h3", text: "Hinweise für die Besetzung" },
+    { type: "h3", text: "Hinweise für die Planung" },
     {
       type: "ul",
       items: [
@@ -118,7 +117,7 @@ export const article: Article = {
     { type: "h2", id: "unterstuetzung", text: "Unterstützung in beiden Disziplinen" },
     {
       type: "p",
-      text: "Viele Vorhaben brauchen beide Perspektiven, oft in wechselnder Gewichtung über die Projektlaufzeit. KOVALI bietet [Business Analysis](/leistungen/business-analysis) und [Requirements Engineering](/leistungen/requirements-engineering) als eigenständige Leistungen an, die sich kombinieren lassen. Der Beitrag [Was macht ein Business Analyst?](/insights/was-macht-ein-business-analyst) beschreibt, welche Aufgaben die Rolle im Alltag umfasst. Für eine Einschätzung Ihres Vorhabens erreichen Sie uns über die [Kontaktseite](/kontakt).",
+      text: "Viele Vorhaben brauchen beide Perspektiven, oft in wechselnder Gewichtung über die Projektlaufzeit. KOVALI bietet beides als eine Disziplin an: [Business Analysis & Requirements Engineering](/leistungen/business-analysis). Der Beitrag [Was macht ein Business Analyst?](/insights/was-macht-ein-business-analyst) beschreibt, welche Aufgaben die Rolle im Alltag umfasst. Für eine Einschätzung Ihres Vorhabens erreichen Sie uns über die [Kontaktseite](/kontakt).",
     },
   ],
 };

@@ -29,7 +29,10 @@ export const profileSchema = z.object({
   ),
   focus: z.enum(values(focusOptions), { error: "Bitte wählen Sie Ihren Schwerpunkt." }),
   availability: z.preprocess(blankToUndefined, z.enum(values(availabilityOptions)).optional()),
-  engagement: z.preprocess(blankToUndefined, z.enum(values(engagementOptions)).optional()),
+  engagement: z.preprocess(
+    blankToUndefined,
+    z.enum(values(engagementOptions), { error: "Bitte wählen Sie, über welche Firma Sie mit KOVALI zusammenarbeiten." }),
+  ),
   profileUrl: z.preprocess(
     blankToUndefined,
     z
