@@ -1,4 +1,4 @@
-import { formatChf, formatNumber, formatPercent } from "./format";
+import { formatChf, formatNumber, formatPercent, formatRate } from "./format";
 import {
   holidaySupplement,
   OFFICIAL_RATES,
@@ -966,11 +966,8 @@ export function modelLabel(billing: string, rateBasis?: string | null): string {
   return rateBasis === "kostensatz" ? "Lohn, Kostensatz" : "Lohn, brutto";
 }
 
-/** "CHF 120.00 / h" or "CHF 1’000.00 / Tag". */
-export function formatRate(amount: number | null | undefined, unit: string | null | undefined): string {
-  if (amount === null || amount === undefined) return "–";
-  return `${formatChf(amount)} / ${unit === "tag" ? "Tag" : "h"}`;
-}
+/** "CHF 120.00 pro Stunde", short "CHF 120 / h" (shared with the vacancies, see format.ts). */
+export { formatRate };
 
 /** "158.2 Stunden pro Monat" for hints. */
 export function formatHours(hours: number): string {

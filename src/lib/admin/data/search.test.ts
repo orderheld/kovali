@@ -3,6 +3,7 @@ import type { SQL } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { contractSearchWhere } from "../contracts/data";
 import { companySearchWhere } from "./companies";
+import { mandateSearchWhere } from "./mandates";
 import { assignmentSearchWhere, contactSearchWhere, documentSearchWhere, excerpt, parseDisplayNumber, phoneVariants, snippetSearchWhere } from "./search";
 import { everyWord, wordPatterns } from "./words";
 
@@ -89,9 +90,12 @@ describe("word-wise search conditions", () => {
 
   it("requires every word somewhere in the snippet", () => {
     const q = render(snippetSearchWhere("GHR Kurzprofil"))!;
-    expect(q.params).toEqual(["%GHR%", "%GHR%", "%GHR%", "%Kurzprofil%", "%Kurzprofil%", "%Kurzprofil%"]);
-    expect(q.sql).toContain('"snippets"."body" ilike $3');
+    expect(q.params).toEqual(["%GHR%", "%GHR%", "%GHR%", "%GHR%", "%Kurzprofil%", "%Kurzprofil%", "%Kurzprofil%", "%Kurzprofil%"]);
+    expect(q.sql).toContain('"snippets"."body" ilike $2');
+    expect(q.sql).toContain('"companies"."name" ilike $4');
     expect(q.sql).toMatch(/\) and \(/);
+    expect(q.sql).not.toContain('"snippets"."id" =');
+    expect(render(snippetSearchWhere("T-0004"))!.params).toContain(4);
     expect(snippetSearchWhere("  ")).toBeUndefined();
   });
 
@@ -102,6 +106,16 @@ describe("word-wise search conditions", () => {
     const byText = render(assignmentSearchWhere("Muster Bank"))!;
     expect(byText.sql).toContain('"companies"."name" ilike');
     expect(byText.sql).not.toContain('"assignments"."id" =');
+  });
+
+  it("matches vacancies word by word, also in skills and by number", () => {
+    const q = render(mandateSearchWhere("SAP Basel"))!;
+    expect(q.sql).toMatch(/\) and \(/);
+    expect(q.sql).toContain("array_to_string");
+    expect(q.params.filter((p) => p === "%Basel%")).toHaveLength(7);
+    expect(q.sql).not.toContain('"mandates"."id" =');
+    expect(render(mandateSearchWhere("M-0007"))!.params).toContain(7);
+    expect(mandateSearchWhere("")).toBeUndefined();
   });
 
   it("searches documents by file name and kind, only those of a known record", () => {

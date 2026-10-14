@@ -46,6 +46,11 @@ export function addDaysIso(iso: string, days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+/** Calendar days from `from` to `to` (YYYY-MM-DD); negative when `to` is earlier. */
+export function daysBetweenIso(from: string, to: string): number {
+  return Math.round((Date.parse(`${to}T12:00:00Z`) - Date.parse(`${from}T12:00:00Z`)) / 86_400_000);
+}
+
 /** Adds calendar months to a YYYY-MM-DD date; the 31st becomes the last day of a shorter month. */
 export function addMonthsIso(iso: string, months: number): string {
   const d = new Date(`${iso}T12:00:00Z`);
@@ -65,6 +70,16 @@ const pct = new Intl.NumberFormat("de-CH", { maximumFractionDigits: 2 });
 export function formatChf(amount: number | null | undefined, opts: { round?: boolean } = {}): string {
   if (amount === null || amount === undefined || Number.isNaN(amount)) return "–";
   return `CHF ${(opts.round ? chfRound : chf).format(amount)}`;
+}
+
+/**
+ * A rate per hour or day: "CHF 125.00 pro Stunde"; short "CHF 125 / h" or "CHF 1’100 / Tag"
+ * (whole francs without decimals) for tiles and tables.
+ */
+export function formatRate(amount: number | null | undefined, unit: string | null | undefined, short = false): string {
+  if (amount === null || amount === undefined) return "–";
+  const per = unit === "tag" ? (short ? "/ Tag" : "pro Tag") : short ? "/ h" : "pro Stunde";
+  return `${formatChf(amount, { round: short && Number.isInteger(amount) })} ${per}`;
 }
 
 export function formatNumber(value: number | null | undefined, digits = 2): string {

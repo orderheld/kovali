@@ -76,7 +76,7 @@ async function systemInfo() {
 }
 
 const settingLabels: Record<string, string> = {
-  rechner_defaults: "Eigene Werte des Lohnrechners",
+  rechner_defaults: "Werte des früheren Lohnrechners (nicht mehr verwendet)",
   einkommen: "Ansätze für Einkommen und Kosten",
   admin_totp_last_step: "Zuletzt verwendeter Zwei-Faktor-Code (Schutz vor Wiederverwendung)",
 };

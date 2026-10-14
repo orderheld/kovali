@@ -104,7 +104,7 @@ export default async function AssignmentsPage({ searchParams }: PageProps<"/admi
                       ) : null}
                     </Td>
                     <Td align="right" className="whitespace-nowrap">
-                      {formatRate(a.rateAmount, a.rateUnit)}
+                      {formatRate(a.rateAmount, a.rateUnit, true)}
                       <span className="block text-xs text-slate">Pensum {a.workload} %</span>
                     </Td>
                     <Td className="whitespace-nowrap">{modelLabel(a.billing, a.rateBasis)}</Td>

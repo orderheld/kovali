@@ -172,6 +172,8 @@ describe.skipIf(!url)("assignments, earnings settings and dashboard (database)",
   it("collects the dashboard figures", async () => {
     const data = await import("@/lib/admin/data/dashboard");
     const { runningAssignments } = await import("@/lib/admin/data/assignments");
+    const { listEndingContracts } = await import("@/lib/admin/contracts/data");
+    const { pinnedSnippets } = await import("@/lib/admin/data/snippets");
     const today = "2026-10-14";
 
     await client.query("delete from activities; delete from contracts; delete from assignments; delete from mandates; delete from snippets;");
@@ -203,9 +205,9 @@ describe.skipIf(!url)("assignments, earnings settings and dashboard (database)",
          ('V-4', 'Schon vorbei', 'unterzeichnet', '2026-10-01'),
          ('V-5', 'Hinfällig', 'storniert', '2026-11-01')`,
     );
-    expect((await data.endingContracts(today)).map((c) => c.number)).toEqual(["V-2", "V-1"]);
+    expect((await listEndingContracts(today)).map((c) => c.number)).toEqual(["V-2", "V-1"]);
 
     await client.query("insert into snippets (title, body, pinned) values ('Kurzprofil', 'Text A', true), ('Anschreiben', 'Text B', false)");
-    expect((await data.pinnedSnippets()).map((s) => s.title)).toEqual(["Kurzprofil"]);
+    expect((await pinnedSnippets(6)).map((s) => s.title)).toEqual(["Kurzprofil"]);
   });
 });

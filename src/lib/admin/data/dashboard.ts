@@ -1,18 +1,20 @@
 import "server-only";
-import { and, asc, count, desc, eq, gte, inArray, isNotNull, isNull, lte, notInArray } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, inArray, isNotNull, isNull, lte } from "drizzle-orm";
 import { getDb } from "../db/client";
 import { activities, assignments, companies, contracts, mandates, snippets } from "../db/schema";
 import { addDaysIso, displayNo, todayIso } from "../format";
 import { openMandateStatuses } from "../options";
 
-/** Figures and lists for the dashboard (/admin), queried directly from the tables. */
+/**
+ * Figures and lists for the dashboard (/admin), queried directly from the tables. Contracts
+ * ending soon come from contracts/data.ts (listEndingContracts), pinned snippets from
+ * data/snippets.ts (pinnedSnippets).
+ */
 
 /** Next steps due within this many days are shown (overdue ones always). */
 export const NEXT_STEP_DAYS = 7;
 /** Application deadlines within this many days are shown. */
 export const DEADLINE_DAYS = 7;
-/** Contracts whose validity ends within this many days are shown. */
-export const CONTRACT_END_DAYS = 60;
 
 /** Vacancy next steps due by today + 7 days (overdue ones first) and deadlines in the next 7 days. */
 export async function dashboardAgenda(today = todayIso()) {
@@ -105,44 +107,6 @@ export async function vacancyPipeline(): Promise<Record<string, number>> {
   const db = await getDb();
   const rows = await db.select({ status: mandates.status, n: count() }).from(mandates).groupBy(mandates.status);
   return Object.fromEntries(rows.map((r) => [r.status, r.n]));
-}
-
-/** Contracts that are not finished or void and whose validity ends between today and today + 60 days. */
-export async function endingContracts(today = todayIso()) {
-  const db = await getDb();
-  return db
-    .select({
-      id: contracts.id,
-      number: contracts.number,
-      title: contracts.title,
-      status: contracts.status,
-      validUntil: contracts.validUntil,
-      noticePeriod: contracts.noticePeriod,
-      company: companies.name,
-    })
-    .from(contracts)
-    .leftJoin(companies, eq(companies.id, contracts.companyId))
-    .where(
-      and(
-        notInArray(contracts.status, ["beendet", "storniert"]),
-        gte(contracts.validUntil, today),
-        lte(contracts.validUntil, addDaysIso(today, CONTRACT_END_DAYS)),
-      ),
-    )
-    .orderBy(asc(contracts.validUntil), asc(contracts.id))
-    .limit(10);
-}
-
-/** Pinned snippets with their company, to copy straight from the dashboard. */
-export async function pinnedSnippets(limit = 6) {
-  const db = await getDb();
-  return db
-    .select({ id: snippets.id, title: snippets.title, category: snippets.category, body: snippets.body, company: companies.name })
-    .from(snippets)
-    .leftJoin(companies, eq(companies.id, snippets.companyId))
-    .where(eq(snippets.pinned, true))
-    .orderBy(desc(snippets.updatedAt), desc(snippets.id))
-    .limit(limit);
 }
 
 export type NextBestStep =

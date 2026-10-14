@@ -2,7 +2,7 @@ import "server-only";
 import { and, asc, count, desc, eq, ilike, or, sql, type SQL } from "drizzle-orm";
 import { getDb } from "../db/client";
 import { assignments, companies, contacts, contracts, documents, mandates } from "../db/schema";
-import { likePattern } from "./query";
+import { everyWord } from "./words";
 
 /** Queries of the assignments (Aufträge): list, detail, linked contracts, prefill from a vacancy. */
 
@@ -31,20 +31,24 @@ const listColumns = {
 export type AssignmentListRow = Awaited<ReturnType<typeof listAssignments>>[number];
 
 /**
- * Search text condition: title, end client, company, location and "A-0003" / "a3" for the
- * display number. The query must left-join companies on assignments.company_id.
+ * Search text condition, word by word: every word in title, end client, location, notes or the
+ * company's name; "A-0003" or "a3" also finds the assignment by its display number. The list
+ * and the global search (/admin/suche) both use it. The query must left-join companies on
+ * assignments.company_id.
  */
 export function assignmentSearchWhere(q: string | null | undefined): SQL | undefined {
-  const pattern = likePattern(q);
-  if (!pattern) return undefined;
-  const number = /^a-?0*(\d{1,9})$/i.exec(q?.trim() ?? "");
-  return or(
-    ilike(assignments.title, pattern),
-    ilike(assignments.endClient, pattern),
-    ilike(assignments.location, pattern),
-    ilike(companies.name, pattern),
-    number ? eq(assignments.id, Number(number[1])) : undefined,
+  const words = everyWord(q, (pattern) =>
+    or(
+      ilike(assignments.title, pattern),
+      ilike(assignments.endClient, pattern),
+      ilike(assignments.location, pattern),
+      ilike(assignments.notes, pattern),
+      ilike(companies.name, pattern),
+    ),
   );
+  if (!words) return undefined;
+  const number = /^a\s*-?\s*0*(\d{1,9})$/i.exec(q?.trim() ?? "");
+  return number ? or(words, eq(assignments.id, Number(number[1]))) : words;
 }
 
 /** Running ones by end date, planned ones by start, finished ones newest first. */

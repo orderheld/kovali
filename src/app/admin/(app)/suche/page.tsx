@@ -145,7 +145,7 @@ export default async function SearchPage({ searchParams }: PageProps<"/admin/suc
           </p>
 
           {results.assignments.total ? (
-            <Group id="auftraege" title="Aufträge" icon={Briefcase} total={results.assignments.total}>
+            <Group id="auftraege" title="Aufträge" icon={Briefcase} total={results.assignments.total} moreHref={listHref("/admin/auftraege", { q, status: "alle" })}>
               {results.assignments.rows.map((a) => (
                 <Row key={a.id} href={`/admin/auftraege/${a.id}`}>
                   <Line title={a.title}>
@@ -187,7 +187,7 @@ export default async function SearchPage({ searchParams }: PageProps<"/admin/suc
           ) : null}
 
           {results.snippets.total ? (
-            <Group id="texte" title="Textbausteine" icon={TextQuote} total={results.snippets.total}>
+            <Group id="texte" title="Textbausteine" icon={TextQuote} total={results.snippets.total} moreHref={listHref("/admin/texte", { q })}>
               {results.snippets.rows.map((t) => (
                 <li key={t.id} className="flex items-start gap-3 px-5 py-3 text-sm">
                   <Link href={`/admin/texte/${t.id}`} className="group min-w-0 flex-1">
@@ -195,6 +195,7 @@ export default async function SearchPage({ searchParams }: PageProps<"/admin/suc
                       <span className="font-medium text-ink group-hover:text-blue group-hover:underline">{t.title}</span>
                       <Mono>{displayNo.snippet(t.id)}</Mono>
                       {t.category ? <Badge>{t.category}</Badge> : null}
+                      {t.company ? <span className="text-xs text-slate">{t.company}</span> : null}
                     </span>
                     <span className="mt-1 block text-[0.8125rem] text-slate">{t.excerpt}</span>
                   </Link>

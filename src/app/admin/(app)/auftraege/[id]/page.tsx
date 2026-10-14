@@ -111,7 +111,7 @@ export default async function AssignmentPage({ params }: PageProps<"/admin/auftr
                 <div className="grid gap-3 px-5 pt-4 sm:grid-cols-2 2xl:grid-cols-4">
                   <StatTile
                     label={a.billing === "lohn" ? (a.rateBasis === "kostensatz" ? "Kostensatz" : "Satz all-in") : "Satz ohne MWST"}
-                    value={formatRate(a.rateAmount, a.rateUnit)}
+                    value={formatRate(a.rateAmount, a.rateUnit, true)}
                     hint={a.rateUnit === "tag" ? `${formatChf(earnings.revenue.hourly)} pro Stunde` : a.billing === "lohn" ? "Lohn über Payroll" : "Rechnung über die Einzelfirma"}
                   />
                   <StatTile label="Einnahmen pro Monat" value={formatChf(earnings.revenue.month, { round: true })} hint={`${formatChf(earnings.revenue.year, { round: true })} pro Jahr`} />

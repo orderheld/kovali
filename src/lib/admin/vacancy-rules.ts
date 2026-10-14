@@ -1,4 +1,4 @@
-import { formatChf } from "./format";
+import { daysBetweenIso, formatRate } from "./format";
 import { mandateStatuses, openMandateStatuses, type Tone } from "./options";
 
 /**
@@ -100,17 +100,13 @@ export interface Due {
 /** Dates up to this many days ahead count as due soon (amber). */
 export const SOON_DAYS = 3;
 
-function daysBetween(from: string, to: string): number {
-  return Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000);
-}
-
 /**
  * How pressing a date (YYYY-MM-DD) is compared with today. Null without a date or when the
  * vacancy is no longer worked on: an old next step of a closed vacancy needs no attention.
  */
 export function dueState(date: string | null | undefined, today: string, active = true): Due | null {
   if (!date || !active) return null;
-  const days = daysBetween(today, date);
+  const days = daysBetweenIso(today, date);
   if (days < 0) return { level: "overdue", days, label: `${-days} ${days === -1 ? "Tag" : "Tage"} überfällig` };
   if (days === 0) return { level: "today", days, label: "heute" };
   if (days <= SOON_DAYS) return { level: "soon", days, label: days === 1 ? "morgen" : `in ${days} Tagen` };
@@ -188,12 +184,8 @@ export function quickActions(status: string, appliedAt: string | null): QuickAct
 
 // --- Display --------------------------------------------------------------------
 
-/** "CHF 125.00 pro Stunde", short "CHF 125 / h". */
-export function formatRate(amount: number | null | undefined, unit: string | null | undefined, short = false): string {
-  if (amount === null || amount === undefined) return "–";
-  const per = unit === "tag" ? (short ? "/ Tag" : "pro Tag") : short ? "/ h" : "pro Stunde";
-  return `${formatChf(amount, { round: short && Number.isInteger(amount) })} ${per}`;
-}
+/** "CHF 125.00 pro Stunde", short "CHF 125 / h" (shared with the assignments, see format.ts). */
+export { formatRate };
 
 /** Link to the calculator with the posted rate, or null without a rate. */
 export function rechnerHref(v: { rateSell: number | null; rateUnit: string | null; workload: number | null }): string | null {

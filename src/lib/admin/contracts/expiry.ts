@@ -1,3 +1,4 @@
+import { daysBetweenIso } from "../format";
 import type { Tone } from "../options";
 
 /**
@@ -14,11 +15,7 @@ export const closedContractStatuses = ["beendet", "storniert"] as const;
 export type ContractExpiry = { state: "ending"; days: number } | { state: "expired"; days: number } | null;
 
 /** Whole days from `from` to `to` (negative when `to` lies before `from`). */
-export function daysBetween(from: string, to: string): number {
-  const a = Date.parse(`${from}T00:00:00Z`);
-  const b = Date.parse(`${to}T00:00:00Z`);
-  return Math.round((b - a) / 86_400_000);
-}
+export const daysBetween = daysBetweenIso;
 
 export function contractExpiry(
   contract: { status: string; validUntil: string | null },

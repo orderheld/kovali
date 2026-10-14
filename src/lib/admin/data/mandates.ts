@@ -5,7 +5,8 @@ import { activities, assignments, companies, contacts, contracts, documents, man
 import { addDaysIso, todayIso } from "../format";
 import { mandateStatuses, openMandateStatuses } from "../options";
 import { statusChange } from "../vacancy-rules";
-import { likePattern, PAGE_SIZE } from "./query";
+import { PAGE_SIZE } from "./query";
+import { everyWord } from "./words";
 
 /**
  * Vacancies (Vakanzen, table mandates): list, counts, due next steps, detail, and the writes
@@ -24,20 +25,22 @@ export interface MandateFilter {
  * left-join companies on mandates.company_id.
  */
 export function mandateSearchWhere(q: string | null | undefined): SQL | undefined {
-  const pattern = likePattern(q);
-  if (!pattern) return undefined;
-  // "M-0007" or "m7" finds the vacancy by its display number.
-  const number = /^m-?0*(\d{1,9})$/i.exec(q?.trim() ?? "");
-  return or(
-    ilike(mandates.title, pattern),
-    ilike(mandates.reference, pattern),
-    ilike(mandates.endClient, pattern),
-    ilike(mandates.description, pattern),
-    ilike(mandates.location, pattern),
-    sql`array_to_string(${mandates.requiredSkills}, ' ') ilike ${pattern}`,
-    ilike(companies.name, pattern),
-    number ? eq(mandates.id, Number(number[1])) : undefined,
+  // Every word has to occur somewhere: "SAP Basel" finds an SAP vacancy in Basel.
+  const words = everyWord(q, (pattern) =>
+    or(
+      ilike(mandates.title, pattern),
+      ilike(mandates.reference, pattern),
+      ilike(mandates.endClient, pattern),
+      ilike(mandates.description, pattern),
+      ilike(mandates.location, pattern),
+      sql`array_to_string(${mandates.requiredSkills}, ' ') ilike ${pattern}`,
+      ilike(companies.name, pattern),
+    ),
   );
+  if (!words) return undefined;
+  // "M-0007" or "m7" finds the vacancy by its display number.
+  const number = /^m\s*-?\s*0*(\d{1,9})$/i.exec(q?.trim() ?? "");
+  return number ? or(words, eq(mandates.id, Number(number[1]))) : words;
 }
 
 function filterWhere({ q, companyId, priority }: MandateFilter): SQL | undefined {

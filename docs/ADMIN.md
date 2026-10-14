@@ -53,10 +53,12 @@ Lokal: `.env.local` mit denselben Variablen (eine lokale Postgres-Datenbank gen�
 | `src/proxy.ts` | Vorab-Check: ohne Sitzungs-Cookie Weiterleitung zum Login. Die echte Prüfung passiert in jeder Seite und Action. |
 | `src/app/admin/login`, `einrichtung` | Öffentlich erreichbar. |
 | `src/app/admin/(app)/` | Alles hinter dem Login. `layout.tsx` prüft die Sitzung und zeigt die Navigation. |
-| `src/app/admin/(app)/_shared/` | Notizen (`ActivityFeed`), Dokumente (`DocumentsCard`), Suchfeld, gemeinsame Actions. |
+| `src/app/admin/(app)/_shared/` | Notizen (`ActivityFeed`), Dokumente (`DocumentsCard`), Aufschlüsselung des Einkommens (`EarningsBreakdown`), Suchfeld, gemeinsame Actions. |
 | `src/app/admin/api/dokumente/[id]` | Download eines Dokuments. |
-| `src/lib/admin/` | Daten und Logik ohne UI: `db/` (Schema, Migrationen, Client), `auth/`, `crypto.ts`, `documents.ts`, `options.ts`, `owner.ts`, `format.ts`, `forms.ts`, `payroll.ts`, `data/` (Abfragen). |
-| `src/components/admin/` | `ui.tsx` (Bausteine), `form.tsx` (Formulare), `copy-button.tsx`, `shell.tsx` (Navigation). |
+| `src/lib/admin/` | Daten und Logik ohne UI: `db/` (Schema, Migrationen, Client), `auth/`, `crypto.ts`, `documents.ts`, `options.ts`, `owner.ts`, `format.ts`, `forms.ts`, `data/` (Abfragen je Modul, Suche, Übersicht). |
+| `src/lib/admin/earnings.ts` | Einkommensrechnung für Übersicht, Aufträge und Rechner (rein, mit Tests). Standardwerte mit Quellen und Stand; Ferhats Werte stehen unter dem Einstellungs-Schlüssel `einkommen` (`earnings-settings.ts`). Lohnabzüge kommen aus `payroll.ts`. |
+| `src/lib/admin/vacancy-rules.ts`, `texts.ts`, `contracts/` | Regeln der Vakanzen (Status, Fälligkeit), Textbausteine und Verträge (Nummern, Ablauf, Verknüpfungen). |
+| `src/components/admin/` | `ui.tsx` (Bausteine), `form.tsx` (Formulare), `long-text-field.tsx` (langer Text mit Zeichenzahl und Textbausteinen), `copy-button.tsx`, `shell.tsx` (Navigation). |
 
 Datenmodell (Migration `0004_personal_admin`): `assignments` (Aufträge), `mandates` (Vakanzen; Tabelle, Export und Owner-Typ heissen aus historischen Gründen «mandate»), `contracts` (Ablage; `template` ist die Vertragsart), `snippets` (Textbausteine), `companies`, `contacts`, `documents` und `activities` (je mit genau einem bzw. mindestens einem Bezug: Firma, Vakanz, Vertrag oder Auftrag). Die Tabellen des früheren Kandidatenmoduls hat 0004 nur gelöscht, wenn nie ein Kandidat gespeichert war; sonst liegen sie unbenutzt in der Datenbank (Hinweis unter Einstellungen → System).
 

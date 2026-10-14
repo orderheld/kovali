@@ -5,10 +5,15 @@ import { getDb } from "../db/client";
 import { assignments, companies, contacts, contracts, documents, mandates, snippets } from "../db/schema";
 import { displayNo } from "../format";
 import { documentKinds } from "../options";
+import { assignmentSearchWhere } from "./assignments";
 import { companySearchWhere } from "./companies";
 import { mandateSearchWhere } from "./mandates";
 import { likePattern } from "./query";
+import { snippetSearchWhere } from "./snippets";
 import { everyWord } from "./words";
+
+// The lists of the modules use the same conditions; re-exported for the tests.
+export { assignmentSearchWhere, snippetSearchWhere };
 
 /**
  * Global search of the admin area (/admin/suche). A display number such as A-0003, M-0007 or
@@ -122,31 +127,6 @@ export async function resolveJump(target: JumpTarget): Promise<string | null> {
 }
 
 /**
- * Assignments: every word in title, end client, location, notes or the company's name; "A-3"
- * also finds the assignment by its number. The query must left-join companies on
- * assignments.company_id.
- */
-export function assignmentSearchWhere(q: string | null | undefined): SQL | undefined {
-  const words = everyWord(q, (pattern) =>
-    or(
-      ilike(assignments.title, pattern),
-      ilike(assignments.endClient, pattern),
-      ilike(assignments.location, pattern),
-      ilike(assignments.notes, pattern),
-      ilike(companies.name, pattern),
-    ),
-  );
-  if (!words) return undefined;
-  const number = /^a\s*-?\s*0*(\d{1,9})$/i.exec(q?.trim() ?? "");
-  return number ? or(words, eq(assignments.id, Number(number[1]))) : words;
-}
-
-/** Text snippets: every word in title, category or the text itself. */
-export function snippetSearchWhere(q: string | null | undefined): SQL | undefined {
-  return everyWord(q, (pattern) => or(ilike(snippets.title, pattern), ilike(snippets.category, pattern), ilike(snippets.body, pattern)));
-}
-
-/**
  * Documents by file name, or by kind ("Lohnabrechnung" finds all payslips). Only documents of
  * a company, vacancy, contract or assignment: files of the former candidate module, still
  * stored when candidates existed, belong to none of them and stay out of the search.
@@ -212,8 +192,8 @@ export async function searchAll(input: string) {
   if (!likePattern(input)) return null;
   const db = await getDb();
 
-  // Vacancies, contracts and companies use the same condition as their lists, so "Alle
-  // anzeigen" there shows these hits.
+  // Every group uses the same condition as its module's list, so "Alle anzeigen" there shows
+  // these hits.
   const mandateWhere = mandateSearchWhere(input);
   const contractWhere = contractSearchWhere(input);
   const companyWhere = companySearchWhere(input);
@@ -278,12 +258,13 @@ export async function searchAll(input: string) {
     ),
     group(
       db
-        .select({ id: snippets.id, title: snippets.title, category: snippets.category, body: snippets.body, pinned: snippets.pinned })
+        .select({ id: snippets.id, title: snippets.title, category: snippets.category, body: snippets.body, pinned: snippets.pinned, company: companies.name })
         .from(snippets)
+        .leftJoin(companies, eq(companies.id, snippets.companyId))
         .where(snippetWhere)
         .orderBy(desc(snippets.pinned), asc(sql`lower(${snippets.title})`), asc(snippets.id))
         .limit(SEARCH_GROUP_LIMIT),
-      db.select({ n: count() }).from(snippets).where(snippetWhere),
+      db.select({ n: count() }).from(snippets).leftJoin(companies, eq(companies.id, snippets.companyId)).where(snippetWhere),
     ),
     group(
       db

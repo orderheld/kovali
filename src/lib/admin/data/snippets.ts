@@ -2,7 +2,7 @@ import "server-only";
 import { and, asc, count, desc, eq, ilike, isNotNull, or, sql, type SQL } from "drizzle-orm";
 import { getDb } from "../db/client";
 import { companies, snippets } from "../db/schema";
-import { likePattern } from "./query";
+import { everyWord } from "./words";
 
 /** Textbausteine: reusable texts with a category, an optional company and a pinned flag. */
 
@@ -16,20 +16,17 @@ export interface SnippetFilter {
 }
 
 /**
- * Search condition for snippets: title, text, category, company or "T-0004". The query must
- * left-join companies on snippets.company_id.
+ * Search condition for snippets, word by word: every word in title, text, category or the
+ * company's name; "T-0004" also finds the snippet by its number. The list and the global
+ * search (/admin/suche) both use it. The query must left-join companies on snippets.company_id.
  */
 export function snippetSearchWhere(q: string | null | undefined): SQL | undefined {
-  const pattern = likePattern(q);
-  if (!pattern) return undefined;
-  const number = /^t-?0*(\d{1,9})$/i.exec(q?.trim() ?? "");
-  return or(
-    ilike(snippets.title, pattern),
-    ilike(snippets.body, pattern),
-    ilike(snippets.category, pattern),
-    ilike(companies.name, pattern),
-    number ? eq(snippets.id, Number(number[1])) : undefined,
+  const words = everyWord(q, (pattern) =>
+    or(ilike(snippets.title, pattern), ilike(snippets.body, pattern), ilike(snippets.category, pattern), ilike(companies.name, pattern)),
   );
+  if (!words) return undefined;
+  const number = /^t\s*-?\s*0*(\d{1,9})$/i.exec(q?.trim() ?? "");
+  return number ? or(words, eq(snippets.id, Number(number[1]))) : words;
 }
 
 const columns = {

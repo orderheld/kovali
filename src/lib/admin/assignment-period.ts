@@ -1,12 +1,9 @@
-import { formatDate } from "./format";
+import { daysBetweenIso, formatDate } from "./format";
 import type { Tone } from "./options";
 
 /** Period of an assignment relative to today: remaining days, start, overdue end date. Pure. */
 
-/** Calendar days from `from` to `to` (YYYY-MM-DD); negative when `to` is earlier. */
-export function daysBetweenIso(from: string, to: string): number {
-  return Math.round((Date.parse(`${to}T12:00:00Z`) - Date.parse(`${from}T12:00:00Z`)) / 86_400_000);
-}
+export { daysBetweenIso };
 
 const days = (n: number) => (n === 1 ? "1 Tag" : `${n} Tage`);
 const inDays = (n: number) => (n === 1 ? "morgen" : `in ${n} Tagen`);

@@ -85,7 +85,7 @@ export default async function NewAssignmentPage({ searchParams }: PageProps<"/ad
           contacts={contacts}
           vacancies={vacancies}
           settings={settings}
-          cancelHref={prefill ? `/admin/vakanzen/${prefill.mandateId}` : "/admin/auftraege"}
+          cancelHref={prefill ? `/admin/vakanzen/${prefill.mandateId}` : values.companyId ? `/admin/firmen/${values.companyId}` : "/admin/auftraege"}
           submitLabel="Auftrag erfassen"
         />
       </div>

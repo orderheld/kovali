@@ -3,24 +3,18 @@ import Link from "next/link";
 import { ArrowRight, Briefcase, Calculator, CalendarClock, FileSignature, Pin, Plus, Settings2, Telescope, TextQuote } from "lucide-react";
 import { CopyButton } from "@/components/admin/copy-button";
 import { Badge, Card, CardBody, CardHeader, EmptyState, LinkButton, Mono, Notice, PageHeader, StatTile } from "@/components/admin/ui";
-import { daysBetweenIso, formatPeriod, periodStatus } from "@/lib/admin/assignment-period";
+import { formatPeriod, periodStatus } from "@/lib/admin/assignment-period";
 import { requireAdmin } from "@/lib/admin/auth/session";
+import { listEndingContracts } from "@/lib/admin/contracts/data";
+import { CONTRACT_ENDING_DAYS, contractExpiry, expiryLabel, expiryTone } from "@/lib/admin/contracts/expiry";
 import { runningAssignments } from "@/lib/admin/data/assignments";
-import {
-  CONTRACT_END_DAYS,
-  dashboardAgenda,
-  endingContracts,
-  NEXT_STEP_DAYS,
-  nextBestStep,
-  pinnedSnippets,
-  setupProgress,
-  vacancyPipeline,
-  type NextBestStep,
-} from "@/lib/admin/data/dashboard";
+import { dashboardAgenda, NEXT_STEP_DAYS, nextBestStep, setupProgress, vacancyPipeline, type NextBestStep } from "@/lib/admin/data/dashboard";
 import { loadEarningsSettings } from "@/lib/admin/data/earnings";
+import { pinnedSnippets } from "@/lib/admin/data/snippets";
 import { assignmentEarningsInput, computeEarnings, computeEarningsTotal, formatRate, modelLabel, type EarningsInput, type EarningsSettings } from "@/lib/admin/earnings";
 import { addDaysIso, displayNo, formatChf, formatDate, formatNumber, todayIso } from "@/lib/admin/format";
 import { labelOf, mandateStatuses, type Tone } from "@/lib/admin/options";
+import { dueState, dueTone } from "@/lib/admin/vacancy-rules";
 import { cn } from "@/lib/utils";
 import { EarningsBreakdown } from "./_shared/earnings-breakdown";
 
@@ -46,12 +40,10 @@ function longToday(now: Date): string {
   return new Intl.DateTimeFormat("de-CH", { timeZone: "Europe/Zurich", weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(now);
 }
 
-/** "überfällig", "heute", "morgen" or the date, with a matching colour. */
+/** "2 Tage überfällig", "heute", "morgen" or "in 5 Tagen", coloured as in the vacancy list. */
 function dueBadge(date: string, today: string): { label: string; tone: Tone } {
-  if (date < today) return { label: `überfällig seit ${formatDate(date)}`, tone: "red" };
-  if (date === today) return { label: "heute", tone: "amber" };
-  if (date === addDaysIso(today, 1)) return { label: "morgen", tone: "amber" };
-  return { label: formatDate(date), tone: "neutral" };
+  const due = dueState(date, today);
+  return { label: due?.label ?? formatDate(date), tone: dueTone(due) ?? "neutral" };
 }
 
 const money = (v: number) => formatChf(v, { round: true });
@@ -65,8 +57,8 @@ export default async function DashboardPage() {
     loadEarningsSettings(),
     dashboardAgenda(today),
     vacancyPipeline(),
-    endingContracts(today),
-    pinnedSnippets(),
+    listEndingContracts(today),
+    pinnedSnippets(6),
     setupProgress(),
   ]);
   const { settings, saved } = earningsSettings;
@@ -166,7 +158,7 @@ export default async function DashboardPage() {
                 <>
                   <div className="grid gap-3 px-5 pt-4 sm:grid-cols-2 xl:grid-cols-4">
                     {running.length === 1 ? (
-                      <StatTile label={rateLabel(running[0])} value={formatRate(running[0].rateAmount, running[0].rateUnit)} hint={modelLabel(running[0].billing, running[0].rateBasis)} />
+                      <StatTile label={rateLabel(running[0])} value={formatRate(running[0].rateAmount, running[0].rateUnit, true)} hint={modelLabel(running[0].billing, running[0].rateBasis)} />
                     ) : (
                       <StatTile label="Stunden pro Monat" value={formatNumber(total.hoursPerMonth, 1)} hint="alle Aufträge zusammen" />
                     )}
@@ -294,7 +286,7 @@ export default async function DashboardPage() {
               <CardHeader
                 icon={FileSignature}
                 title="Verträge, die bald enden"
-                description={`Laufzeit endet in den nächsten ${CONTRACT_END_DAYS} Tagen.`}
+                description={`Laufzeit endet in den nächsten ${CONTRACT_ENDING_DAYS} Tagen.`}
                 actions={
                   <LinkButton href="/admin/vertraege" size="sm" variant="ghost">
                     Alle Verträge
@@ -304,7 +296,7 @@ export default async function DashboardPage() {
               {contracts.length ? (
                 <ul className="divide-y divide-line">
                   {contracts.map((c) => {
-                    const days = c.validUntil ? daysBetweenIso(today, c.validUntil) : null;
+                    const expiry = contractExpiry(c, today);
                     return (
                       <li key={c.id}>
                         <Link href={`/admin/vertraege/${c.id}`} className="flex items-start gap-3 px-5 py-3 text-sm transition-colors hover:bg-mist/60">
@@ -312,11 +304,11 @@ export default async function DashboardPage() {
                             <span className="block font-medium text-ink">{c.title}</span>
                             <span className="block text-xs text-slate">
                               <Mono>{c.number}</Mono>
-                              {c.company ? `, ${c.company}` : ""}, bis {formatDate(c.validUntil)}
+                              {c.companyName ? `, ${c.companyName}` : ""}, bis {formatDate(c.validUntil)}
                               {c.noticePeriod ? `, Kündigungsfrist ${c.noticePeriod}` : ""}
                             </span>
                           </span>
-                          <Badge tone={days !== null && days <= 30 ? "amber" : "neutral"}>{days === 0 ? "endet heute" : days === 1 ? "endet morgen" : `noch ${days} Tage`}</Badge>
+                          {expiry ? <Badge tone={expiryTone(expiry)}>{expiryLabel(expiry)}</Badge> : null}
                         </Link>
                       </li>
                     );
@@ -347,7 +339,7 @@ export default async function DashboardPage() {
                         <Link href={`/admin/texte/${s.id}`} className="block text-sm font-medium text-ink hover:text-blue hover:underline">
                           {s.title}
                         </Link>
-                        {s.category || s.company ? <span className="block text-xs text-slate">{[s.category, s.company].filter(Boolean).join(", ")}</span> : null}
+                        {s.category || s.companyName ? <span className="block text-xs text-slate">{[s.category, s.companyName].filter(Boolean).join(", ")}</span> : null}
                         <span className="mt-1 line-clamp-2 block text-[0.8125rem] whitespace-pre-line text-slate">{s.body}</span>
                       </span>
                       <CopyButton value={s.body} />
@@ -418,7 +410,7 @@ function AssignmentRows({ rows, settings, today }: { rows: { a: RunningRow; inpu
                 <span className="block text-xs text-slate">{[a.companyName, a.endClient, `Pensum ${a.workload} %`].filter(Boolean).join(", ")}</span>
               </span>
               <span className="text-right whitespace-nowrap">
-                <span className="block text-ink">{formatRate(a.rateAmount, a.rateUnit)}</span>
+                <span className="block text-ink">{formatRate(a.rateAmount, a.rateUnit, true)}</span>
                 <span className="block text-xs text-slate">{modelLabel(a.billing, a.rateBasis)}</span>
               </span>
               {period ? <Badge tone={period.tone}>{period.text}</Badge> : null}
