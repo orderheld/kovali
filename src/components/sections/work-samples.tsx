@@ -18,13 +18,13 @@ export function WorkSamples({
   id = "arbeit",
   title = workSamples.title,
   text = workSamples.text,
-  traceDefectNote = "mobile",
+  traceDefectNote = "always",
 }: {
   id?: string;
   title?: string;
   text?: React.ReactNode;
-  /** Defect footnote of the traceability table; "mobile" when the hero test run shows it on lg. */
-  traceDefectNote?: "always" | "mobile" | "never";
+  /** Defect footnote of the traceability table. */
+  traceDefectNote?: "always" | "never";
 }) {
   const titleId = `${id}-title`;
   return (
