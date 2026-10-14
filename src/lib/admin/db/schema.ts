@@ -298,8 +298,14 @@ export const loginAttempts = pgTable(
     scope: text("scope").notNull(),
     ipHash: text("ip_hash").notNull(),
     success: boolean("success").notNull(),
+    /** "password": wrong password (or still being checked); "code": right password, wrong code. */
+    kind: text("kind").notNull().default("password"),
   },
-  (t) => [index("login_attempts_ip_at_idx").on(t.scope, t.ipHash, t.at), index("login_attempts_at_idx").on(t.scope, t.at)],
+  (t) => [
+    index("login_attempts_ip_at_idx").on(t.scope, t.ipHash, t.at),
+    index("login_attempts_at_idx").on(t.scope, t.at),
+    index("login_attempts_kind_at_idx").on(t.scope, t.kind, t.at),
+  ],
 );
 
 export const settings = pgTable("settings", {

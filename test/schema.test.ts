@@ -117,6 +117,13 @@ describe.skipIf(!url)("database schema", () => {
     expect((await client.query("select assignment_id from contracts where id = 1")).rows[0]).toEqual({ assignment_id: null });
   });
 
+  it("records the kind of a failed login", async () => {
+    await client.query("insert into login_attempts (scope, ip_hash, success) values ('admin', 'ip-1', false)");
+    expect((await client.query("select kind from login_attempts")).rows).toEqual([{ kind: "password" }]);
+    await client.query("update login_attempts set kind = 'code'");
+    await expect(client.query("update login_attempts set kind = 'otp'")).rejects.toThrow(/login_attempts_kind_check/);
+  });
+
   it("keeps stored candidates and their data, and still adds the new tables", async () => {
     await client.query("drop schema public cascade; create schema public;");
     for (const m of migrationsThrough("0003_consent_scope_contract_sent")) await client.query(m.sql);
@@ -128,9 +135,9 @@ describe.skipIf(!url)("database schema", () => {
       "insert into documents (candidate_id, kind, filename, mime_type, size_bytes, sha256, content) values (1, 'cv', 'cv.pdf', 'application/pdf', 1, 'x', '\\x00')",
     );
     await client.query("insert into login_attempts (scope, ip_hash, success) values ('portal', 'ip-1', false), ('admin', 'ip-2', false)");
-    const last = migrations[migrations.length - 1];
-    expect(last.id).toBe("0004_personal_admin");
-    await client.query(last.sql);
+    const personal = migrations.findIndex((m) => m.id === "0004_personal_admin");
+    expect(migrations[personal - 1].id).toBe("0003_consent_scope_contract_sent");
+    for (const m of migrations.slice(personal)) await client.query(m.sql);
 
     // The candidate data stays untouched.
     expect((await client.query("select first_name, last_name from candidates")).rows).toEqual([{ first_name: "Test", last_name: "Person" }]);

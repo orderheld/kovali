@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { KeyRound, Laptop, ShieldCheck, Smartphone } from "lucide-react";
 import { Badge, Card, CardBody, CardHeader, DescriptionList, LinkButton } from "@/components/admin/ui";
 import { activeAdminSessions, requireAdmin } from "@/lib/admin/auth/session";
-import { LOGIN_WINDOW_MINUTES, PER_IP_LIMIT } from "@/lib/admin/auth/rate-limit";
+import { CODE_LOCK_MINUTES, GLOBAL_CODE_LIMIT, LOGIN_WINDOW_MINUTES, PER_IP_LIMIT } from "@/lib/admin/auth/rate-limit";
 import { formatDateTime } from "@/lib/admin/format";
 import { endAllSessions } from "./actions";
 import { auditCountLastDays, lastAudit } from "./audit-data";
@@ -75,7 +75,11 @@ export default async function SecurityPage() {
             <ul className="space-y-2 text-sm text-ink">
               <li>Eine Sitzung endet nach 12 Stunden oder nach 4 Stunden ohne Aktivität.</li>
               <li>
-                Nach {PER_IP_LIMIT} Fehlversuchen von derselben Adresse ist die Anmeldung {LOGIN_WINDOW_MINUTES} Minuten gesperrt.
+                Nach {PER_IP_LIMIT} Fehlversuchen von derselben Adresse ist die Anmeldung von dort {LOGIN_WINDOW_MINUTES} Minuten gesperrt.
+              </li>
+              <li>
+                Ist der Code mit dem richtigen Passwort {GLOBAL_CODE_LIMIT}-mal in einer Stunde falsch, ist jede Anmeldung bis zu {CODE_LOCK_MINUTES} Minuten gesperrt. Falsche
+                Passwörter von anderen Adressen sperren dich nicht aus.
               </li>
               <li>Das Cookie ist HttpOnly, Secure und SameSite; die Datenbank kennt nur seinen Hash.</li>
               <li>Jede Anmeldung, Änderung und jeder Dokumentabruf steht im Protokoll, ohne Namen.</li>

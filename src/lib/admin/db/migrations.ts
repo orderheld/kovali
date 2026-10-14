@@ -541,6 +541,17 @@ begin
 end $$;
 `,
   },
+  {
+    // Failed logins of two kinds: a wrong password, or the right password with a wrong code.
+    // Only the second kind locks the whole login (see auth/rate-limit.ts), because only someone
+    // who knows the password can cause it.
+    id: "0005_login_attempt_kind",
+    sql: /* sql */ `
+alter table login_attempts
+  add column kind text not null default 'password' check (kind in ('password', 'code'));
+create index login_attempts_kind_at_idx on login_attempts (scope, kind, at);
+`,
+  },
 ];
 
 /** The migrations up to and including `id`, in order (for tests of a database at that state). */
