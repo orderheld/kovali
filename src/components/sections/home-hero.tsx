@@ -1,27 +1,27 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
-import { StoryCard } from "@/components/artifacts/story-card";
-import { TestRunCard } from "@/components/artifacts/test-run-card";
 import { DarkBackdrop } from "@/components/brand/motifs";
 import { ButtonLink } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { founder } from "@/content/company";
 import { home } from "@/content/home";
 import { serviceHref, services } from "@/content/services";
+import { HeroKovali } from "./hero-kovali";
 import { Portrait } from "./portrait";
 
 /**
  * Home hero on near-black ink with grid and blue glow: mono kicker, H1 and lead that say what
  * KOVALI does, the buttons (above the fold on laptop screens), the four disciplines as indexed
- * links and Ferhat Demir's byline with a small avatar. On the right an example user story; from
- * lg the test run overlaps it. Text rises into place once (kv-rise, transform only). Below sm the
- * buttons are full width.
+ * links and Ferhat Demir's byline with a small avatar. On the right the K of the logo with its
+ * three parts KO · VA · LI (HeroKovali; below lg a compact key under the byline). The backdrop
+ * leaves out its arm lines here, because they would run through the drawing. Text rises into
+ * place once (kv-rise, transform only). Below sm the buttons are full width.
  */
 export function HomeHero() {
   const { hero } = home;
   return (
     <section aria-labelledby="hero-title" className="on-dark relative isolate overflow-hidden bg-night text-white">
-      <DarkBackdrop variant="hero" />
+      <DarkBackdrop variant="hero" arms={false} />
       <Container className="relative grid gap-14 pb-20 pt-14 md:pt-20 lg:grid-cols-12 lg:items-center lg:gap-10 lg:pb-24 lg:pt-16">
         <div className="lg:col-span-6">
           <p className="eyebrow kv-rise">{hero.kicker}</p>
@@ -71,15 +71,7 @@ export function HomeHero() {
           </div>
         </div>
 
-        <div className="kv-rise relative min-w-0 [--kv-delay:0.18s] lg:col-span-6">
-          {/* Electric glow under the artefacts. */}
-          <div
-            aria-hidden
-            className="kv-glow absolute left-1/2 top-1/2 aspect-square w-[120%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgb(53_169_255/0.2)_0%,rgb(20_91_206/0.14)_35%,transparent_65%)]"
-          />
-          <StoryCard overlap className="relative w-full md:max-w-xl lg:max-w-[30rem]" />
-          <TestRunCard className="relative hidden lg:-mt-10 lg:ml-auto lg:block lg:w-[23rem]" />
-        </div>
+        <HeroKovali className="kv-rise min-w-0 [--kv-delay:0.18s] lg:col-span-6" />
       </Container>
     </section>
   );

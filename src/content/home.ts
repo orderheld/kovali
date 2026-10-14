@@ -16,6 +16,18 @@ export const home = {
     byline: "seit über 10 Jahren in der IT",
     primary: { label: "Projekt besprechen", href: "/kontakt" },
     secondary: { label: "Leistungen ansehen", href: "/leistungen" },
+    /**
+     * The K of the logo in the hero (hero-kovali.tsx): one plain line per part. Codes and names
+     * come from `workSamples.steps`; "So sieht die Arbeit aus" explains each step in full.
+     * `intro` is read by screen readers only, before the three parts. The drawing does not wrap
+     * text: keep each line under about 38 characters.
+     */
+    signature: {
+      intro: "Das K im Logo hat drei Teile.",
+      ko: "Klären, was gebaut wird.",
+      va: "Nutzen und Aufwand abwägen.",
+      li: "Testen und in den Betrieb begleiten.",
+    },
   },
   services: {
     title: "IT Consulting",

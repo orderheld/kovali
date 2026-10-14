@@ -15,25 +15,6 @@ export interface Defect {
   text: string;
 }
 
-export interface UserStorySample {
-  id: string;
-  title: string;
-  /** "Als {role} möchte ich {want}, damit {benefit}." */
-  role: string;
-  want: string;
-  benefit: string;
-  /** Gherkin lines; leading spaces are kept, the first word is highlighted as keyword. */
-  criteria: readonly string[];
-  links: readonly string[];
-}
-
-export interface TestRunSample {
-  id: string;
-  kind: string;
-  cases: readonly { id: string; title: string; status: TestStatus }[];
-  defect: Defect;
-}
-
 export type ProcessNode =
   | { type: "start"; label?: string }
   | { type: "end"; label?: string }
@@ -69,34 +50,6 @@ export interface TraceSample {
 const defect: Defect = {
   id: "DEF-07",
   text: "PLZ-Feld verlangt 5 Ziffern. Schweizer Postleitzahlen haben 4.",
-};
-
-export const userStory: UserStorySample = {
-  id: "US-112",
-  title: "Adresse im Kundenkonto ändern",
-  role: "Kundin",
-  want: "meine Adresse selbst ändern",
-  benefit: "Rechnungen an die neue Adresse gehen",
-  criteria: [
-    "Szenario: Postleitzahl mit vier Ziffern",
-    "  Angenommen die Kundin ist angemeldet",
-    "  Wenn sie eine vierstellige Postleitzahl eingibt",
-    "  Und die Änderung speichert",
-    "  Dann wird die neue Adresse übernommen",
-    "  Und die Änderung erscheint im Verlauf",
-  ],
-  links: ["REQ-014", "REQ-015", "TC-031", "TC-032"],
-};
-
-export const testRun: TestRunSample = {
-  id: "Testlauf",
-  kind: "Regression",
-  cases: [
-    { id: "TC-031", title: "Adresse speichern", status: "pass" },
-    { id: "TC-032", title: "PLZ mit 4 Ziffern", status: "fail" },
-    { id: "TC-033", title: "Verlauf aktualisiert", status: "pass" },
-  ],
-  defect,
 };
 
 export const addressProcess: ProcessSample = {
