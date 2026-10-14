@@ -1,4 +1,10 @@
+import { RETENTION_MONTHS_WITH_CONSENT, RETENTION_MONTHS_WITHOUT_CONSENT } from "@/lib/admin/retention";
+import { numberWord } from "@/lib/utils";
 import type { FaqItem, TitledText } from "./types";
+
+/** Same periods as the privacy policy and the admin tool (`retention.ts`). */
+const withoutConsent = `${numberWord(RETENTION_MONTHS_WITHOUT_CONSENT)} Monate`;
+const withConsent = `${numberWord(RETENTION_MONTHS_WITH_CONSENT)} Monate`;
 
 /**
  * Content for /fachleute: independent specialists who work through their own company (GmbH or
@@ -47,8 +53,14 @@ export const specialists = {
   notes: [
     "KOVALI vergibt Mandate nur an Firmen: Ihre GmbH oder AG arbeitet als Subunternehmen von KOVALI. Ist Ihre Firma noch in Gründung, können Sie Ihr Profil trotzdem senden. Einen Auftrag erhält sie erst nach dem Eintrag im Handelsregister. Eine Anstellung bietet KOVALI nicht an.",
     "Die Zusammenarbeit erfolgt in Mandaten, für die KOVALI selbst verantwortlich ist. KOVALI vermittelt keine Stellen an Dritte und verleiht kein Personal.",
-    "Ihr Profil wird höchstens sechs Monate aufbewahrt und danach gelöscht. Auf Wunsch löschen wir es jederzeit früher.",
+    `Ohne Ihre Einwilligung wird Ihr Profil höchstens ${withoutConsent} aufbewahrt, mit Ihrer Einwilligung höchstens ${withConsent}. Auf Wunsch löschen wir es jederzeit früher.`,
   ],
+
+  /** Box on /fachleute, shown only once the portal is configured. Access is by invitation. */
+  portal: {
+    title: "Zugang zum Portal",
+    text: "Sie haben eine Einladung von KOVALI erhalten? Im Portal pflegen Sie Ihr Profil und sehen offene Mandate.",
+  },
 
   /** Shown instead of the form while it is inactive (no e-mail delivery configured). */
   emailInstructions:
@@ -69,7 +81,7 @@ export const specialists = {
     {
       question: "Wie lange wird mein Profil aufbewahrt?",
       answer:
-        "Höchstens sechs Monate. Danach wird es gelöscht, auf Wunsch auch früher. Eine kurze E-Mail genügt. Details stehen in der [Datenschutzerklärung](/datenschutz).",
+        `Ohne Ihre Einwilligung höchstens ${withoutConsent}. Willigen Sie ein, dass KOVALI Ihr Profil für spätere Mandate behält, höchstens ${withConsent}. Auf Wunsch löschen wir es früher. Eine kurze E-Mail genügt. Details stehen in der [Datenschutzerklärung](/datenschutz).`,
     },
   ] satisfies FaqItem[],
 } as const;

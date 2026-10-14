@@ -46,6 +46,12 @@ export const footerNav: { title: string; items: NavItem[] }[] = [
   },
 ];
 
+/**
+ * Login of the portal for specialists who work with KOVALI (built in the admin thread).
+ * Footer and /fachleute show it only once the portal is configured (`isAdminConfigured`).
+ */
+export const portalLogin: NavItem = { label: "Login für Fachleute", href: "/portal/login" };
+
 export const legalNav: NavItem[] = [
   { label: "Impressum", href: "/impressum" },
   { label: "Datenschutz", href: "/datenschutz" },

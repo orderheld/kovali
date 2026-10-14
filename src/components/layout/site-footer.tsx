@@ -2,10 +2,14 @@ import Link from "next/link";
 import { Logo } from "@/components/brand/logo";
 import { Container } from "@/components/ui/container";
 import { site } from "@/config/site";
-import { footerNav, legalNav } from "@/content/navigation";
+import { footerNav, legalNav, portalLogin } from "@/content/navigation";
+import { isAdminConfigured } from "@/lib/admin/env";
 
 /** Year of the build, injected in next.config.ts, so pages stay static. */
 const year = process.env.NEXT_PUBLIC_BUILD_YEAR;
+
+/** Read at build time like the year: the portal link appears with the deploy that has the portal settings. */
+const bottomNav = isAdminConfigured() ? [portalLogin, ...legalNav] : legalNav;
 
 /** Column headings are h2 for the outline but stay small and sans (the site serif is for content headings). */
 const headingClass = "font-sans text-sm font-medium text-white/60";
@@ -61,8 +65,8 @@ export function SiteFooter() {
           <p>
             © {year} {site.brand}. Ein Angebot von {site.legal.entityName.value}.
           </p>
-          <ul className="flex gap-6">
-            {legalNav.map((item) => (
+          <ul className="flex flex-wrap gap-x-6 gap-y-2">
+            {bottomNav.map((item) => (
               <li key={item.href}>
                 <Link href={item.href} className="hover:text-electric">
                   {item.label}
