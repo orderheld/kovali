@@ -1,9 +1,9 @@
 "use server";
 
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, or, sql } from "drizzle-orm";
 import { refresh } from "next/cache";
 import { z } from "zod";
-import { logActivity } from "@/lib/admin/activities";
+import { logActivity, ownedByDormantCandidate } from "@/lib/admin/activities";
 import { audit } from "@/lib/admin/audit";
 import { requireAdmin } from "@/lib/admin/auth/session";
 import { getContract, loadLinkFacts } from "@/lib/admin/contracts/data";
@@ -175,8 +175,8 @@ export async function signContract(id: number, _prev: ActionState, formData: For
 
 /**
  * Deletes a contract with its documents and its own notes (on delete cascade). History entries
- * that also belong to its company or assignment stay there; contracts filed under it lose the
- * link to their Rahmenvertrag.
+ * that also belong to its company or assignment (or to a candidate of the former module) stay
+ * there; contracts filed under it lose the link to their Rahmenvertrag.
  */
 export async function deleteContract(id: number): Promise<ActionState> {
   await requireAdmin();
@@ -193,7 +193,12 @@ export async function deleteContract(id: number): Promise<ActionState> {
     await tx
       .update(activities)
       .set({ contractId: null })
-      .where(and(eq(activities.contractId, contractId), sql`num_nonnulls(${activities.companyId}, ${activities.mandateId}, ${activities.assignmentId}) > 0`));
+      .where(
+        and(
+          eq(activities.contractId, contractId),
+          or(sql`num_nonnulls(${activities.companyId}, ${activities.mandateId}, ${activities.assignmentId}) > 0`, ownedByDormantCandidate()),
+        ),
+      );
     await tx.delete(contracts).where(eq(contracts.id, contractId));
     return row;
   });

@@ -40,6 +40,10 @@ export default async function EditVacancyPage({ params }: PageProps<"/admin/vaka
   ].filter((part) => part !== null);
   const kept = linked.length ? ` ${linked.join(" und ")} ${impact.assignments + impact.contracts === 1 ? "bleibt" : "bleiben"} erhalten, ohne Verknüpfung.` : "";
   const docs = impact.documents ? ` Das ${impact.documents === 1 ? "betrifft 1 Dokument" : `betrifft ${impact.documents} Dokumente`}.` : "";
+  // Submissions and shares of the former candidate module go with the vacancy (on delete cascade).
+  const legacy = impact.legacy
+    ? ` Auch ${impact.legacy === 1 ? "1 alter Eintrag" : `${impact.legacy} alte Einträge`} aus dem früheren Kandidatenmodul ${impact.legacy === 1 ? "wird" : "werden"} gelöscht.`
+    : "";
 
   return (
     <>
@@ -61,12 +65,12 @@ export default async function EditVacancyPage({ params }: PageProps<"/admin/vaka
         <Card className="border-red-200">
           <CardHeader
             title="Vakanz löschen"
-            description={`Notizen und Dokumente der Vakanz werden mitgelöscht.${docs}${kept} Für den Überblick ist «Absage» oder «Zurückgezogen» meist besser als Löschen.`}
+            description={`Notizen und Dokumente der Vakanz werden mitgelöscht.${docs}${legacy}${kept} Für den Überblick ist «Absage» oder «Zurückgezogen» meist besser als Löschen.`}
           />
           <CardBody>
             <ActionButton
               action={deleteVacancy.bind(null, id)}
-              confirm={`Vakanz ${displayNo.mandate(id)} mit allen Notizen und Dokumenten endgültig löschen?${kept}`}
+              confirm={`Vakanz ${displayNo.mandate(id)} mit allen Notizen und Dokumenten endgültig löschen?${legacy}${kept}`}
               variant="danger"
               size="md"
             >

@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
-import { Archive, CheckCircle2, CircleAlert, Database, GitCommitHorizontal } from "lucide-react";
+import { Archive, CheckCircle2, CircleAlert, Database, GitCommitHorizontal, Trash2 } from "lucide-react";
 import { count, sql } from "drizzle-orm";
 import type { PgTable } from "drizzle-orm/pg-core";
+import { ActionButton } from "@/components/admin/form";
 import { Badge, Card, CardBody, CardHeader, DescriptionList, Mono, Notice, Table, Td, Th } from "@/components/admin/ui";
 import { requireAdmin } from "@/lib/admin/auth/session";
+import { dormantCandidateData } from "@/lib/admin/data/dormant";
+import { param } from "@/lib/admin/data/query";
 import { getDb } from "@/lib/admin/db/client";
 import { migrations } from "@/lib/admin/db/migrations";
 import {
@@ -23,6 +26,7 @@ import {
 import { adminConfigStatus } from "@/lib/admin/env";
 import { formatDateTime } from "@/lib/admin/format";
 import { SettingsHeader } from "../tabs";
+import { deleteDormantCandidates } from "./actions";
 
 /** Admin pages read the session and the database per request and may block. */
 export const instant = false;
@@ -44,17 +48,6 @@ const tables: { label: string; name: string; table: PgTable }[] = [
   { label: "Einstellungen", name: "settings", table: settings },
 ];
 
-/**
- * Data of the former candidate module. Migration 0004 keeps those tables when they held a
- * candidate; nothing reads or writes them any more. Null when they are gone.
- */
-async function dormantCandidates(db: Awaited<ReturnType<typeof getDb>>): Promise<number | null> {
-  const exists = await db.execute<{ present: boolean }>(sql`select to_regclass('candidates') is not null as present`);
-  if (!exists.rows[0]?.present) return null;
-  const rows = await db.execute<{ n: string }>(sql`select count(*) as n from candidates`);
-  return Number(rows.rows[0]?.n ?? 0);
-}
-
 async function systemInfo() {
   const db = await getDb();
   const [applied, counts, version, size, stored, dormant] = await Promise.all([
@@ -63,7 +56,7 @@ async function systemInfo() {
     db.execute<{ server_version: string }>(sql`show server_version`),
     db.execute<{ size: string }>(sql`select pg_size_pretty(pg_database_size(current_database())) as size`),
     db.select({ key: settings.key, updatedAt: settings.updatedAt }).from(settings).orderBy(settings.key),
-    dormantCandidates(db),
+    dormantCandidateData(),
   ]);
   return {
     applied: applied.rows,
@@ -81,8 +74,9 @@ const settingLabels: Record<string, string> = {
   admin_totp_last_step: "Zuletzt verwendeter Zwei-Faktor-Code (Schutz vor Wiederverwendung)",
 };
 
-export default async function SystemPage() {
+export default async function SystemPage({ searchParams }: PageProps<"/admin/einstellungen/system">) {
   await requireAdmin();
+  const deletedCandidates = param((await searchParams).kandidaten) === "geloescht";
   const info = await systemInfo();
   const appliedIds = new Set(info.applied.map((m) => m.id));
   const pending = migrations.filter((m) => !appliedIds.has(m.id));
@@ -145,10 +139,34 @@ export default async function SystemPage() {
         </Card>
       </div>
 
-      {info.dormant !== null ? (
+      {info.dormant ? (
         <Notice tone="neutral" icon={Archive} title="Alte Daten des Kandidatenmoduls" className="mt-6">
-          Die Datenbank enthält noch {info.dormant === 1 ? "1 Kandidatenprofil" : `${info.dormant} Kandidatenprofile`} mit ihren Tabellen aus der früheren
-          Version. Der Admin-Bereich verwendet sie nicht mehr. Sie bleiben unverändert, bis du entscheidest, was damit geschieht.
+          <p>
+            {info.dormant.candidates
+              ? `Die Datenbank enthält noch ${info.dormant.candidates === 1 ? "1 Kandidatenprofil" : `${info.dormant.candidates} Kandidatenprofile`}${
+                  info.dormant.documents ? ` mit ${info.dormant.documents === 1 ? "1 Dokument" : `${info.dormant.documents} Dokumenten`}` : ""
+                } aus der früheren Version.`
+              : "Die leeren Tabellen des früheren Kandidatenmoduls sind noch da."}{" "}
+            Der Admin-Bereich verwendet sie nicht mehr. Sie bleiben, bis du sie hier löschst.
+          </p>
+          <p className="mt-2">
+            Beim Löschen gehen die Profile mit ihren Dokumenten, Vorschlägen und Portal-Zugängen verloren, danach werden die Tabellen entfernt. Verträge, Vakanzen
+            und Firmen bleiben.
+          </p>
+          <div className="mt-3">
+            <ActionButton
+              action={deleteDormantCandidates}
+              confirm="Alle alten Kandidatenprofile mit ihren Dokumenten endgültig löschen und die Tabellen entfernen? Das lässt sich nicht rückgängig machen."
+              variant="danger"
+              icon={<Trash2 aria-hidden className="size-4" />}
+            >
+              Alte Kandidatendaten endgültig löschen
+            </ActionButton>
+          </div>
+        </Notice>
+      ) : deletedCandidates ? (
+        <Notice tone="green" icon={CheckCircle2} className="mt-6">
+          Die alten Kandidatendaten und ihre Tabellen sind gelöscht.
         </Notice>
       ) : null}
 

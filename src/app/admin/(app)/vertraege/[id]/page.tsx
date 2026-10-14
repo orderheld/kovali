@@ -122,6 +122,9 @@ export default async function ContractPage({ params }: PageProps<"/admin/vertrae
   const expiry = contractExpiry(contract, today);
   const isFramework = contract.template === "rahmenvertrag";
   const owner = { type: "contract" as const, id };
+  // Contracts generated from the former templates kept their entries in `data`; the text itself
+  // was rendered on request and is not stored. Shown read-only until the signed file is filed.
+  const legacyData = Object.entries(contract.data ?? {}).map(([key, value]) => [key, typeof value === "string" ? value : JSON.stringify(value)] as const);
 
   const details: { label: string; value: React.ReactNode; wide?: boolean }[] = [
     { label: "Art", value: labelOf(contractKinds, contract.template) },
@@ -264,6 +267,22 @@ export default async function ContractPage({ params }: PageProps<"/admin/vertrae
       ) : expiry?.state === "expired" ? (
         <Notice tone="neutral" icon={CalendarClock} className="mb-6">
           Die Laufzeit ist am {formatDate(contract.validUntil)} abgelaufen. Wenn der Vertrag nicht verlängert wurde, markiere ihn als beendet.
+        </Notice>
+      ) : null}
+      {legacyData.length && !files ? (
+        <Notice tone="amber" icon={FileWarning} title="Mit der früheren Vorlage erstellt" className="mb-6">
+          <p>Die Datei ist nicht abgelegt. Lade die unterschriebene Fassung unter «Dateien» hoch.</p>
+          <details className="mt-2">
+            <summary className="cursor-pointer font-medium select-none">Angaben aus der Vorlage ({legacyData.length})</summary>
+            <dl className="mt-2 grid gap-x-4 gap-y-1 sm:grid-cols-[minmax(0,12rem)_minmax(0,1fr)]">
+              {legacyData.map(([key, value]) => (
+                <div key={key} className="contents">
+                  <dt className="text-amber-900/80">{key}</dt>
+                  <dd className="break-words whitespace-pre-line">{value}</dd>
+                </div>
+              ))}
+            </dl>
+          </details>
         </Notice>
       ) : null}
 

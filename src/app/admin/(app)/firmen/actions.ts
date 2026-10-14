@@ -1,9 +1,9 @@
 "use server";
 
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, or, sql } from "drizzle-orm";
 import { refresh } from "next/cache";
 import { z } from "zod";
-import { logActivity } from "@/lib/admin/activities";
+import { logActivity, ownedByDormantCandidate } from "@/lib/admin/activities";
 import { audit } from "@/lib/admin/audit";
 import { requireAdmin } from "@/lib/admin/auth/session";
 import { getDb } from "@/lib/admin/db/client";
@@ -60,15 +60,21 @@ export async function deleteCompany(id: number): Promise<ActionState> {
   const db = await getDb();
   // Contacts, notes and documents of the company are deleted with it (on delete cascade);
   // vacancies, assignments, contracts and snippets keep their data and lose the link. History
-  // entries that also belong to a vacancy, contract or assignment (e.g. "Vertrag abgelegt") only
-  // lose the company, so they stay on those records; entries of the company alone go with it.
+  // entries that also belong to a vacancy, contract or assignment (e.g. "Vertrag abgelegt") or to
+  // a candidate of the former module only lose the company, so they stay on those records;
+  // entries of the company alone go with it.
   const deleted = await db.transaction(async (tx) => {
     const [company] = await tx.select({ id: companies.id }).from(companies).where(eq(companies.id, companyId)).for("update").limit(1);
     if (!company) return false;
     await tx
       .update(activities)
       .set({ companyId: null })
-      .where(and(eq(activities.companyId, companyId), sql`num_nonnulls(${activities.mandateId}, ${activities.contractId}, ${activities.assignmentId}) > 0`));
+      .where(
+        and(
+          eq(activities.companyId, companyId),
+          or(sql`num_nonnulls(${activities.mandateId}, ${activities.contractId}, ${activities.assignmentId}) > 0`, ownedByDormantCandidate()),
+        ),
+      );
     await tx.delete(companies).where(eq(companies.id, companyId));
     return true;
   });

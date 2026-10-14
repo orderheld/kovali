@@ -188,7 +188,7 @@ describe.skipIf(!url)("vacancies and snippets (database)", () => {
     expect(await data.vacancyAssignments(1)).toEqual([
       { id: 1, title: "Business Analyst", status: "laufend", startDate: "2026-11-01", endDate: null, companyName: "Alpenblick Vermittlung AG" },
     ]);
-    expect(await data.mandateDeleteImpact(1)).toEqual({ assignments: 1, contracts: 0, documents: 0 });
+    expect(await data.mandateDeleteImpact(1)).toEqual({ assignments: 1, contracts: 0, documents: 0, legacy: 0 });
     expect(await data.getMandate(999)).toBeNull();
   });
 

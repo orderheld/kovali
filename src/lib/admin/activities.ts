@@ -1,10 +1,20 @@
 import "server-only";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import { getDb } from "./db/client";
 import { activities } from "./db/schema";
 import type { OwnerRef } from "./owner";
 
 /** Notes and the history of a record (calls, e-mails, status changes). */
+
+/**
+ * History entries that still belong to a candidate of the former candidate module (column
+ * candidate_id, which migration 0004 keeps while candidate data exists). Deleting a vacancy,
+ * contract or company only detaches such entries, so the old data stays until Ferhat deletes it
+ * under Einstellungen > System. Works whether or not the column exists.
+ */
+export function ownedByDormantCandidate() {
+  return sql`(to_jsonb(${activities}) ->> 'candidate_id') is not null`;
+}
 
 function ownerFilter(owner: OwnerRef) {
   switch (owner.type) {

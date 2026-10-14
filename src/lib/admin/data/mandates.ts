@@ -1,5 +1,6 @@
 import "server-only";
 import { and, asc, count, desc, eq, ilike, inArray, isNotNull, lte, or, sql, type SQL } from "drizzle-orm";
+import { ownedByDormantCandidate } from "../activities";
 import { getDb } from "../db/client";
 import { activities, assignments, companies, contacts, contracts, documents, mandates } from "../db/schema";
 import { addDaysIso, todayIso } from "../format";
@@ -212,15 +213,32 @@ export async function vacancyAssignments(mandateId: number) {
     .orderBy(desc(assignments.startDate), desc(assignments.id));
 }
 
-/** What deleting a vacancy touches: its documents go with it, assignments and contracts lose the link. */
+/**
+ * What deleting a vacancy touches: its documents go with it, assignments and contracts lose the
+ * link. `legacy` counts submissions and shares of the former candidate module that would go
+ * with it (0 when those tables are gone).
+ */
 export async function mandateDeleteImpact(id: number) {
   const db = await getDb();
-  const [[a], [c], [d]] = await Promise.all([
+  const [[a], [c], [d], legacy] = await Promise.all([
     db.select({ n: count() }).from(assignments).where(eq(assignments.mandateId, id)),
     db.select({ n: count() }).from(contracts).where(eq(contracts.mandateId, id)),
     db.select({ n: count() }).from(documents).where(eq(documents.mandateId, id)),
+    legacyVacancyRows(id),
   ]);
-  return { assignments: a?.n ?? 0, contracts: c?.n ?? 0, documents: d?.n ?? 0 };
+  return { assignments: a?.n ?? 0, contracts: c?.n ?? 0, documents: d?.n ?? 0, legacy };
+}
+
+/** Submissions and shares of the former candidate module for a vacancy, while those tables exist. */
+async function legacyVacancyRows(id: number): Promise<number> {
+  const db = await getDb();
+  const present = await db.execute<{ present: boolean }>(sql`select to_regclass('submissions') is not null and to_regclass('vacancy_shares') is not null as present`);
+  if (!present.rows[0]?.present) return 0;
+  // Not in the Drizzle schema (dormant tables), so plain SQL.
+  const rows = await db.execute<{ n: string }>(
+    sql`select (select count(*) from submissions where mandate_id = ${id}) + (select count(*) from vacancy_shares where mandate_id = ${id}) as n`,
+  );
+  return Number(rows.rows[0]?.n ?? 0);
 }
 
 /** The company of a contact, to check that a vacancy's contact belongs to its company. */
@@ -344,7 +362,9 @@ export async function setMandateNextStep(
 /**
  * Deletes a vacancy. Its notes and documents go with it (on delete cascade); assignments and
  * contracts keep their data and lose the link. History entries that also belong to a company,
- * contract or assignment only lose the vacancy, so they stay on those records.
+ * contract or assignment (or to a candidate of the former module) only lose the vacancy, so
+ * they stay on those records. Old candidate submissions and shares of the vacancy go with it
+ * (on delete cascade); mandateDeleteImpact counts them for the confirmation.
  */
 export async function deleteMandate(id: number): Promise<{ id: number; title: string; companyId: number | null } | null> {
   const db = await getDb();
@@ -354,7 +374,12 @@ export async function deleteMandate(id: number): Promise<{ id: number; title: st
     await tx
       .update(activities)
       .set({ mandateId: null })
-      .where(and(eq(activities.mandateId, id), sql`num_nonnulls(${activities.companyId}, ${activities.contractId}, ${activities.assignmentId}) > 0`));
+      .where(
+        and(
+          eq(activities.mandateId, id),
+          or(sql`num_nonnulls(${activities.companyId}, ${activities.contractId}, ${activities.assignmentId}) > 0`, ownedByDormantCandidate()),
+        ),
+      );
     const [deleted] = await tx
       .delete(mandates)
       .where(eq(mandates.id, id))
