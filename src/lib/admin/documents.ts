@@ -51,14 +51,23 @@ export function safeFilename(name: string, kind: FileKind): string {
   return `${withoutExt}.${ext}`;
 }
 
+/** "PDF-, DOCX-, PNG- und JPG" or "PDF": the file kinds in German, before "-Dateien". */
+export function kindList(kinds: readonly FileKind[]): string {
+  const names = kinds.map((k) => (k === "jpeg" ? "JPG" : k.toUpperCase()));
+  if (names.length <= 1) return names.join("");
+  return `${names
+    .slice(0, -1)
+    .map((n) => `${n}-`)
+    .join(", ")} und ${names.at(-1)}`;
+}
+
 export async function checkUpload(value: FormDataEntryValue | null, allowed: FileKind[] = ["pdf", "docx", "png", "jpeg"]): Promise<UploadCheck> {
   if (!(value instanceof File) || value.size === 0) return { ok: false, error: "Bitte eine Datei auswählen.", empty: true };
   if (value.size > DOCUMENT_MAX_BYTES) return { ok: false, error: `Die Datei ist grösser als ${DOCUMENT_MAX_LABEL}.` };
   const content = Buffer.from(await value.arrayBuffer());
   const kind = sniffKind(content);
   if (!kind || !allowed.includes(kind)) {
-    const names = allowed.map((k) => (k === "jpeg" ? "JPG" : k.toUpperCase())).join(", ");
-    return { ok: false, error: `Erlaubt sind nur ${names}-Dateien.` };
+    return { ok: false, error: `Erlaubt sind nur ${kindList(allowed)}-Dateien.` };
   }
   return { ok: true, content, kind, mimeType: MIME[kind], filename: safeFilename(value.name, kind) };
 }

@@ -63,9 +63,15 @@ export function LongTextField({
     const start = el.selectionStart ?? el.value.length;
     const end = el.selectionEnd ?? start;
     const before = el.value.slice(0, start);
+    const after = el.value.slice(end);
+    // A paragraph of its own: a blank line before and after, unless one is there already.
     const gap = before === "" || before.endsWith("\n\n") ? "" : before.endsWith("\n") ? "\n" : "\n\n";
+    const trail = after === "" || after.startsWith("\n\n") ? "" : after.startsWith("\n") ? "\n" : "\n\n";
     el.focus();
-    el.setRangeText(gap + snippet.body, start, end, "end");
+    el.setRangeText(gap + snippet.body + trail, start, end, "end");
+    // The cursor goes right after the inserted text, before the blank line.
+    const cursor = start + gap.length + snippet.body.length;
+    el.setSelectionRange(cursor, cursor);
     setStats(textStats(el.value));
     setChosen("");
   };

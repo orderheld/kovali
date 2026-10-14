@@ -131,6 +131,17 @@ describe.skipIf(!url)("vacancies and snippets (database)", () => {
     await updateVacancy(2, idle, form({ ...vacancyDefaults, title: "Testmanager Bank", companyId: "2", status: "angeboten", appliedAt: "2026-10-01" }));
     expect(await one("select applied_at::text from mandates where id = 2")).toEqual({ applied_at: "2026-10-01" });
     expect(await updateVacancy(999, idle, form({ ...vacancyDefaults, title: "Weg" }))).toMatchObject({ status: "error" });
+
+    // Skills of the former version under «weitere Kompetenzen»: the form lists them with the
+    // others, and after a save only that one list is left.
+    const { getMandate } = await import("@/lib/admin/data/mandates");
+    const { vacancySkills } = await import("@/lib/admin/vacancy-rules");
+    await client.query("update mandates set required_skills = '{Jira}', nice_skills = '{jira, Confluence}' where id = 2");
+    const old = await getMandate(2);
+    expect(vacancySkills(old!)).toEqual(["Jira", "Confluence"]);
+    const skills = JSON.stringify(vacancySkills(old!));
+    await updateVacancy(2, idle, form({ ...vacancyDefaults, title: "Testmanager Bank", companyId: "2", status: "angeboten", appliedAt: "2026-10-01", requiredSkills: skills }));
+    expect(await one("select required_skills, nice_skills from mandates where id = 2")).toEqual({ required_skills: ["Jira", "Confluence"], nice_skills: [] });
   });
 
   it("sets the next step and moves it into the history when done", async () => {
@@ -177,7 +188,7 @@ describe.skipIf(!url)("vacancies and snippets (database)", () => {
       [5, "Interview vorbereiten"],
     ]);
     expect((await data.dueNextSteps({ today: "2026-10-14", days: 0 })).map((d) => d.id)).toEqual([3]);
-    expect(await data.skillSuggestions()).toEqual(["Azure", "Python", "SAP FI", "Scrum"]);
+    expect(await data.skillSuggestions()).toEqual(["Azure", "Confluence", "Jira", "Python", "SAP FI", "Scrum"]);
   });
 
   it("shows the vacancy with its contact and the assignments made from it", async () => {

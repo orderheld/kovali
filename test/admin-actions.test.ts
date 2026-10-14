@@ -79,7 +79,13 @@ describe.skipIf(!url)("admin actions (database)", () => {
     expect(wrongKind).toMatchObject({ status: "error", errors: { kind: expect.any(String) } });
     // Only real PDF, Word and image files.
     const text = new File(["kein PDF"], "notiz.pdf", { type: "application/pdf" });
-    expect(await uploadDocument(owner, idle, form({ kind: "rapport", file: text }))).toMatchObject({ status: "error", errors: { file: expect.any(String) } });
+    expect(await uploadDocument(owner, idle, form({ kind: "rapport", file: text }))).toMatchObject({
+      status: "error",
+      errors: { file: "Erlaubt sind nur PDF-, DOCX-, PNG- und JPG-Dateien." },
+    });
+    const { kindList } = await import("@/lib/admin/documents");
+    expect(kindList(["pdf"])).toBe("PDF");
+    expect(kindList(["pdf", "docx"])).toBe("PDF- und DOCX");
     expect(await rows("select 1 from documents where assignment_id = $1", [a.id])).toHaveLength(1);
 
     expect(await deleteDocument(Number(doc.id))).toMatchObject({ status: "success" });

@@ -310,7 +310,9 @@ export async function updateMandate(id: number, values: MandateValues, now = new
     const state = statusChange({ status: current.status, appliedAt: values.appliedAt, closedAt: current.closedAt }, values.status, today, now);
     await tx
       .update(mandates)
-      .set({ ...values, appliedAt: state.appliedAt, closedAt: state.closedAt, updatedAt: now })
+      // The form shows the former "weitere Kompetenzen" in its one list (vacancySkills), so they
+      // are in values.requiredSkills now, or Ferhat removed them.
+      .set({ ...values, niceSkills: [], appliedAt: state.appliedAt, closedAt: state.closedAt, updatedAt: now })
       .where(eq(mandates.id, id));
     return { previousStatus: current.status };
   });

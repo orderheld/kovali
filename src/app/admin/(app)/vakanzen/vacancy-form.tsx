@@ -8,6 +8,7 @@ import { LinkButton } from "@/components/admin/ui";
 import type { Mandate } from "@/lib/admin/db/schema";
 import type { ActionState } from "@/lib/admin/forms";
 import { mandateKinds, mandatePriorities, mandateSources, mandateStatuses, rateUnits, remoteOptions } from "@/lib/admin/options";
+import { vacancySkills } from "@/lib/admin/vacancy-rules";
 
 export interface CompanyChoice {
   value: number;
@@ -162,7 +163,7 @@ export function VacancyForm({
         <TagInputField
           name="requiredSkills"
           label="Verlangte Kompetenzen"
-          defaultValue={vacancy?.requiredSkills}
+          defaultValue={vacancy ? vacancySkills(vacancy) : undefined}
           suggestions={skillSuggestions}
           hint="Enter oder Komma trennt die Einträge."
           className="sm:col-span-2 lg:col-span-3"

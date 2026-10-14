@@ -126,7 +126,13 @@ function Field({ field, settings, defaults }: { field: EarningsField; settings: 
       <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
         {badge ? <Badge tone={badge === "Richtwert" ? "amber" : "blue"}>{badge}</Badge> : null}
         {field.hint ? <span>{field.hint}</span> : null}
-        {value !== standard ? <span>Standard: {display(field, standard)}</span> : null}
+        {value !== standard ? (
+          <span>
+            {field.key === "vatRegistered"
+              ? `In den Firmendaten ist KOVALI ${standard ? "" : "nicht "}als MWST-pflichtig erfasst.`
+              : `Standard: ${display(field, standard)}`}
+          </span>
+        ) : null}
       </span>
     ) : undefined;
 

@@ -22,7 +22,7 @@ import {
   type DocumentKind,
 } from "@/lib/admin/options";
 import { formatTextStats, previewText, textStats } from "@/lib/admin/texts";
-import { dueState, formatRate, isOpenStatus, quickActions, rechnerHref } from "@/lib/admin/vacancy-rules";
+import { dueState, formatRate, isOpenStatus, quickActions, rechnerHref, vacancySkills } from "@/lib/admin/vacancy-rules";
 import { ActivityFeed } from "../../_shared/activity-feed";
 import { DocumentsCard } from "../../_shared/documents-card";
 import { completeNextStep, saveNextStep, setVacancyStatus } from "../actions";
@@ -57,6 +57,7 @@ export default async function VacancyPage({ params }: PageProps<"/admin/vakanzen
   const active = isOpenStatus(vacancy.status);
   const won = vacancy.status === "gewonnen";
   const owner = { type: "mandate" as const, id };
+  const skills = vacancySkills(vacancy);
   // The deadline only matters until the application is out.
   const deadline = dueState(vacancy.deadline, today, active && !vacancy.appliedAt);
   const nextStepDue = dueState(vacancy.nextStepAt, today, active);
@@ -237,16 +238,10 @@ export default async function VacancyPage({ params }: PageProps<"/admin/vakanzen
                   oder die Ausschreibung als PDF unter Dokumente ablegen.
                 </p>
               )}
-              {vacancy.requiredSkills.length ? (
+              {skills.length ? (
                 <div>
-                  <p className="mb-1.5 text-[0.8125rem] text-slate">Verlangte Kompetenzen</p>
-                  <TagList items={vacancy.requiredSkills} tone="blue" />
-                </div>
-              ) : null}
-              {vacancy.niceSkills.length ? (
-                <div>
-                  <p className="mb-1.5 text-[0.8125rem] text-slate">Weitere Kompetenzen</p>
-                  <TagList items={vacancy.niceSkills} />
+                  <p className="mb-1.5 text-[0.8125rem] text-slate">Kompetenzen</p>
+                  <TagList items={skills} tone="blue" />
                 </div>
               ) : null}
               <p className="text-xs text-slate">

@@ -91,7 +91,7 @@ export async function setAssignmentStatus(id: number, status: string): Promise<A
   if (before.status === next) return ok();
   await db.update(assignments).set({ status: next, updatedAt: new Date() }).where(eq(assignments.id, assignmentId));
   await logActivity({ type: "assignment", id: assignmentId }, `Status: ${labelOf(assignmentStatuses, before.status)} → ${labelOf(assignmentStatuses, next)}`);
-  await audit("update", { entity: "assignment", entityId: assignmentId, summary: `${label(assignmentId)}: Status` });
+  await audit("update", { entity: "assignment", entityId: assignmentId, summary: `${label(assignmentId)}: Status ${labelOf(assignmentStatuses, next)}` });
   refresh();
   return ok(`Status: ${labelOf(assignmentStatuses, next)}.`);
 }

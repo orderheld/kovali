@@ -12,6 +12,7 @@ import {
   sectionsByStatus,
   statusChange,
   statusParam,
+  vacancySkills,
 } from "./vacancy-rules";
 
 const now = new Date("2026-10-14T08:30:00Z");
@@ -145,5 +146,13 @@ describe("display", () => {
     expect(rechnerHref({ rateSell: 1050.5, rateUnit: "tag", workload: null })).toBe("/admin/rechner?satz=1050.5&einheit=tag");
     expect(rechnerHref({ rateSell: null, rateUnit: "stunde", workload: 100 })).toBeNull();
     expect(rechnerHref({ rateSell: 0, rateUnit: "stunde", workload: 100 })).toBeNull();
+  });
+});
+
+describe("skills", () => {
+  it("folds the former «weitere Kompetenzen» into one list without duplicates", () => {
+    expect(vacancySkills({ requiredSkills: ["SAP FI", "Scrum"], niceSkills: ["scrum", "Jira", " "] })).toEqual(["SAP FI", "Scrum", "Jira"]);
+    expect(vacancySkills({ requiredSkills: [], niceSkills: [] })).toEqual([]);
+    expect(vacancySkills({ requiredSkills: ["Azure"] })).toEqual(["Azure"]);
   });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addDaysIso, addMonthsIso, daysBetweenIso, displayNo, formatDate, formatRate, todayIso } from "./format";
+import { addDaysIso, addMonthsIso, daysBetweenIso, displayNo, formatBytes, formatDate, formatRate, todayIso } from "./format";
 
 describe("date helpers", () => {
   it("adds days across months and years", () => {
@@ -27,6 +27,14 @@ describe("date helpers", () => {
     // 23:30 UTC on 13 October is already 14 October in Zurich (summer time).
     expect(todayIso(new Date("2026-10-13T23:30:00Z"))).toBe("2026-10-14");
     expect(formatDate("2026-10-14")).toBe("14.10.2026");
+  });
+});
+
+describe("file sizes", () => {
+  it("uses the decimal point", () => {
+    expect(formatBytes(820)).toBe("820 B");
+    expect(formatBytes(14 * 1024)).toBe("14 KB");
+    expect(formatBytes(1.5 * 1024 * 1024)).toBe("1.5 MB");
   });
 });
 

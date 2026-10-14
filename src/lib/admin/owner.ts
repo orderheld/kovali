@@ -21,23 +21,6 @@ export const ownerSchema = z.object({
   id: z.number().int().positive(),
 });
 
-const paths: Record<OwnerType, string> = {
-  company: "/admin/firmen",
-  mandate: "/admin/vakanzen",
-  contract: "/admin/vertraege",
-  assignment: "/admin/auftraege",
-};
-
-/** Detail page of the record, e.g. /admin/auftraege/3. */
-export function ownerPath(owner: OwnerRef): string {
-  return `${paths[owner.type]}/${owner.id}`;
-}
-
-/** Entity name in the audit log ("company", "mandate", "contract", "assignment"). */
-export function ownerEntity(owner: OwnerRef): string {
-  return owner.type;
-}
-
 /** Name of the record without personal data, for audit summaries: "Auftrag A-0003", "Vertrag #12". */
 export function ownerLabel(owner: OwnerRef): string {
   switch (owner.type) {

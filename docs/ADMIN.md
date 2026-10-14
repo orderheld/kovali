@@ -38,9 +38,21 @@ Passwort ändern oder neues Handy: auf `/admin/einrichtung` (angemeldet) einen n
 
 Lokal: `.env.local` mit denselben Variablen (eine lokale Postgres-Datenbank genügt) und `npm run dev`.
 
+## Umstieg von der Version mit Kandidatenportal
+
+Läuft schon die frühere Version (mit Kandidaten und Portal), gilt beim Wechsel auf diese:
+
+1. **Backup**: In Neon vorher einen Branch oder ein Backup anlegen. Die Migrationen laufen beim ersten Datenbankzugriff von selbst. `0004_personal_admin` löscht die Portal-Spalten der Vakanzen (`portal_title`, `portal_description`, `portal_rate`, `portal_rate_unit`) endgültig. `0005_login_attempt_kind` merkt sich bei Fehlversuchen, ob Passwort oder Code falsch war.
+2. **Zwei-Faktor-Schlüssel**: `ADMIN_TOTP_SECRET` war bisher empfohlen und ist jetzt Pflicht. Vor dem Deployment setzen, sonst leitet `/admin` auf `/admin/einrichtung` um, bis er gesetzt und neu deployt ist.
+3. **Verträge aus den Vorlagen**: Die frühere Version hat Verträge aus Vorlagen erzeugt. Diese Version legt nur noch Dateien ab. Vor dem Wechsel jedes PDF unter `/admin/api/vertraege/<id>` herunterladen und danach beim Vertrag unter «Dateien» hochladen. Ohne Datei zeigt der Vertrag den Hinweis «Mit der früheren Vorlage erstellt» und die gespeicherten Angaben.
+4. **Rechner**: Werte unter dem alten Schlüssel `rechner_defaults` werden nicht übernommen. Die Annahmen unter Rechner → Annahmen einmal prüfen und speichern (Schlüssel `einkommen`).
+5. **Alte Kandidatendaten**: War beim Umstieg ein Kandidat vorhanden, lässt 0004 die Tabellen des Kandidatenmoduls stehen. Nichts liest oder schreibt sie. Einstellungen → System zeigt dann, wie viele Profile und Dokumente noch da sind, und löscht sie mit «Alte Kandidatendaten endgültig löschen»: erst die Kandidaten mit ihren Dokumenten, Vorschlägen und Verlaufseinträgen, dann die Tabellen. Verträge bleiben und verlieren nur den Bezug. Das Protokoll hält nur die Anzahl fest.
+
 ## Sicherheit
 
-- Anmeldung immer mit Passwort (PBKDF2-SHA256, 600'000 Iterationen) und Code aus Google Authenticator (TOTP, jeder Code nur einmal gültig). Höchstens 5 Fehlversuche pro IP in 15 Minuten und 50 insgesamt pro Stunde.
+- Anmeldung immer mit Passwort (PBKDF2-SHA256, 600'000 Iterationen) und Code aus Google Authenticator (TOTP, jeder Code nur einmal gültig).
+- Höchstens 5 Fehlversuche pro IP in 15 Minuten. Wird mit dem richtigen Passwort 10 Mal in einer Stunde ein falscher Code eingegeben, ist die Anmeldung für alle gesperrt, bis diese Versuche eine Stunde alt sind; dann das Passwort ändern. Falsche Passwörter allein sperren nur die eigene IP, nie Ferhat. Prüfen und Festhalten eines Versuchs geschieht unter einer Datenbank-Sperre, parallele Anfragen zählen also mit (`auth/rate-limit.ts`).
+- Gesperrt und keine Zeit zu warten: im SQL-Editor von Neon `delete from login_attempts;` ausführen.
 - Sitzungen in der Datenbank (nur der SHA-256 des Tokens), Cookie `__Host-`, HttpOnly, Secure, SameSite=Lax. Ende nach 12 Stunden oder 4 Stunden ohne Aktivität (`auth/session.ts`).
 - Dokumente sind mit AES-256-GCM verschlüsselt, bevor sie in die Datenbank gehen. Jeder Abruf wird protokolliert.
 - Protokoll (`audit_log`) für jede Anmeldung, Änderung und jeden Dokumentabruf, nur mit Nummern wie `A-0003`, nie mit Namen.
@@ -60,7 +72,7 @@ Lokal: `.env.local` mit denselben Variablen (eine lokale Postgres-Datenbank gen�
 | `src/lib/admin/vacancy-rules.ts`, `texts.ts`, `contracts/` | Regeln der Vakanzen (Status, Fälligkeit), Textbausteine und Verträge (Nummern, Ablauf, Verknüpfungen). |
 | `src/components/admin/` | `ui.tsx` (Bausteine), `form.tsx` (Formulare), `long-text-field.tsx` (langer Text mit Zeichenzahl und Textbausteinen), `copy-button.tsx`, `shell.tsx` (Navigation). |
 
-Datenmodell (Migration `0004_personal_admin`): `assignments` (Aufträge), `mandates` (Vakanzen; Tabelle, Export und Owner-Typ heissen aus historischen Gründen «mandate»), `contracts` (Ablage; `template` ist die Vertragsart), `snippets` (Textbausteine), `companies`, `contacts`, `documents` und `activities` (je mit genau einem bzw. mindestens einem Bezug: Firma, Vakanz, Vertrag oder Auftrag). Die Tabellen des früheren Kandidatenmoduls hat 0004 nur gelöscht, wenn nie ein Kandidat gespeichert war; sonst liegen sie unbenutzt in der Datenbank (Hinweis unter Einstellungen → System).
+Datenmodell (Migration `0004_personal_admin`): `assignments` (Aufträge), `mandates` (Vakanzen; Tabelle, Export und Owner-Typ heissen aus historischen Gründen «mandate»), `contracts` (Ablage; `template` ist die Vertragsart), `snippets` (Textbausteine), `companies`, `contacts`, `documents` und `activities` (je mit genau einem bzw. mindestens einem Bezug: Firma, Vakanz, Vertrag oder Auftrag). Die Tabellen des früheren Kandidatenmoduls hat 0004 nur gelöscht, wenn beim Umstieg kein Kandidat vorhanden war; sonst liegen sie unbenutzt in der Datenbank, bis sie unter Einstellungen → System gelöscht werden (`data/dormant.ts`). Beim Löschen von Vakanzen, Verträgen und Firmen bleiben Verlaufseinträge, die noch zu einem alten Kandidaten gehören. `0005_login_attempt_kind` ergänzt `login_attempts.kind` (`password` oder `code`).
 
 ### Konventionen
 
@@ -71,6 +83,7 @@ Datenmodell (Migration `0004_personal_admin`): `assignments` (Aufträge), `manda
 - **Auswahllisten**: nur aus `options.ts`; Werte mit `legacy` gibt es noch in alten Zeilen, angeboten wird `offered(list)`.
 - **Datenbank**: neue Spalten nur über eine neue Migration, nie eine ausgelieferte ändern. `npm test` mit `TEST_DATABASE_URL` prüft, dass Schema und Migrationen übereinstimmen.
 - **Texte**: Deutsch für die Schweiz, «ss» statt «ß», Ferhat wird geduzt.
+- **Keine Angaben** zu Handelsregister, UID, MWST-Nummer oder Bewilligungen (Personalverleih, Arbeitsvermittlung) von KOVALI.
 
 ### Prüfen
 

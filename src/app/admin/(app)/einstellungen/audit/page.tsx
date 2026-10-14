@@ -29,7 +29,7 @@ export default async function AuditLogPage({ searchParams }: PageProps<"/admin/e
       <Card>
         <CardHeader
           title={`Protokoll (${log.total})`}
-          description="Wer wann was angesehen, geändert oder exportiert hat. Nur Nummern, keine Namen; die IP-Adresse nur als Hash."
+          description="Jede Anmeldung, Änderung und jeder Dokumentabruf. Nur Nummern, keine Namen; die IP-Adresse nur als Hash."
           actions={
             <form action="/admin/einstellungen/audit" className="flex flex-wrap items-center gap-2">
               <label htmlFor="audit-aktion" className="sr-only">

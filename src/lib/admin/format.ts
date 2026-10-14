@@ -11,7 +11,6 @@ const dateTimeFmt = new Intl.DateTimeFormat("de-CH", {
   hour: "2-digit",
   minute: "2-digit",
 });
-const longDateFmt = new Intl.DateTimeFormat("de-CH", { timeZone: TZ, day: "numeric", month: "long", year: "numeric" });
 
 function toDate(value: Date | string): Date {
   // Plain dates (YYYY-MM-DD) are calendar days; noon UTC keeps them on the same day in Zurich.
@@ -26,11 +25,6 @@ export function formatDate(value: Date | string | null | undefined): string {
 /** 13.10.2026, 22:15 */
 export function formatDateTime(value: Date | string | null | undefined): string {
   return value ? dateTimeFmt.format(toDate(value)) : "–";
-}
-
-/** 13. Oktober 2026 */
-export function formatLongDate(value: Date | string | null | undefined): string {
-  return value ? longDateFmt.format(toDate(value)) : "–";
 }
 
 /** Today's date in Zurich as YYYY-MM-DD. */
@@ -92,21 +86,6 @@ export function formatPercent(value: number | null | undefined): string {
   return `${pct.format(value)} %`;
 }
 
-/** "Jan. 2024" from YYYY-MM */
-export function formatMonth(ym: string | null | undefined): string {
-  if (!ym) return "";
-  const m = /^(\d{4})-(\d{2})$/.exec(ym);
-  if (!m) return ym;
-  const names = ["Jan.", "Feb.", "März", "Apr.", "Mai", "Juni", "Juli", "Aug.", "Sept.", "Okt.", "Nov.", "Dez."];
-  return `${names[Number(m[2]) - 1] ?? ""} ${m[1]}`;
-}
-
-export function formatMonthRange(from: string, to: string): string {
-  const a = formatMonth(from);
-  const b = to ? formatMonth(to) : "heute";
-  return a ? `${a} – ${b}` : b;
-}
-
 /** Display numbers: A-0012 (Auftrag), M-0007 (Vakanz, table mandates), F-0003 (Firma), T-0004 (Textbaustein). */
 export const displayNo = {
   assignment: (id: number) => `A-${String(id).padStart(4, "0")}`,
@@ -119,8 +98,9 @@ export function fullName(p: { firstName?: string | null; lastName?: string | nul
   return [p.firstName, p.lastName].filter(Boolean).join(" ") || "–";
 }
 
+/** 820 B, 14 KB, 1.5 MB: with a decimal point like every other number. */
 export function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
-  return `${(bytes / 1024 / 1024).toFixed(1).replace(".", ",")} MB`;
+  return `${formatNumber(bytes / 1024 / 1024, 1)} MB`;
 }

@@ -145,7 +145,7 @@ export async function setContractStatus(id: number, status: string): Promise<Act
     .returning({ id: contracts.id });
   if (!row) return fail("Der Status wurde inzwischen geändert. Bitte lade die Seite neu.");
   await logActivity(owners(contractId, current), `Vertrag ${current.number}: ${labelOf(contractStatuses, current.status)} → ${labelOf(contractStatuses, target)}`);
-  await audit("update", { entity: "contract", entityId: contractId, summary: `Vertrag ${current.number}: Status ${target}` });
+  await audit("update", { entity: "contract", entityId: contractId, summary: `Vertrag ${current.number}: Status ${labelOf(contractStatuses, target)}` });
   refresh();
   return ok(`Status: ${labelOf(contractStatuses, target)}.`);
 }
@@ -168,7 +168,7 @@ export async function signContract(id: number, _prev: ActionState, formData: For
     .returning({ id: contracts.id });
   if (!row) return fail("Der Status wurde inzwischen geändert. Bitte lade die Seite neu.");
   await logActivity(owners(contractId, current), `Vertrag ${current.number} unterzeichnet am ${formatDate(signedAt)}.`);
-  await audit("update", { entity: "contract", entityId: contractId, summary: `Vertrag ${current.number}: Status unterzeichnet` });
+  await audit("update", { entity: "contract", entityId: contractId, summary: `Vertrag ${current.number}: Status ${labelOf(contractStatuses, "unterzeichnet")}` });
   refresh();
   return ok("Als unterzeichnet erfasst.");
 }

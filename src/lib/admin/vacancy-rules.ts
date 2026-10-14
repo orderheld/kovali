@@ -68,12 +68,6 @@ export function groupCounts(perStatus: Record<string, number>): Record<VacancyGr
   return Object.fromEntries(vacancyGroups.map((g) => [g.value, sum(g.statuses)])) as Record<VacancyGroup, number>;
 }
 
-/** Position of a status in the pipeline, for sorting (unknown values last). */
-export function statusRank(status: string): number {
-  const i = mandateStatuses.findIndex((s) => s.value === status);
-  return i === -1 ? mandateStatuses.length : i;
-}
-
 /** Splits rows into consecutive sections of the same status, in the order given. */
 export function sectionsByStatus<T extends { status: string }>(rows: readonly T[]): { status: string; rows: T[] }[] {
   const sections: { status: string; rows: T[] }[] = [];
@@ -193,4 +187,23 @@ export function rechnerHref(v: { rateSell: number | null; rateUnit: string | nul
   const sp = new URLSearchParams({ satz: String(v.rateSell), einheit: v.rateUnit === "tag" ? "tag" : "stunde" });
   if (v.workload) sp.set("pensum", String(v.workload));
   return `/admin/rechner?${sp.toString()}`;
+}
+
+/**
+ * The skills of a vacancy as one list. Vacancies from the former version may still hold
+ * "weitere Kompetenzen" (nice_skills), which no form edits any more: they are shown and edited
+ * together with the required ones, and the next save keeps only this list. Duplicates in another
+ * spelling ("sap fi" next to "SAP FI") count once; the first spelling wins.
+ */
+export function vacancySkills(v: { requiredSkills: readonly string[]; niceSkills?: readonly string[] | null }): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of [...v.requiredSkills, ...(v.niceSkills ?? [])]) {
+    const skill = raw.trim();
+    const key = skill.toLocaleLowerCase("de-CH");
+    if (!skill || seen.has(key)) continue;
+    seen.add(key);
+    out.push(skill);
+  }
+  return out;
 }

@@ -26,9 +26,25 @@ export function isAuditAction(value: string | undefined): value is AuditAction {
   return Boolean(value && value in auditActionLabels);
 }
 
-/** Label of any stored action; entries of removed features show their raw action name. */
+/**
+ * Actions of the former candidate module. Its entries stay in the log; they get a label but
+ * are not offered in the filter.
+ */
+const legacyActionLabels: Record<string, { label: string; tone: Tone }> = {
+  anonymise: { label: "Anonymisiert (früher)", tone: "neutral" },
+  consent: { label: "Einwilligung (früher)", tone: "neutral" },
+  share: { label: "Freigabe (früher)", tone: "neutral" },
+  review: { label: "Geprüft (früher)", tone: "neutral" },
+  portal_login: { label: "Portal-Anmeldung (früher)", tone: "neutral" },
+  portal_login_failed: { label: "Portal-Anmeldung fehlgeschlagen (früher)", tone: "neutral" },
+  portal_change: { label: "Änderung im Portal (früher)", tone: "neutral" },
+  portal_logout_all: { label: "Portal-Abmeldung überall (früher)", tone: "neutral" },
+};
+
+/** Label of any stored action; unknown ones show their raw name. */
 export function auditActionMeta(action: string): { label: string; tone: Tone } {
-  return isAuditAction(action) ? auditActionLabels[action] : { label: action, tone: "neutral" };
+  if (isAuditAction(action)) return auditActionLabels[action];
+  return Object.hasOwn(legacyActionLabels, action) ? legacyActionLabels[action] : { label: action, tone: "neutral" };
 }
 
 const entityLabels: Record<string, string> = {
@@ -42,12 +58,19 @@ const entityLabels: Record<string, string> = {
   activity: "Notiz",
   settings: "Einstellungen",
   session: "Sitzung",
+  // The former candidate module.
+  candidate: "Kandidat (früher)",
+  submission: "Vorschlag (früher)",
+  candidate_account: "Portal-Konto (früher)",
+  change_request: "Änderungsantrag (früher)",
+  vacancy_share: "Vakanz-Freigabe (früher)",
+  privacy: "Datenschutz (früher)",
 };
 
 /** "Auftrag A-0003", "Dokument #12" or "–". */
 export function auditObject(entity: string | null, entityId: number | null): string {
   if (!entity) return "–";
-  const label = entityLabels[entity] ?? entity;
+  const label = Object.hasOwn(entityLabels, entity) ? entityLabels[entity] : entity;
   if (!entityId) return label;
   switch (entity) {
     case "assignment":
@@ -58,6 +81,8 @@ export function auditObject(entity: string | null, entityId: number | null): str
       return `${label} ${displayNo.mandate(entityId)}`;
     case "snippet":
       return `${label} ${displayNo.snippet(entityId)}`;
+    case "candidate":
+      return `${label} K-${String(entityId).padStart(4, "0")}`;
     default:
       return `${label} #${entityId}`;
   }

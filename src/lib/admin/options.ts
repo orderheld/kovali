@@ -96,31 +96,6 @@ export const rateBases = options([
 
 // --- Vakanzen (Tabelle mandates) ----------------------------------------------
 
-export const disciplines = options([
-  { value: "business-analysis", label: "Business Analysis" },
-  { value: "requirements-engineering", label: "Requirements Engineering" },
-  { value: "projektleitung", label: "Projektleitung" },
-  { value: "product-owner", label: "Product Owner" },
-  { value: "scrum-agile", label: "Scrum Master / Agile Coach" },
-  { value: "test-management", label: "Test Management" },
-  { value: "test-engineering", label: "Test Engineering / Automation" },
-  { value: "application-management", label: "Application Management" },
-  { value: "sap", label: "SAP-Beratung" },
-  { value: "entwicklung", label: "Softwareentwicklung" },
-  { value: "architektur", label: "Architektur" },
-  { value: "data", label: "Data / BI" },
-  { value: "cloud-devops", label: "Cloud / DevOps" },
-  { value: "security", label: "IT-Security" },
-  { value: "andere", label: "Andere" },
-]);
-
-export const seniorities = options([
-  { value: "junior", label: "Junior" },
-  { value: "professional", label: "Professional" },
-  { value: "senior", label: "Senior" },
-  { value: "expert", label: "Expert / Lead" },
-]);
-
 export const mandateKinds = options([
   { value: "ausschreibung", label: "Ausschreibung", description: "Ein Vermittler hat die Vakanz ausgeschrieben, du bewirbst dich." },
   { value: "anfrage", label: "Anfrage", description: "Ein Vermittler oder Kunde fragt dich direkt an." },

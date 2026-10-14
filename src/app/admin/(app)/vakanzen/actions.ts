@@ -101,7 +101,7 @@ export async function setVacancyStatus(id: number, status: string): Promise<Acti
   if (!result.changed) return ok();
   const applied = result.appliedNow && result.appliedAt ? `, beworben am ${formatDate(result.appliedAt)}` : "";
   await logActivity(vacancyOwner(vacancyId), `${statusText(result.from, result.to)}${applied}`);
-  await audit("update", { entity: "mandate", entityId: vacancyId, summary: `${label(vacancyId)}: Status ${result.to}` });
+  await audit("update", { entity: "mandate", entityId: vacancyId, summary: `${label(vacancyId)}: Status ${labelOf(mandateStatuses, result.to)}` });
   // Navigation badges count open vacancies, so the layout must render again as well.
   refresh();
   return ok(`Status: ${labelOf(mandateStatuses, result.to)}.`);

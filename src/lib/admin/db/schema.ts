@@ -196,7 +196,7 @@ export const contracts = pgTable(
     signedAt: date("signed_at", { mode: "string" }),
     /** Free text, e.g. "3 Monate auf Monatsende". */
     noticePeriod: text("notice_period"),
-    /** First marked as sent; stays when the contract is reopened, so it can no longer be deleted. */
+    /** When the contract was first marked as sent (info only). */
     sentAt: timestamp("sent_at", { withTimezone: true }),
     notes: text("notes"),
     createdAt: createdAt(),

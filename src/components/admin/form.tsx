@@ -142,17 +142,6 @@ function ActionFormInner({
   );
 }
 
-/** Submit button for forms that place it themselves (hideSubmit). */
-export function SubmitButton({ children, variant = "primary", size = "md", className }: { children: React.ReactNode; variant?: "primary" | "secondary" | "danger"; size?: "md" | "sm"; className?: string }) {
-  const { pending } = useFormState();
-  return (
-    <button type="submit" disabled={pending} className={buttonClass(variant, size, className)}>
-      {pending ? <Loader2 aria-hidden className="size-4 animate-spin" /> : null}
-      {children}
-    </button>
-  );
-}
-
 const control =
   "block w-full rounded-md border border-line bg-white px-3 py-2 text-[0.9375rem] text-ink shadow-[inset_0_1px_0_rgb(11_23_51/0.03)] transition-colors placeholder:text-slate/55 hover:border-slate/40 focus:border-blue focus:ring-2 focus:ring-blue/20 focus:outline-none disabled:bg-mist disabled:text-slate aria-[invalid=true]:border-red-600 aria-[invalid=true]:focus:ring-red-600/20";
 
@@ -381,60 +370,6 @@ export function CheckboxField({
         </p>
       ) : null}
     </div>
-  );
-}
-
-/** Several values from a fixed list as toggle chips; submitted as a JSON array. */
-export function MultiChoiceField({
-  name,
-  label,
-  hint,
-  className,
-  options,
-  defaultValue = [],
-}: Omit<BaseFieldProps, "required" | "disabled"> & {
-  options: readonly { value: string; label: string }[];
-  defaultValue?: string[];
-}) {
-  const [selected, setSelected] = useState<string[]>(defaultValue);
-  const error = useFieldError(name);
-  const id = `${useId()}-${name}`;
-  const ref = useRef<HTMLFieldSetElement>(null);
-  useFormReset(ref, () => setSelected(defaultValue));
-  return (
-    <fieldset ref={ref} className={className} aria-describedby={describedBy(id, hint, error)}>
-      <legend className="mb-1.5 text-sm font-medium text-ink">{label}</legend>
-      <input type="hidden" name={name} value={JSON.stringify(selected)} />
-      <div className="flex flex-wrap gap-2">
-        {options.map((o) => {
-          const on = selected.includes(o.value);
-          return (
-            <button
-              key={o.value}
-              type="button"
-              aria-pressed={on}
-              onClick={() => setSelected((s) => (on ? s.filter((v) => v !== o.value) : [...s, o.value]))}
-              className={cn(
-                "rounded-full border px-3 py-1 text-[0.8125rem] transition-colors",
-                on ? "border-blue bg-blue text-white" : "border-line bg-white text-ink hover:border-slate/40",
-              )}
-            >
-              {o.label}
-            </button>
-          );
-        })}
-      </div>
-      {hint ? (
-        <p id={`${id}-hint`} className="mt-1.5 text-[0.8125rem] text-slate">
-          {hint}
-        </p>
-      ) : null}
-      {error ? (
-        <p id={`${id}-error`} className="mt-1.5 text-[0.8125rem] font-medium text-red-700">
-          {error}
-        </p>
-      ) : null}
-    </fieldset>
   );
 }
 
