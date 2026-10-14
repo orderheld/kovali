@@ -46,7 +46,7 @@ Beim Wechsel zur GmbH: `legal.form` auf `"gmbh"` setzen, Firmenname, UID und Han
 | `NEXT_PUBLIC_SITE_URL` | erst mit eigener Domain: `https://www.kovali.ch` | gleich | Für Canonical-URLs und Sitemap. Solange die Seite auf `*.vercel.app` läuft, gilt diese Adresse |
 | `RESEND_API_KEY` | Schlüssel aus Schritt 4 | leer lassen | Nur auf dem Server, nie im Browser |
 | `CONTACT_TO_EMAIL` | `info@kovali.ch` | `info@kovali.ch` | Empfänger der Anfragen |
-| `CONTACT_FROM_EMAIL` | `KOVALI Website <website@mail.kovali.ch>` | gleich | Absender auf verifizierter Domain |
+| `CONTACT_FROM_EMAIL` | `KOVALI Website <website@kovali.ch>` | gleich | Absender auf der in Resend verifizierten Domain (eingerichtet ist `kovali.ch`) |
 | `CONTACT_IP_SALT` | Zufallswert | Zufallswert | `openssl rand -hex 32` |
 | `CONTACT_DRY_RUN` | `false` | `true` | Previews senden keine E-Mails. In Production wirkt der Wert nicht, dort wird immer versendet |
 | `DATABASE_URL` | optional, Schritt 5 | leer | Ohne Wert nur E-Mail-Versand |
@@ -70,6 +70,7 @@ Beim Wechsel zur GmbH: `legal.form` auf `"gmbh"` setzen, Firmenname, UID und Han
 
    Zeigt Vercel andere Werte an, gelten die Werte aus Vercel.
 3. **Wichtig:** Bestehende **MX-Einträge** und den SPF-Eintrag der E-Mail bei cyon **nicht ändern**, sonst kommt keine E-Mail mehr an `info@kovali.ch` an. Bestehende A- oder AAAA-Einträge für `@` und `www`, die auf cyon zeigen, ersetzen bzw. entfernen.
+   **Die Nameserver bleiben bei cyon** (`ns1.cyon.ch`, `ns2.cyon.ch`). Vercel bietet an, auf die Vercel-Nameserver zu wechseln: nicht machen. Sonst gelten die Einträge bei cyon nicht mehr, E-Mails an `@kovali.ch` kommen nicht an und Resend kann die Domain nicht bestätigen.
 4. Warten, bis Vercel die Domain als *Valid Configuration* meldet. Das SSL-Zertifikat erstellt Vercel automatisch.
 5. `NEXT_PUBLIC_SITE_URL` auf `https://www.kovali.ch` setzen und neu deployen (*Deployments → Redeploy*). Erst danach gibt die Website die Indexierung frei und verweist in Canonical-URLs, Sitemap und Vorschaubildern auf die eigene Domain.
 
@@ -78,9 +79,9 @@ Beim Wechsel zur GmbH: `legal.form` auf `"gmbh"` setzen, Firmenname, UID und Han
 Das Formular sendet jede Anfrage über [Resend](https://resend.com) an `info@kovali.ch`. Antworten gehen direkt an die Absenderin oder den Absender (Reply-To).
 
 1. Konto bei Resend anlegen, **Domains → Add Domain**.
-   Empfehlung: eine Subdomain wie `mail.kovali.ch` verwenden. So bleibt der SPF-Eintrag der Hauptdomain bei cyon unberührt.
+   Eingerichtet ist die Hauptdomain `kovali.ch`. Die Einträge von Resend liegen auf eigenen Namen (`resend._domainkey`, `send`) und berühren MX und SPF der Hauptdomain nicht.
    Als Region **EU (Irland, eu-west-1)** wählen.
-2. Resend zeigt drei bis vier DNS-Einträge an (MX und TXT für SPF auf `send.mail`, TXT für DKIM auf `resend._domainkey.mail`). Diese exakt so im cyon-DNS-Editor anlegen.
+2. Resend zeigt die nötigen DNS-Einträge an (unter anderem TXT für DKIM auf `resend._domainkey`). Diese exakt so im cyon-DNS-Editor anlegen.
 3. Empfohlen zusätzlich ein DMARC-Eintrag für die Hauptdomain, falls noch keiner besteht:
 
 | Typ | Name | Wert |
@@ -90,10 +91,12 @@ Das Formular sendet jede Anfrage über [Resend](https://resend.com) an `info@kov
    Nach einigen Wochen ohne Probleme kann `p=none` auf `p=quarantine` erhöht werden.
 4. In Resend **Verify** klicken und warten, bis die Domain als *Verified* erscheint.
 5. **API Keys → Create API Key** mit Berechtigung *Sending access*, eingeschränkt auf die Domain. Den Schlüssel als `RESEND_API_KEY` in Vercel (nur Production) eintragen.
-6. `CONTACT_FROM_EMAIL` auf eine Adresse der verifizierten Domain setzen, z. B. `KOVALI Website <website@mail.kovali.ch>`. Diese Adresse braucht kein Postfach.
+6. `CONTACT_FROM_EMAIL` auf eine Adresse der verifizierten Domain setzen, also `KOVALI Website <website@kovali.ch>`. Diese Adresse braucht kein Postfach.
 7. Neu deployen (*Deployments → Redeploy*), damit die Variablen greifen.
 
 **Was passiert bei Fehlern?** Jede Anfrage erhält eine Referenz (z. B. `KOV-20261013-7KQ4`). Diese wird angezeigt, mit der E-Mail versendet und im Vercel-Log protokolliert (ohne Personendaten). Kann die E-Mail nicht versendet werden, sieht die Person eine Fehlermeldung mit Referenz und der Adresse `info@kovali.ch`. Ist Neon eingerichtet, wird die Anfrage trotzdem gespeichert, mit Status `failed`.
+
+**Fehlersuche:** Im Vercel-Log (*Logs*) nach `contact.received` suchen. Das Feld `emailError` enthält die Meldung von Resend. Meldet Resend, die Domain sei nicht verifiziert, zuerst die Nameserver prüfen: `dig kovali.ch NS` muss `ns1.cyon.ch` und `ns2.cyon.ch` zeigen, und `dig resend._domainkey.kovali.ch TXT` muss den DKIM-Schlüssel liefern.
 
 **Schutz vor Missbrauch:** verstecktes Honeypot-Feld, Mindestzeit beim Ausfüllen, Begrenzung auf fünf Anfragen pro 15 Minuten und Absender (zusätzlich über die Datenbank, falls Neon aktiv ist), serverseitige Validierung aller Felder.
 
