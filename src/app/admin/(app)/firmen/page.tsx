@@ -6,13 +6,18 @@ import { requireAdmin } from "@/lib/admin/auth/session";
 import { kindCounts, listCompanies } from "@/lib/admin/data/companies";
 import { listHref, pageNumber, PAGE_SIZE, param } from "@/lib/admin/data/query";
 import { displayNo } from "@/lib/admin/format";
-import { companyKinds, companyStatuses, labelOf, offered, toneOf } from "@/lib/admin/options";
+import { companyKinds, companyStatuses, labelOf, toneOf } from "@/lib/admin/options";
 import { SearchBox } from "../_shared/search-box";
 
 /** Admin pages read the session and the database per request and may block. */
 export const instant = false;
 
 export const metadata: Metadata = { title: "Firmen" };
+
+/** Zero in grey, so the numbers that matter stand out. */
+function Count({ n }: { n: number }) {
+  return n ? <span className="font-medium text-ink">{n}</span> : <span className="text-slate/70">0</span>;
+}
 
 export default async function CompaniesPage({ searchParams }: PageProps<"/admin/firmen">) {
   await requireAdmin();
@@ -37,17 +42,20 @@ export default async function CompaniesPage({ searchParams }: PageProps<"/admin/
       <Tabs
         items={[
           { label: "Alle", href: listHref("/admin/firmen", { q }), active: !kind, count: all },
-          ...offered(companyKinds).map((k) => ({
-            label: k.label,
-            href: listHref("/admin/firmen", { q, art: k.value }),
-            active: kind === k.value,
-            count: counts[k.value] ?? 0,
-          })),
+          // Old kinds only while companies still have them.
+          ...companyKinds
+            .filter((k) => !k.legacy || counts[k.value])
+            .map((k) => ({
+              label: k.label,
+              href: listHref("/admin/firmen", { q, art: k.value }),
+              active: kind === k.value,
+              count: counts[k.value] ?? 0,
+            })),
         ]}
       />
       <Card>
         <div className="border-b border-line px-5 py-3">
-          <SearchBox action="/admin/firmen" defaultValue={q} placeholder="Name oder Ort" hidden={{ art: kind }} />
+          <SearchBox action="/admin/firmen" defaultValue={q} placeholder="Name, Ort, Branche oder UID" hidden={{ art: kind }} />
         </div>
         {rows.length ? (
           <>
@@ -59,6 +67,8 @@ export default async function CompaniesPage({ searchParams }: PageProps<"/admin/
                   <Th>Ort</Th>
                   <Th align="right">Kontakte</Th>
                   <Th align="right">Offene Vakanzen</Th>
+                  <Th align="right">Laufende Aufträge</Th>
+                  <Th align="right">Verträge</Th>
                   <Th>Status</Th>
                 </tr>
               </thead>
@@ -78,8 +88,18 @@ export default async function CompaniesPage({ searchParams }: PageProps<"/admin/
                       <Badge tone={toneOf(companyKinds, c.kind)}>{labelOf(companyKinds, c.kind)}</Badge>
                     </Td>
                     <Td>{c.city ?? "–"}</Td>
-                    <Td align="right">{c.contacts}</Td>
-                    <Td align="right">{c.openMandates}</Td>
+                    <Td align="right">
+                      <Count n={c.contacts} />
+                    </Td>
+                    <Td align="right">
+                      <Count n={c.openMandates} />
+                    </Td>
+                    <Td align="right">
+                      <Count n={c.runningAssignments} />
+                    </Td>
+                    <Td align="right">
+                      <Count n={c.contracts} />
+                    </Td>
                     <Td>
                       <Badge tone={toneOf(companyStatuses, c.status)}>{labelOf(companyStatuses, c.status)}</Badge>
                     </Td>

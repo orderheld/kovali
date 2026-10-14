@@ -35,7 +35,7 @@ export function ContactForm({
         <CheckboxField
           name="isSignatory"
           label="Zeichnungsberechtigt"
-          hint="Wird in Verträgen als Unterzeichner vorgeschlagen."
+          hint="Wird bei neuen Verträgen mit dieser Firma als Kontakt vorgeschlagen."
           defaultChecked={contact?.isSignatory}
           className="sm:col-span-2 lg:col-span-3"
         />

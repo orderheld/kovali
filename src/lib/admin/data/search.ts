@@ -1,32 +1,42 @@
 import "server-only";
-import { asc, count, desc, eq, ilike, or, sql, type Column, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, ilike, inArray, or, sql, type Column, type SQL } from "drizzle-orm";
+import { contractSearchWhere } from "../contracts/data";
 import { getDb } from "../db/client";
-import { companies, contacts, contracts, mandates } from "../db/schema";
+import { assignments, companies, contacts, contracts, documents, mandates, snippets } from "../db/schema";
+import { displayNo } from "../format";
+import { documentKinds } from "../options";
+import { companySearchWhere } from "./companies";
 import { mandateSearchWhere } from "./mandates";
 import { likePattern } from "./query";
+import { everyWord } from "./words";
 
 /**
- * Global search of the admin area (/admin/suche). A display number such as M-0007 or a
- * contract number jumps straight to the record; anything else searches vacancies, companies,
- * contacts and contracts. Search terms may contain names, so they are never logged.
+ * Global search of the admin area (/admin/suche). A display number such as A-0003, M-0007 or
+ * a contract number jumps straight to the record; anything else searches assignments,
+ * vacancies, contracts, text snippets, companies, contacts and document file names. Search
+ * terms may contain names, so they are never logged.
  */
 
 export const SEARCH_GROUP_LIMIT = 10;
 
-export type JumpTarget = { kind: "mandate" | "company"; id: number } | { kind: "contract"; number: string };
+type RecordKind = "assignment" | "mandate" | "company" | "snippet";
 
-const PREFIXES: Record<string, "mandate" | "company"> = {
+export type JumpTarget = { kind: RecordKind; id: number } | { kind: "contract"; number: string };
+
+const PREFIXES: Record<string, RecordKind> = {
+  A: "assignment",
   M: "mandate",
   F: "company",
+  T: "snippet",
 };
 
 /**
- * Recognises display numbers: M-7, f0003 and contract numbers such as V-2026-0001 (also
- * "v 2026-1"). Returns null for anything else.
+ * Recognises display numbers: A-3, m7, f0003, T-0004 and contract numbers such as
+ * V-2026-0001 (also "v 2026-1"). Returns null for anything else.
  */
 export function parseDisplayNumber(input: string): JumpTarget | null {
   const q = input.trim();
-  const record = /^(M|F)\s*-?\s*(\d{1,9})$/i.exec(q);
+  const record = /^(A|M|F|T)\s*-?\s*(\d{1,9})$/i.exec(q);
   if (record) {
     const id = Number(record[2]);
     if (!Number.isSafeInteger(id) || id <= 0) return null;
@@ -63,10 +73,31 @@ export function phoneVariants(input: string): string[] | null {
   return [...variants];
 }
 
+/**
+ * A short piece of `text` around the first search word it contains, for result lists. Starts
+ * at the beginning when no word occurs (the hit was in the title). Whitespace is collapsed.
+ */
+export function excerpt(text: string, query: string, length = 160): string {
+  const flat = text.replace(/\s+/g, " ").trim();
+  if (flat.length <= length) return flat;
+  const lower = flat.toLowerCase();
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+  const hit = words.map((w) => lower.indexOf(w)).filter((i) => i >= 0);
+  const at = hit.length ? Math.min(...hit) : 0;
+  // Some context before the hit, but never past the end.
+  const start = Math.max(0, Math.min(at - Math.floor(length / 4), flat.length - length));
+  const end = Math.min(flat.length, start + length);
+  return `${start > 0 ? "…" : ""}${flat.slice(start, end).trim()}${end < flat.length ? "…" : ""}`;
+}
+
 /** Where a display number leads, or null if the record does not exist (any more). */
 export async function resolveJump(target: JumpTarget): Promise<string | null> {
   const db = await getDb();
   switch (target.kind) {
+    case "assignment": {
+      const [row] = await db.select({ id: assignments.id }).from(assignments).where(eq(assignments.id, target.id)).limit(1);
+      return row ? `/admin/auftraege/${row.id}` : null;
+    }
     case "mandate": {
       const [row] = await db.select({ id: mandates.id }).from(mandates).where(eq(mandates.id, target.id)).limit(1);
       return row ? `/admin/vakanzen/${row.id}` : null;
@@ -74,6 +105,10 @@ export async function resolveJump(target: JumpTarget): Promise<string | null> {
     case "company": {
       const [row] = await db.select({ id: companies.id }).from(companies).where(eq(companies.id, target.id)).limit(1);
       return row ? `/admin/firmen/${row.id}` : null;
+    }
+    case "snippet": {
+      const [row] = await db.select({ id: snippets.id }).from(snippets).where(eq(snippets.id, target.id)).limit(1);
+      return row ? `/admin/texte/${row.id}` : null;
     }
     case "contract": {
       const [row] = await db
@@ -84,6 +119,59 @@ export async function resolveJump(target: JumpTarget): Promise<string | null> {
       return row ? `/admin/vertraege/${row.id}` : null;
     }
   }
+}
+
+/**
+ * Assignments: every word in title, end client, location, notes or the company's name; "A-3"
+ * also finds the assignment by its number. The query must left-join companies on
+ * assignments.company_id.
+ */
+export function assignmentSearchWhere(q: string | null | undefined): SQL | undefined {
+  const words = everyWord(q, (pattern) =>
+    or(
+      ilike(assignments.title, pattern),
+      ilike(assignments.endClient, pattern),
+      ilike(assignments.location, pattern),
+      ilike(assignments.notes, pattern),
+      ilike(companies.name, pattern),
+    ),
+  );
+  if (!words) return undefined;
+  const number = /^a\s*-?\s*0*(\d{1,9})$/i.exec(q?.trim() ?? "");
+  return number ? or(words, eq(assignments.id, Number(number[1]))) : words;
+}
+
+/** Text snippets: every word in title, category or the text itself. */
+export function snippetSearchWhere(q: string | null | undefined): SQL | undefined {
+  return everyWord(q, (pattern) => or(ilike(snippets.title, pattern), ilike(snippets.category, pattern), ilike(snippets.body, pattern)));
+}
+
+/**
+ * Documents by file name, or by kind ("Lohnabrechnung" finds all payslips). Only documents of
+ * a company, vacancy, contract or assignment: files of the former candidate module, still
+ * stored when candidates existed, belong to none of them and stay out of the search.
+ */
+export function documentSearchWhere(q: string | null | undefined): SQL | undefined {
+  const words = everyWord(q, (pattern) => {
+    const word = pattern.slice(1, -1).replace(/\\(.)/g, "$1").toLowerCase();
+    // Short words would match half the kinds ("a" is in most labels).
+    const kinds = word.length >= 3 ? documentKinds.filter((k) => !k.legacy && k.label.toLowerCase().includes(word)).map((k) => k.value) : [];
+    return or(ilike(documents.filename, pattern), kinds.length ? inArray(documents.kind, kinds) : undefined);
+  });
+  if (!words) return undefined;
+  return and(words, sql`num_nonnulls(${documents.companyId}, ${documents.mandateId}, ${documents.contractId}, ${documents.assignmentId}) > 0`);
+}
+
+/** Contacts: name in either order, e-mail, role, or a phone number in any spelling. */
+export function contactSearchWhere(q: string | null | undefined): SQL | undefined {
+  const pattern = likePattern(q);
+  if (!pattern) return undefined;
+  return or(
+    nameMatches(contacts.firstName, contacts.lastName, pattern),
+    ilike(contacts.email, pattern),
+    ilike(contacts.role, pattern),
+    phoneMatches(contacts.phone, phoneVariants(q ?? "")),
+  );
 }
 
 /** Matches "Vorname Nachname" in both orders. */
@@ -102,26 +190,57 @@ async function group<T>(rows: Promise<T[]>, total: Promise<{ n: number }[]>) {
   return { rows: r, total: t?.n ?? 0 };
 }
 
+/** The record a document belongs to, as a link label and path. */
+function documentOwner(d: {
+  companyId: number | null;
+  companyName: string | null;
+  mandateId: number | null;
+  mandateTitle: string | null;
+  contractId: number | null;
+  contractNumber: string | null;
+  contractTitle: string | null;
+  assignmentId: number | null;
+  assignmentTitle: string | null;
+}): { label: string; href: string } {
+  if (d.contractId) return { label: `Vertrag ${d.contractNumber ?? ""} ${d.contractTitle ?? ""}`.trim(), href: `/admin/vertraege/${d.contractId}` };
+  if (d.assignmentId) return { label: `Auftrag ${displayNo.assignment(d.assignmentId)} ${d.assignmentTitle ?? ""}`.trim(), href: `/admin/auftraege/${d.assignmentId}` };
+  if (d.mandateId) return { label: `Vakanz ${displayNo.mandate(d.mandateId)} ${d.mandateTitle ?? ""}`.trim(), href: `/admin/vakanzen/${d.mandateId}` };
+  return { label: `Firma ${d.companyName ?? displayNo.company(d.companyId ?? 0)}`, href: `/admin/firmen/${d.companyId}` };
+}
+
 export async function searchAll(input: string) {
-  const pattern = likePattern(input);
-  if (!pattern) return null;
+  if (!likePattern(input)) return null;
   const db = await getDb();
-  const phones = phoneVariants(input);
-  const digits = input.replace(/\D/g, "");
 
-  // Same condition as the vacancy list, so "Alle anzeigen" there shows these hits.
+  // Vacancies, contracts and companies use the same condition as their lists, so "Alle
+  // anzeigen" there shows these hits.
   const mandateWhere = mandateSearchWhere(input);
-  const companyWhere = or(
-    ilike(companies.name, pattern),
-    ilike(companies.legalName, pattern),
-    ilike(companies.city, pattern),
-    ilike(companies.uid, pattern),
-    digits.length >= 6 ? sql`regexp_replace(coalesce(${companies.uid}, ''), '[^0-9]', '', 'g') like ${`%${digits}%`}` : undefined,
-  );
-  const contactWhere = or(nameMatches(contacts.firstName, contacts.lastName, pattern), ilike(contacts.email, pattern), phoneMatches(contacts.phone, phones));
-  const contractWhere = or(ilike(contracts.number, pattern), ilike(contracts.title, pattern));
+  const contractWhere = contractSearchWhere(input);
+  const companyWhere = companySearchWhere(input);
+  const assignmentWhere = assignmentSearchWhere(input);
+  const snippetWhere = snippetSearchWhere(input);
+  const contactWhere = contactSearchWhere(input);
+  const documentWhere = documentSearchWhere(input);
 
-  const [mandateResults, companyResults, contactResults, contractResults] = await Promise.all([
+  const [assignmentResults, mandateResults, contractResults, snippetResults, companyResults, contactResults, documentResults] = await Promise.all([
+    group(
+      db
+        .select({
+          id: assignments.id,
+          title: assignments.title,
+          endClient: assignments.endClient,
+          status: assignments.status,
+          startDate: assignments.startDate,
+          endDate: assignments.endDate,
+          company: companies.name,
+        })
+        .from(assignments)
+        .leftJoin(companies, eq(companies.id, assignments.companyId))
+        .where(assignmentWhere)
+        .orderBy(sql`case ${assignments.status} when 'laufend' then 0 when 'geplant' then 1 else 2 end`, sql`${assignments.startDate} desc nulls last`, desc(assignments.id))
+        .limit(SEARCH_GROUP_LIMIT),
+      db.select({ n: count() }).from(assignments).leftJoin(companies, eq(companies.id, assignments.companyId)).where(assignmentWhere),
+    ),
     group(
       db
         .select({
@@ -138,6 +257,33 @@ export async function searchAll(input: string) {
         .orderBy(desc(mandates.createdAt), desc(mandates.id))
         .limit(SEARCH_GROUP_LIMIT),
       db.select({ n: count() }).from(mandates).leftJoin(companies, eq(companies.id, mandates.companyId)).where(mandateWhere),
+    ),
+    group(
+      db
+        .select({
+          id: contracts.id,
+          number: contracts.number,
+          title: contracts.title,
+          kind: contracts.template,
+          status: contracts.status,
+          validUntil: contracts.validUntil,
+          company: companies.name,
+        })
+        .from(contracts)
+        .leftJoin(companies, eq(companies.id, contracts.companyId))
+        .where(contractWhere)
+        .orderBy(desc(contracts.createdAt), desc(contracts.id))
+        .limit(SEARCH_GROUP_LIMIT),
+      db.select({ n: count() }).from(contracts).leftJoin(companies, eq(companies.id, contracts.companyId)).where(contractWhere),
+    ),
+    group(
+      db
+        .select({ id: snippets.id, title: snippets.title, category: snippets.category, body: snippets.body, pinned: snippets.pinned })
+        .from(snippets)
+        .where(snippetWhere)
+        .orderBy(desc(snippets.pinned), asc(sql`lower(${snippets.title})`), asc(snippets.id))
+        .limit(SEARCH_GROUP_LIMIT),
+      db.select({ n: count() }).from(snippets).where(snippetWhere),
     ),
     group(
       db
@@ -168,21 +314,54 @@ export async function searchAll(input: string) {
     ),
     group(
       db
-        .select({ id: contracts.id, number: contracts.number, title: contracts.title, status: contracts.status, company: companies.name })
-        .from(contracts)
-        .leftJoin(companies, eq(companies.id, contracts.companyId))
-        .where(contractWhere)
-        .orderBy(desc(contracts.createdAt), desc(contracts.id))
+        .select({
+          id: documents.id,
+          filename: documents.filename,
+          kind: documents.kind,
+          mimeType: documents.mimeType,
+          sizeBytes: documents.sizeBytes,
+          createdAt: documents.createdAt,
+          companyId: documents.companyId,
+          companyName: companies.name,
+          mandateId: documents.mandateId,
+          mandateTitle: mandates.title,
+          contractId: documents.contractId,
+          contractNumber: contracts.number,
+          contractTitle: contracts.title,
+          assignmentId: documents.assignmentId,
+          assignmentTitle: assignments.title,
+        })
+        .from(documents)
+        .leftJoin(companies, eq(companies.id, documents.companyId))
+        .leftJoin(mandates, eq(mandates.id, documents.mandateId))
+        .leftJoin(contracts, eq(contracts.id, documents.contractId))
+        .leftJoin(assignments, eq(assignments.id, documents.assignmentId))
+        .where(documentWhere)
+        .orderBy(desc(documents.createdAt), desc(documents.id))
         .limit(SEARCH_GROUP_LIMIT),
-      db.select({ n: count() }).from(contracts).where(contractWhere),
+      db.select({ n: count() }).from(documents).where(documentWhere),
     ),
   ]);
 
   return {
+    assignments: assignmentResults,
     mandates: mandateResults,
+    contracts: contractResults,
+    snippets: { total: snippetResults.total, rows: snippetResults.rows.map((s) => ({ ...s, excerpt: excerpt(s.body, input) })) },
     companies: companyResults,
     contacts: contactResults,
-    contracts: contractResults,
+    documents: {
+      total: documentResults.total,
+      rows: documentResults.rows.map((d) => ({
+        id: d.id,
+        filename: d.filename,
+        kind: d.kind,
+        mimeType: d.mimeType,
+        sizeBytes: d.sizeBytes,
+        createdAt: d.createdAt,
+        owner: documentOwner(d),
+      })),
+    },
   };
 }
 
