@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { RotateCcw } from "lucide-react";
+import { CheckCircle2, RotateCcw } from "lucide-react";
 import { ActionButton } from "@/components/admin/form";
-import { Card, CardBody, PageHeader, Tabs } from "@/components/admin/ui";
+import { Card, CardBody, Notice, PageHeader, Tabs } from "@/components/admin/ui";
 import { requireAdmin } from "@/lib/admin/auth/session";
 import { earningsFallback, loadEarningsSettings } from "@/lib/admin/data/earnings";
 import { param } from "@/lib/admin/data/query";
@@ -26,7 +26,7 @@ function amount(value: string | undefined, max: number): number | null {
 /**
  * /admin/rechner: "Was bleibt mir?" for a rate, prefilled from ?satz=&einheit=&pensum=&modell=
  * &basis=&stunden=&spesen= (links from assignments and vacancies). ?ansicht=annahmen shows the
- * assumptions with their sources.
+ * assumptions with their sources; ?zurueckgesetzt= follows a reset to the defaults.
  */
 export default async function CalculatorPage({ searchParams }: PageProps<"/admin/rechner">) {
   await requireAdmin();
@@ -48,6 +48,9 @@ export default async function CalculatorPage({ searchParams }: PageProps<"/admin
   };
   // A new prefill (another assignment) starts the calculator fresh.
   const calculatorKey = JSON.stringify(initial);
+  // Changes only on a reset: the form then shows the defaults. A save keeps the form mounted,
+  // so its success message stays visible.
+  const reset = param(sp.zurueckgesetzt);
   const savedText = !saved
     ? "Noch nicht gespeichert: Es gelten die Standardwerte."
     : savedAt
@@ -72,11 +75,16 @@ export default async function CalculatorPage({ searchParams }: PageProps<"/admin
         </>
       ) : (
         <div className="max-w-5xl space-y-6">
+          {reset && !saved ? (
+            <Notice tone="green" icon={CheckCircle2}>
+              Zurückgesetzt. Es gelten wieder die Standardwerte.
+            </Notice>
+          ) : null}
           <Card>
             <CardBody className="flex flex-wrap items-start justify-between gap-4 text-sm">
               <div className="max-w-2xl space-y-1.5">
                 <p className="text-ink">
-                  Mit diesen Werten rechnen der Rechner, deine Aufträge und die Übersicht. Die Standardwerte sind recherchiert, Stand {formatDate(EARNINGS_AS_OF)}. Prüfe sie einmal im Jahr.
+                  Mit diesen Werten rechnen der Rechner, deine Aufträge und die Übersicht. Die Standardwerte gelten für 2026, recherchiert am {formatDate(EARNINGS_AS_OF)}. Prüfe sie einmal im Jahr.
                 </p>
                 <p className="text-slate">
                   «Richtwert» und «Annahme» sind Schätzungen. Ersetze sie durch die Zahlen aus deinen Offerten und Verfügungen.
@@ -94,8 +102,7 @@ export default async function CalculatorPage({ searchParams }: PageProps<"/admin
               ) : null}
             </CardBody>
           </Card>
-          {/* Remounted when saved values appear or are removed, so the fields show the stored state. */}
-          <EarningsSettingsForm key={saved ? "eigene" : "standard"} settings={settings} defaults={earningsFallback()} />
+          <EarningsSettingsForm key={reset ?? "annahmen"} settings={settings} defaults={earningsFallback()} />
         </div>
       )}
     </>

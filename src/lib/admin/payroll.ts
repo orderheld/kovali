@@ -64,9 +64,6 @@ export interface PayrollRates {
   gavEmployee: number;
 }
 
-/** The date the defaults below were checked. Shown next to the rates; check yearly. */
-export const RATES_AS_OF = "2026-10-13";
-
 /** Defaults for 2026. Every value is listed with its source in RATE_SOURCES. */
 export const OFFICIAL_RATES: PayrollRates = {
   holidayWeeks: 5,
@@ -144,6 +141,14 @@ export const RATE_SOURCES: RateSource[] = [
     url: "https://www.bsv.admin.ch/dam/de/sd-web/GZplHByBJoFc/Internet_Masszahlenarticles_25_26_d.pdf",
   },
   {
+    // Not yet the default: the values above apply until 31.12.2026.
+    keys: ["bvgEntryThreshold", "bvgCoordinationDeduction", "bvgUpperLimit", "bvgMinCoordinated"],
+    label: "Ab 2027: Eintrittsschwelle CHF 23’040, Koordinationsabzug CHF 26’880, oberer Grenzbetrag CHF 92’160, min. koordinierter Lohn CHF 3’840",
+    kind: "amtlich",
+    source: "Bundesrat, Anpassung an die Teuerung vom 2.10.2026; Vorsorgeforum, Vorsorgezahlen 2027 (Stand 14.10.2026)",
+    url: "https://www.vorsorgeforum.ch/wp-content/uploads/2026/10/Vorsorgezahlen-2027-Vorsorgeforum.pdf",
+  },
+  {
     keys: ["bvgCredit25", "bvgCredit35", "bvgCredit45", "bvgCredit55", "bvgEmployerShare"],
     label: "BVG-Altersgutschriften 7 / 10 / 15 / 18 % des koordinierten Lohns; Arbeitgeber trägt mindestens die Hälfte",
     kind: "amtlich",
@@ -203,14 +208,6 @@ export const RATE_SOURCES: RateSource[] = [
     source: "Richtwert; massgebend ist der Vorsorgeplan der Pensionskasse",
   },
 ];
-
-export const VAT_SOURCE: RateSource = {
-  keys: [],
-  label: "MWST-Normalsatz 8.1 % seit 1.1.2024; MWST-pflichtig ab CHF 100’000 Umsatz pro Jahr",
-  kind: "amtlich",
-  source: "ESTV, MWST-Sätze; Art. 10 Abs. 2 lit. a MWSTG (SR 641.20)",
-  url: "https://www.estv.admin.ch/de/mwst-steuersaetze",
-};
 
 /** Ferienentschädigung for n weeks: holiday days ÷ (260 working days − holiday days). */
 export function holidaySupplement(weeks: number): number {

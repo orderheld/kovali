@@ -65,7 +65,9 @@ function Example({ settings }: { settings: EarningsSettings }) {
   ];
   return (
     <div className="rounded-lg border border-line bg-mist/60 px-4 py-3 text-sm" aria-live="polite">
-      <p className="text-slate">Mit diesen Werten bleiben dir bei CHF 120 pro Stunde und 100 % Pensum pro Monat:</p>
+      <p className="text-slate">
+        Mit diesen Werten bleiben dir bei CHF 120 pro Stunde und 100 % Pensum pro Monat {settings.taxReservePercent > 0 ? "nach Steuer-Rücklage" : "vor Steuern"}:
+      </p>
       <dl className="mt-2 flex flex-wrap gap-x-6 gap-y-1">
         {rows.map((r) => (
           <div key={r.label} className="flex gap-2">

@@ -3,7 +3,7 @@
 import { useId, useState } from "react";
 import { ActionForm, FormSection, SelectField, TextAreaField, TextField, useFormState } from "@/components/admin/form";
 import { LinkButton } from "@/components/admin/ui";
-import { computeEarnings, formatHours, hoursPerYear, workingDaysPerYear, type EarningsSettings } from "@/lib/admin/earnings";
+import { computeEarnings, formatHours, hoursPerYear, netTaxNote, workingDaysPerYear, type EarningsSettings } from "@/lib/admin/earnings";
 import { formatChf } from "@/lib/admin/format";
 import type { ActionState } from "@/lib/admin/forms";
 import { assignmentStatuses, billingModels, rateBases, rateUnits, remoteOptions, type Option } from "@/lib/admin/options";
@@ -233,12 +233,12 @@ export function AssignmentForm({
           <div className="grid grid-cols-[minmax(0,1fr)_9rem] items-start gap-3">
             <TextField
               name="rateAmount"
-              label={preview.billing === "lohn" ? "Satz (all-in)" : "Satz ohne MWST"}
+              label={preview.billing !== "lohn" ? "Satz ohne MWST" : preview.rateBasis === "kostensatz" ? "Kostensatz" : "Satz (all-in)"}
               inputMode="decimal"
               suffix="CHF"
               defaultValue={values.rateAmount}
             />
-            <SelectField name="rateUnit" label="Einheit" options={rateUnits} defaultValue={values.rateUnit ?? "stunde"} />
+            <SelectField name="rateUnit" label="Einheit" options={rateUnits} defaultValue={values.rateUnit ?? "stunde"} hint="1 Tag = 8.4 Stunden" />
           </div>
           <TextField
             name="hoursPerMonth"
@@ -263,7 +263,7 @@ export function AssignmentForm({
           <div className="rounded-md bg-mist/70 px-4 py-3 text-sm sm:col-span-full" aria-live="polite">
             {result ? (
               <p className="text-ink">
-                Mit deinen Annahmen bleiben dir ca. <strong className="font-semibold">{formatChf(result.net.month, { round: true })} pro Monat</strong> (
+                Mit deinen Annahmen bleiben dir {netTaxNote(result)} ca. <strong className="font-semibold">{formatChf(result.net.month, { round: true })} pro Monat</strong> (
                 {formatChf(result.net.year, { round: true })} pro Jahr) von {formatChf(result.revenue.month, { round: true })}.
               </p>
             ) : (

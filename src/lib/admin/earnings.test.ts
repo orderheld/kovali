@@ -8,6 +8,8 @@ import {
   EARNINGS_DEFAULTS,
   EARNINGS_FIELDS,
   hoursPerYear,
+  netLabel,
+  netTaxNote,
   sourcesFor,
   workingDaysPerYear,
   type Earnings,
@@ -275,9 +277,56 @@ describe("several assignments", () => {
     const total = computeEarningsTotal([at({ workload: 50 }), at({ rate: 100, workload: 50, billing: "lohn" }), at({ rate: 0 })], S)!;
     expect(total.model).toBe("gemischt");
     expect(total.revenue.year).toBeCloseTo(invoice.revenue.year + payroll.revenue.year, 6);
-    expect(total.net.year).toBeCloseTo(invoice.net.year + payroll.net.year, 6);
+    // The payroll part (gross 100 × 949.2 = 94’920, above the BVG entry threshold) insures him in a
+    // pension fund, so the Säule 3a of the Einzelfirma drops from 10 % × 110’404 = 11’040.40 to 7’258.
+    expect(year(invoice, "vorsorge")).toBeCloseTo(11_040.4, 6);
+    expect(year(total, "vorsorge")).toBe(7_258);
+    expect(total.net.year).toBeCloseTo(invoice.net.year + payroll.net.year + 11_040.4 - 7_258, 6);
     expect(total.hoursPerYear).toBeCloseTo(1898.4, 6);
     expect(computeEarningsTotal([at({ rate: 0 })], S)).toBeNull();
+  });
+
+  it("caps the Säule 3a at the small amount next to a payroll assignment with a pension fund", () => {
+    // Rechnung 125 × 1’518.72 = 189’840, profit 186’340, 3a wanted 10 % = 18’634.
+    // Lohn brutto 95/h at 100 %: gross 180’348, BVG applies → 3a at most 7’258.
+    const mix = [at({ rate: 125, workload: 80 }), at({ rate: 95, billing: "lohn", rateBasis: "brutto" })];
+    const total = computeEarningsTotal(mix, S)!;
+    const vorsorge = total.lines.find((l) => l.key === "vorsorge")!;
+    expect(vorsorge.year).toBe(7_258);
+    expect(vorsorge.note).toContain("mit Pensionskasse aus dem Lohn");
+    const separate = run(mix[0]).net.year + run(mix[1]).net.year;
+    expect(total.net.year).toBeCloseTo(separate + 18_634 - 7_258, 6);
+    expect(total.net.year).toBeCloseTo(312_011, 0);
+    // A small payroll job below the BVG entry threshold (30 × 379.68 = 11’390.40) leaves the large 3a.
+    const small = computeEarningsTotal([at({ rate: 125, workload: 80 }), at({ rate: 30, workload: 20, billing: "lohn" })], S)!;
+    expect(year(small, "vorsorge")).toBeCloseTo(18_634, 6);
+  });
+
+  it("says where a line comes from when both models are combined", () => {
+    const mix = [at({ rate: 125, workload: 40 }), at({ rate: 95, workload: 50, billing: "lohn", rateBasis: "brutto" })];
+    const total = computeEarningsTotal(mix, S)!;
+    const labels = total.lines.filter((l) => l.group !== "info").map((l) => l.label);
+    expect(new Set(labels).size).toBe(labels.length);
+    expect(total.lines.find((l) => l.key === "ahv")!.label).toBe("AHV/IV/EO (Einzelfirma)");
+    expect(total.lines.find((l) => l.key === "lohn-ahvIvEo")!.label).toBe("AHV/IV/EO (Lohn)");
+    expect(total.lines.find((l) => l.key === "ktg")!.label).toBe("Krankentaggeld (Einzelfirma)");
+    expect(total.lines.find((l) => l.key === "lohn-ktg")!.label).toBe("Krankentaggeld (Lohn)");
+    // Lines that occur once keep their name; a single model keeps all names.
+    expect(total.lines.find((l) => l.key === "haftpflicht")!.label).toBe("Berufshaftpflicht");
+    expect(computeEarningsTotal([at({ workload: 50 }), at({ workload: 50 })], S)!.lines.find((l) => l.key === "ahv")!.label).toBe("AHV/IV/EO");
+  });
+});
+
+describe("labels of what is left", () => {
+  it("says «vor Steuern» without a tax reserve and «nach Steuer-Rücklage» with one", () => {
+    expect(netLabel(run(at({})))).toBe("Bleibt dir vor Steuern");
+    expect(netTaxNote(run(at({}), { ...S, taxReservePercent: 20 }))).toBe("nach Steuer-Rücklage");
+  });
+
+  it("words the MWST notice as a projection", () => {
+    const notice = run(at({})).notices.join(" ");
+    expect(notice).toContain("Aufs Jahr hochgerechnet sind das CHF 227’808 Umsatz.");
+    expect(notice).toContain("Kläre mit der ESTV, ab wann");
   });
 });
 

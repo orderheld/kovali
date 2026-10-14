@@ -161,7 +161,10 @@ describe.skipIf(!url)("assignments, earnings settings and dashboard (database)",
     expect(await saveEarningsSettings(idle, form({ ...values, ktgPercent: "viel" }))).toMatchObject({ status: "error", errors: { ktgPercent: expect.any(String) } });
     expect((await loadEarningsSettings()).settings.ktgPercent).toBe(1.3);
 
-    expect(await clearEarningsSettings()).toMatchObject({ status: "success" });
+    // The reset reloads the Annahmen with a new key, so the form shows the defaults.
+    const { redirect } = await import("next/navigation");
+    expect(await clearEarningsSettings()).toBeUndefined();
+    expect(redirect).toHaveBeenLastCalledWith(expect.stringMatching(/^\/admin\/rechner\?ansicht=annahmen&zurueckgesetzt=\d+$/));
     expect(await loadEarningsSettings()).toMatchObject({ saved: false, settings: { ktgPercent: EARNINGS_DEFAULTS.ktgPercent, fakEnabled: true } });
     expect(await rows("select summary from audit_log where entity = 'settings' order by id")).toEqual([
       { summary: "Rechner: Annahmen gespeichert" },

@@ -5,6 +5,7 @@ import {
   payrollFromGross,
   publicHolidaySupplement,
   RATE_SOURCES,
+  VAT_RATE_PERCENT,
   VAT_THRESHOLD,
   wageFromRate,
   type PayrollRates,
@@ -114,7 +115,7 @@ export const EARNINGS_DEFAULTS: EarningsSettings = {
   otherFixedMonthly: 0,
   taxReservePercent: 0,
   vatRegistered: false,
-  vatRate: 8.1,
+  vatRate: VAT_RATE_PERCENT,
   providerFeePercent: 0,
   payroll: OFFICIAL_RATES,
 };
@@ -400,6 +401,15 @@ export const EARNINGS_SOURCES: readonly EarningsSource[] = [
     url: "https://www.ubs.com/ch/de/help/pension/maximal-contribution-2026.html",
   },
   {
+    // Not yet the default: the values above apply until 31.12.2026.
+    keys: ["pensionMode", "pensionPercent"],
+    label: "Säule 3a ab 2027: ohne Pensionskasse höchstens CHF 36’864, mit Pensionskasse CHF 7’373",
+    kind: "amtlich",
+    confidence: "hoch",
+    source: "VIAC «Neue Maximalbeiträge 2027» (Stand 14.10.2026)",
+    url: "https://viac.ch/en/article/pillar-3a-new-maximum-contributions-for-2027/",
+  },
+  {
     keys: ["pensionMode"],
     label: "Freiwillige Pensionskasse über den Berufsverband oder die Auffangeinrichtung. Die Hälfte der Beiträge mindert das AHV-Einkommen",
     kind: "amtlich",
@@ -624,7 +634,7 @@ interface InvoiceBase {
  * social contributions (revenue − expenses − fixed costs), less half of voluntary BVG
  * contributions; the Ausgleichskasse grosses the tax figure up the same way (Art. 9 AHVG).
  */
-function invoiceEarnings(b: InvoiceBase, s: EarningsSettings): Earnings {
+function invoiceEarnings(b: InvoiceBase, s: EarningsSettings, { pensionFund = false }: { pensionFund?: boolean } = {}): Earnings {
   const lines: EarningsLine[] = [];
   const notices: string[] = [];
   const fixedYear = Math.max(s.liabilityYearly, 0) + Math.max(s.fiduciaryYearly, 0) + Math.max(s.otherFixedMonthly, 0) * 12;
@@ -667,14 +677,17 @@ function invoiceEarnings(b: InvoiceBase, s: EarningsSettings): Earnings {
     } else {
       const wanted = earned * p(s.pensionPercent);
       const netEarned = Math.max(profit - socialYear, 0);
-      const cap = Math.min(netEarned * p(PILLAR_3A_SHARE), PILLAR_3A_MAX_WITHOUT_PK);
+      // With a pension fund (e.g. through a payroll assignment) only the small Säule 3a is open.
+      const cap = pensionFund ? Math.min(netEarned, PILLAR_3A_MAX_WITH_PK) : Math.min(netEarned * p(PILLAR_3A_SHARE), PILLAR_3A_MAX_WITHOUT_PK);
       const amount = Math.min(wanted, cap);
       lines.push(
         line("vorsorge", "Säule 3a", "vorsorge", s.pensionPercent, amount, {
           note:
-            amount < wanted
-              ? `auf das Maximum gekürzt: 20 % des Nettoerwerbseinkommens, höchstens ${chfRound(PILLAR_3A_MAX_WITHOUT_PK)}`
-              : "in % des Gewinns",
+            amount >= wanted
+              ? "in % des Gewinns"
+              : pensionFund
+                ? `auf das Maximum gekürzt: mit Pensionskasse aus dem Lohn höchstens ${chfRound(PILLAR_3A_MAX_WITH_PK)}`
+                : `auf das Maximum gekürzt: 20 % des Nettoerwerbseinkommens, höchstens ${chfRound(PILLAR_3A_MAX_WITHOUT_PK)}`,
           estimate: "Annahme",
         }),
       );
@@ -705,8 +718,9 @@ function invoiceEarnings(b: InvoiceBase, s: EarningsSettings): Earnings {
       }),
     );
   } else if (b.revenueYear > VAT_THRESHOLD) {
+    // The figures are a run rate, not the real turnover of a year: worded as a projection.
     notices.push(
-      `Mit ${chfRound(b.revenueYear)} Umsatz pro Jahr liegst du über ${chfRound(VAT_THRESHOLD)}: KOVALI wird MWST-pflichtig. Melde dich innert 30 Tagen bei der ESTV an; danach kommen ${formatPercent(s.vatRate)} MWST auf deine Rechnungen.`,
+      `Aufs Jahr hochgerechnet sind das ${chfRound(b.revenueYear)} Umsatz. Ab ${chfRound(VAT_THRESHOLD)} Umsatz im Jahr wird KOVALI MWST-pflichtig. Kläre mit der ESTV, ab wann, und melde dich dann innert 30 Tagen an. Danach kommen ${formatPercent(s.vatRate)} MWST auf deine Rechnungen.`,
     );
   }
 
@@ -880,8 +894,10 @@ export function computeEarnings(input: EarningsInput, s: EarningsSettings): Earn
 /**
  * Several assignments at once (the dashboard). Invoiced assignments share one Einzelfirma, so
  * their revenue is added up first: AHV with its scale, the FAK ceiling and the fixed costs count
- * once. Payroll assignments are separate employments and are computed one by one.
- * Lines with the same key are added up.
+ * once. Payroll assignments are separate employments and are computed one by one; when one of
+ * them insures him in a pension fund, the Einzelfirma's Säule 3a is capped at the small amount.
+ * Lines with the same key are added up. With both models, labels that occur twice (AHV/IV/EO,
+ * Krankentaggeld …) say where they come from: «(Einzelfirma)» or «(Lohn)».
  */
 export function computeEarningsTotal(inputs: EarningsInput[], s: EarningsSettings): Earnings | null {
   const parts: Earnings[] = [];
@@ -900,7 +916,8 @@ export function computeEarningsTotal(inputs: EarningsInput[], s: EarningsSetting
       if (e) parts.push(e);
     }
   }
-  if (invoice.count) parts.unshift(invoiceEarnings(invoice, s));
+  const pensionFund = parts.some((e) => e.model === "lohn" && e.lines.some((l) => l.key === "lohn-bvg" && l.year > 0));
+  if (invoice.count) parts.unshift(invoiceEarnings(invoice, s, { pensionFund }));
   if (!parts.length) return null;
   if (parts.length === 1) return parts[0];
 
@@ -923,6 +940,11 @@ export function computeEarningsTotal(inputs: EarningsInput[], s: EarningsSetting
   const revenueYear = parts.reduce((a, e) => a + e.revenue.year, 0);
   const hours = parts.reduce((a, e) => a + e.hoursPerYear, 0);
   const models = new Set(parts.map((e) => e.model));
+  if (models.size > 1) {
+    const seen = new Map<string, number>();
+    for (const l of lines) seen.set(l.label, (seen.get(l.label) ?? 0) + 1);
+    for (const l of lines) if ((seen.get(l.label) ?? 0) > 1) l.label = `${l.label} ${l.key.startsWith("lohn-") ? "(Lohn)" : "(Einzelfirma)"}`;
+  }
   const bases = new Set(parts.map((e) => e.rateBasis));
   return finish(
     {
@@ -958,6 +980,20 @@ export function assignmentEarningsInput(a: {
     hoursPerMonth: a.hoursPerMonth,
     expensesMonthly: a.expensesMonthly,
   };
+}
+
+/**
+ * Whether «Bleibt dir» is before income taxes or after the tax reserve (setting
+ * taxReservePercent). Income taxes are never computed; without a reserve the figure is before
+ * taxes and the labels must say so.
+ */
+export function netTaxNote(e: Pick<Earnings, "lines">): "vor Steuern" | "nach Steuer-Rücklage" {
+  return e.lines.some((l) => l.group === "steuern") ? "nach Steuer-Rücklage" : "vor Steuern";
+}
+
+/** "Bleibt dir vor Steuern" or "Bleibt dir nach Steuer-Rücklage". */
+export function netLabel(e: Pick<Earnings, "lines">): string {
+  return `Bleibt dir ${netTaxNote(e)}`;
 }
 
 /** Short name of the model, e.g. "Rechnung" or "Lohn, Kostensatz". */

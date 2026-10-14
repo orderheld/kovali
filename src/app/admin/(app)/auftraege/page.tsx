@@ -29,6 +29,8 @@ export default async function AssignmentsPage({ searchParams }: PageProps<"/admi
   // Without a choice: the running ones, or all when none is running.
   const status: AssignmentStatusFilter = requested ?? (counts.laufend ? "laufend" : "alle");
   const [rows, { settings }] = await Promise.all([listAssignments({ status, q }), loadEarningsSettings()]);
+  // Income taxes are only deducted with a tax reserve (Annahmen).
+  const taxNote = settings.taxReservePercent > 0 ? "nach Steuer-Rücklage" : "vor Steuern";
   const today = todayIso();
 
   return (
@@ -66,7 +68,10 @@ export default async function AssignmentsPage({ searchParams }: PageProps<"/admi
                 <Th>Zeitraum</Th>
                 <Th align="right">Satz</Th>
                 <Th>Modell</Th>
-                <Th align="right">Bleibt dir / Monat</Th>
+                <Th align="right">
+                  Bleibt dir / Monat
+                  <span className="block font-normal tracking-normal normal-case">{taxNote}</span>
+                </Th>
               </tr>
             </thead>
             <tbody>
@@ -145,7 +150,7 @@ export default async function AssignmentsPage({ searchParams }: PageProps<"/admi
       </Card>
       {rows.length ? (
         <p className="mt-3 text-xs text-slate">
-          «Bleibt dir» rechnet jeden Auftrag für sich mit deinen Annahmen aus dem{" "}
+          «Bleibt dir» ist {taxNote} und rechnet jeden Auftrag für sich mit deinen Annahmen aus dem{" "}
           <Link href="/admin/rechner?ansicht=annahmen" className="text-blue hover:underline">
             Rechner
           </Link>

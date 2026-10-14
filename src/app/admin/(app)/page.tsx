@@ -11,7 +11,7 @@ import { runningAssignments } from "@/lib/admin/data/assignments";
 import { dashboardAgenda, NEXT_STEP_DAYS, nextBestStep, setupProgress, vacancyPipeline, type NextBestStep } from "@/lib/admin/data/dashboard";
 import { loadEarningsSettings } from "@/lib/admin/data/earnings";
 import { pinnedSnippets } from "@/lib/admin/data/snippets";
-import { assignmentEarningsInput, computeEarnings, computeEarningsTotal, formatRate, modelLabel, type EarningsInput, type EarningsSettings } from "@/lib/admin/earnings";
+import { assignmentEarningsInput, computeEarnings, computeEarningsTotal, formatRate, modelLabel, netLabel, type EarningsInput, type EarningsSettings } from "@/lib/admin/earnings";
 import { addDaysIso, displayNo, formatChf, formatDate, formatNumber, todayIso } from "@/lib/admin/format";
 import { labelOf, mandateStatuses, type Tone } from "@/lib/admin/options";
 import { dueState, dueTone } from "@/lib/admin/vacancy-rules";
@@ -174,11 +174,11 @@ export default async function DashboardPage() {
                     )}
                     <StatTile label="Einnahmen pro Monat" value={money(total.revenue.month)} hint={`${money(total.revenue.year)} pro Jahr`} />
                     <StatTile
-                      label="Bleibt dir pro Monat"
+                      label={`${netLabel(total)} pro Monat`}
                       value={<span className={total.net.month < 0 ? "text-red-700" : "text-blue-700"}>{money(total.net.month)}</span>}
                       hint={`${formatChf(total.net.hourly)} pro Stunde`}
                     />
-                    <StatTile label="Bleibt dir pro Jahr" value={money(total.net.year)} hint="über 12 Monate verteilt" />
+                    <StatTile label={`${netLabel(total)} pro Jahr`} value={money(total.net.year)} hint="aufs Jahr hochgerechnet" />
                   </div>
                   {total.notices.length || withoutRate.length || upcoming.length ? (
                     <div className="space-y-2 px-5 pt-4">

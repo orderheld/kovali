@@ -9,6 +9,7 @@ import { settings } from "@/lib/admin/db/schema";
 import { earningsFallback } from "@/lib/admin/data/earnings";
 import { EARNINGS_SETTINGS_KEY, earningsFormSchema, settingsFromForm } from "@/lib/admin/earnings-settings";
 import { ok, parseForm, type ActionState } from "@/lib/admin/forms";
+import { redirectAfterChange } from "@/lib/admin/redirect";
 
 /** Stores Ferhat's assumptions (settings "einkommen"); assignments and the dashboard use them. */
 export async function saveEarningsSettings(_prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -26,12 +27,15 @@ export async function saveEarningsSettings(_prev: ActionState, formData: FormDat
   return ok("Gespeichert. Aufträge und Übersicht rechnen ab jetzt mit diesen Werten.");
 }
 
-/** Removes the saved assumptions; everything uses the researched defaults again. */
+/**
+ * Removes the saved assumptions; everything uses the researched defaults again. The redirect
+ * carries a new value of ?zurueckgesetzt=, so the page remounts the form with the defaults (a
+ * save keeps the form and its success message).
+ */
 export async function clearEarningsSettings(): Promise<ActionState> {
   await requireAdmin();
   const db = await getDb();
   await db.delete(settings).where(eq(settings.key, EARNINGS_SETTINGS_KEY));
   await audit("update", { entity: "settings", summary: "Rechner: Annahmen zurückgesetzt" });
-  refresh();
-  return ok("Zurückgesetzt. Es gelten wieder die Standardwerte.");
+  redirectAfterChange(`/admin/rechner?ansicht=annahmen&zurueckgesetzt=${Date.now()}`);
 }

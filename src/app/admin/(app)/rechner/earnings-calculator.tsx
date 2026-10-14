@@ -5,8 +5,20 @@ import { useState } from "react";
 import { Plus, Settings2 } from "lucide-react";
 import { SelectField, TextField } from "@/components/admin/form";
 import { Card, CardBody, CardHeader, LinkButton, Notice, StatTile } from "@/components/admin/ui";
-import { computeEarnings, formatHours, formatRate, hoursPerYear, workingDaysPerYear, type BillingModel, type Earnings, type EarningsSettings, type RateBasis } from "@/lib/admin/earnings";
-import { formatChf } from "@/lib/admin/format";
+import {
+  computeEarnings,
+  formatHours,
+  formatRate,
+  hoursPerYear,
+  netLabel,
+  netTaxNote,
+  workingDaysPerYear,
+  type BillingModel,
+  type Earnings,
+  type EarningsSettings,
+  type RateBasis,
+} from "@/lib/admin/earnings";
+import { formatChf, formatPercent } from "@/lib/admin/format";
 import { rateUnits } from "@/lib/admin/options";
 import { parseDecimal } from "@/lib/admin/payroll";
 import { cn } from "@/lib/utils";
@@ -54,6 +66,15 @@ function readInputs(form: HTMLFormElement): Inputs {
 }
 
 const money = (v: number) => formatChf(v, { round: true });
+
+/**
+ * Only the invoice reading deducts the planned Vorsorge (Säule 3a or voluntary BVG); the payroll
+ * readings deduct the employee's BVG share. The card says so, or the comparison looks unfair.
+ */
+function cardText(v: (typeof variants)[number], settings: EarningsSettings): string {
+  if (v.billing !== "rechnung" || !(settings.pensionPercent > 0)) return v.description;
+  return `${v.description} Abgezogen ist auch deine Vorsorge (${formatPercent(settings.pensionPercent)} des Gewinns, Annahme).`;
+}
 
 export function EarningsCalculator({ settings, initial, saved }: { settings: EarningsSettings; initial: CalculatorInitial; saved: boolean }) {
   const [inputs, setInputs] = useState<Inputs>({
@@ -109,7 +130,7 @@ export function EarningsCalculator({ settings, initial, saved }: { settings: Ear
         <CardBody>
           <form onInput={onFormEvent} onChange={onFormEvent} onSubmit={(e) => e.preventDefault()} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_10rem_8rem_minmax(0,1fr)_minmax(0,1fr)]">
             <TextField name="rate" label="Satz" inputMode="decimal" suffix="CHF" defaultValue={initial.rate} placeholder="120" />
-            <SelectField name="unit" label="Einheit" options={rateUnits} defaultValue={initial.unit} />
+            <SelectField name="unit" label="Einheit" options={rateUnits} defaultValue={initial.unit} hint="1 Tag = 8.4 Stunden" />
             <TextField name="workload" label="Pensum" inputMode="numeric" suffix="%" defaultValue={initial.workload} />
             <TextField
               name="hoursPerMonth"
@@ -150,9 +171,9 @@ export function EarningsCalculator({ settings, initial, saved }: { settings: Ear
                 )}
               >
                 <span className="block text-sm font-medium text-ink">{r.title}</span>
-                <span className="mt-0.5 block text-[0.8125rem] leading-snug text-slate">{r.description}</span>
+                <span className="mt-0.5 block text-[0.8125rem] leading-snug text-slate">{cardText(r, settings)}</span>
                 <span className="mt-3 block text-xl font-semibold text-ink tabular-nums">{r.earnings ? money(r.earnings.net.month) : "–"}</span>
-                <span className="block text-[0.8125rem] text-slate">{r.earnings ? `bleibt dir pro Monat, ${formatChf(r.earnings.net.hourly)} pro Stunde` : "Satz fehlt"}</span>
+                <span className="block text-[0.8125rem] text-slate">{r.earnings ? `bleibt dir ${netTaxNote(r.earnings)} pro Monat, ${formatChf(r.earnings.net.hourly)} pro Stunde` : "Satz fehlt"}</span>
               </button>
             );
           })}
@@ -177,11 +198,11 @@ export function EarningsCalculator({ settings, initial, saved }: { settings: Ear
             <div className="grid gap-3 px-5 pt-4 sm:grid-cols-2 xl:grid-cols-4">
               <StatTile label={earnings.revenue.label} value={money(earnings.revenue.month)} hint={`${money(earnings.revenue.year)} pro Jahr`} />
               <StatTile
-                label="Bleibt dir pro Monat"
+                label={`${netLabel(earnings)} pro Monat`}
                 value={<span className={earnings.net.month < 0 ? "text-red-700" : "text-blue-700"}>{money(earnings.net.month)}</span>}
                 hint={`${formatChf(earnings.net.hourly)} pro Stunde`}
               />
-              <StatTile label="Bleibt dir pro Jahr" value={money(earnings.net.year)} hint="über 12 Monate verteilt" />
+              <StatTile label={`${netLabel(earnings)} pro Jahr`} value={money(earnings.net.year)} hint="aufs Jahr hochgerechnet" />
               <StatTile label="Abzüge und Kosten" value={money(earnings.revenue.month - earnings.net.month)} hint="pro Monat" />
             </div>
             {earnings.notices.length ? (

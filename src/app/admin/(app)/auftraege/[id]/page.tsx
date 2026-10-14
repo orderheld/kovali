@@ -9,7 +9,7 @@ import { requireAdmin } from "@/lib/admin/auth/session";
 import { assignmentContracts, getAssignment } from "@/lib/admin/data/assignments";
 import { loadEarningsSettings } from "@/lib/admin/data/earnings";
 import { listHref } from "@/lib/admin/data/query";
-import { assignmentEarningsInput, computeEarnings, formatHours, formatRate, modelLabel } from "@/lib/admin/earnings";
+import { assignmentEarningsInput, computeEarnings, formatHours, formatRate, modelLabel, netLabel } from "@/lib/admin/earnings";
 import { parseId } from "@/lib/admin/forms";
 import { displayNo, formatChf, formatDate, todayIso } from "@/lib/admin/format";
 import { assignmentStatuses, contractKinds, contractStatuses, labelOf, mandateStatuses, remoteOptions, toneOf } from "@/lib/admin/options";
@@ -116,11 +116,11 @@ export default async function AssignmentPage({ params }: PageProps<"/admin/auftr
                   />
                   <StatTile label="Einnahmen pro Monat" value={formatChf(earnings.revenue.month, { round: true })} hint={`${formatChf(earnings.revenue.year, { round: true })} pro Jahr`} />
                   <StatTile
-                    label="Bleibt dir pro Monat"
+                    label={`${netLabel(earnings)} pro Monat`}
                     value={<span className={earnings.net.month < 0 ? "text-red-700" : "text-blue-700"}>{formatChf(earnings.net.month, { round: true })}</span>}
                     hint={`${formatChf(earnings.net.hourly)} pro Stunde`}
                   />
-                  <StatTile label="Bleibt dir pro Jahr" value={formatChf(earnings.net.year, { round: true })} hint="über 12 Monate verteilt" />
+                  <StatTile label={`${netLabel(earnings)} pro Jahr`} value={formatChf(earnings.net.year, { round: true })} hint="aufs Jahr hochgerechnet" />
                 </div>
                 {earnings.notices.length ? (
                   <div className="space-y-2 px-5 pt-4">

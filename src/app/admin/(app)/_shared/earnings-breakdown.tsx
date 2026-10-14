@@ -1,5 +1,6 @@
+import Link from "next/link";
 import { Badge, Table, Td, Th } from "@/components/admin/ui";
-import { LINE_GROUPS, type Earnings, type EarningsLine, type LineGroup } from "@/lib/admin/earnings";
+import { LINE_GROUPS, netLabel, netTaxNote, type Earnings, type EarningsLine, type LineGroup } from "@/lib/admin/earnings";
 import { formatChf, formatPercent } from "@/lib/admin/format";
 import { cn } from "@/lib/utils";
 
@@ -7,6 +8,9 @@ import { cn } from "@/lib/utils";
  * What is left of a rate: one stacked bar (net against the cost groups) and a table grouped by
  * line group with month, year and share of the revenue. Used on the dashboard, the assignment
  * page and the Rechner. No hooks, so it renders on the server and inside client components.
+ *
+ * «Bleibt dir» always says whether it is before income taxes or after the tax reserve, because
+ * income taxes are only deducted when Ferhat sets a reserve under Annahmen.
  *
  * Colours: the net in the brand blue, the groups in a categorical order checked for colour
  * vision deficiencies on adjacent segments. Every segment is also named in the legend with its
@@ -50,7 +54,7 @@ export function EarningsBar({ earnings, className }: { earnings: Shown; classNam
   const costs = groupsOf(earnings).filter((g) => g.id !== "info" && g.month > 0);
   const net = earnings.net.month;
   const segments: Segment[] = [
-    ...(net > 0 ? [{ id: "net" as const, label: "Bleibt dir", month: net }] : []),
+    ...(net > 0 ? [{ id: "net" as const, label: netLabel(earnings), month: net }] : []),
     ...costs.map((g) => ({ id: g.id as Segment["id"], label: g.label, month: g.month })),
   ];
   const total = segments.reduce((a, s) => a + s.month, 0);
@@ -62,7 +66,7 @@ export function EarningsBar({ earnings, className }: { earnings: Shown; classNam
         role="img"
         aria-label={
           net > 0
-            ? `Von ${money(earnings.revenue.month)} pro Monat bleiben dir ${money(net)} (${netShare}).`
+            ? `Von ${money(earnings.revenue.month)} pro Monat bleiben dir ${netTaxNote(earnings)} ${money(net)} (${netShare}).`
             : `Die Abzüge sind ${money(-net)} pro Monat höher als die Einnahmen.`
         }
         className="flex h-8 w-full gap-0.5 overflow-hidden rounded-md bg-white"
@@ -76,7 +80,9 @@ export function EarningsBar({ earnings, className }: { earnings: Shown; classNam
               className="flex min-w-[3px] items-center overflow-hidden first:rounded-l-md last:rounded-r-md"
               style={{ flex: `0 1 ${width}%`, background: colors[s.id] }}
             >
-              {s.id === "net" && width >= 22 ? <span className="px-2.5 text-xs font-semibold whitespace-nowrap text-white">Bleibt dir {netShare}</span> : null}
+              {s.id === "net" && width >= 22 ? <span className="px-2.5 text-xs font-semibold whitespace-nowrap text-white">
+                  {netLabel(earnings)} {netShare}
+                </span> : null}
             </div>
           );
         })}
@@ -115,6 +121,7 @@ export function EarningsTable({ earnings, className }: { earnings: Shown; classN
   const revenue = earnings.revenue;
   const deductions = groups.filter((g) => g.id !== "info");
   const info = groups.find((g) => g.id === "info");
+  const taxed = netTaxNote(earnings) === "nach Steuer-Rücklage";
   return (
     <Table className={className}>
       <thead>
@@ -142,7 +149,18 @@ export function EarningsTable({ earnings, className }: { earnings: Shown; classN
           <GroupRows key={g.id} group={g} revenue={revenue.month} />
         ))}
         <tr className="bg-blue/[0.07] font-semibold text-ink">
-          <Td>Bleibt dir</Td>
+          <Td>
+            {netLabel(earnings)}
+            {taxed ? null : (
+              <span className="block text-xs font-normal text-slate">
+                Einkommenssteuern sind nicht abgezogen.{" "}
+                <Link href="/admin/rechner?ansicht=annahmen" className="underline underline-offset-2 hover:text-ink">
+                  Rücklage unter Annahmen setzen
+                </Link>
+                .
+              </span>
+            )}
+          </Td>
           <Td />
           <Td align="right" className={cn("whitespace-nowrap", earnings.net.month < 0 ? "text-red-700" : "text-blue-700")}>
             {money(earnings.net.month)}
