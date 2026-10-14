@@ -1,11 +1,10 @@
-import { responseClause, site, vatClause } from "@/config/site";
-import { hourlyRange } from "./pricing";
+import { responseClause, site } from "@/config/site";
 import type { FaqItem, TitledText } from "./types";
 
 /**
  * Copy for /warum-kovali (spec 3.4 with addendum 1 and 2). Ferhat Demir's block reads
  * `founder` and `certifications`, the working rules `principles` (all in company.ts).
- * Prices come from `site.offer.hourly` (via pricing.ts); every other offer clause appears only once confirmed.
+ * No prices on the site (Ferhat Demir, 14.10.2026). Offer clauses appear only once confirmed.
  */
 
 /**
@@ -23,18 +22,18 @@ const customerProtection =
 export const why = {
   showYoungCompanyNote,
   meta: {
-    title: "Warum KOVALI – Ansprechpartner, Arbeitsweise, Preise",
+    title: "Warum KOVALI – Ansprechpartner, Arbeitsweise, Abgrenzung",
     description:
-      "Warum KOVALI: Geschäftsführer Ferhat Demir arbeitet seit über 10 Jahren in der IT und ist nach IREB und ISTQB zertifiziert. Arbeitsweise, Abgrenzung, Preise.",
+      "Warum KOVALI: Geschäftsführer Ferhat Demir arbeitet seit über 10 Jahren in der IT und ist nach IREB und ISTQB zertifiziert. Arbeitsweise und Abgrenzung.",
     /** Share cards carry no years of experience (spec 3.0), so they get their own text. */
     shareDescription:
-      "Warum KOVALI: Geschäftsführer Ferhat Demir ist nach IREB und ISTQB zertifiziert. Arbeitsweise, Abgrenzung, Preise und Antworten auf häufige Fragen.",
+      "Warum KOVALI: Geschäftsführer Ferhat Demir ist nach IREB und ISTQB zertifiziert. Arbeitsweise, Abgrenzung und Antworten auf häufige Fragen.",
   },
   hero: {
     title: "Was Sie von KOVALI erwarten können",
     lead: "Sie suchen jemanden, der Anforderungen klärt oder Tests steuert, und möchten wissen, mit wem Sie es zu tun haben. Hier steht, wer KOVALI führt, nach welchen Regeln wir arbeiten und was wir nicht anbieten.",
     primary: { label: "Erstgespräch anfragen", href: "/kontakt" },
-    secondary: { label: "Preise ansehen", href: "/preise" },
+    secondary: { label: "Leistungen ansehen", href: "/leistungen" },
   },
   reasons: {
     title: "Was für KOVALI spricht",
@@ -61,8 +60,8 @@ export const why = {
         text: `Unternehmen und öffentliche Organisationen beauftragen KOVALI direkt. Beratungen und IT-Dienstleister holen KOVALI als Subunternehmen in ihr Kundenmandat, der Vertrag mit dem Endkunden bleibt bei ihnen.${customerProtection}`,
       },
       {
-        title: "Preise, die Sie vorher kennen",
-        text: "Die Stundensätze stehen auf dieser Website, mit den Faktoren, die sie bestimmen, und einem Rechenbeispiel. Abgerechnet wird monatlich nach geleisteten Stunden. [Preise](/preise)",
+        title: "Offerte vor dem Start",
+        text: "Aufgabe, Pensum, Laufzeit und Stundensatz stehen in einer schriftlichen Offerte, bevor das Mandat beginnt. Abgerechnet wird monatlich nach geleisteten Stunden.",
       },
     ] satisfies TitledText[],
   },
@@ -104,8 +103,9 @@ export const why = {
       }`,
     },
     {
-      question: "Was kostet ein Einsatz?",
-      answer: `Die Richtwerte liegen bei ${hourlyRange}, ${vatClause()}. Was den Satz bestimmt und wie ein Einsatz von sechs Monaten zu 80\u00A0% gerechnet wird, steht unter [Preise](/preise).`,
+      question: "Wie wird abgerechnet?",
+      answer:
+        "Nach Aufwand, monatlich nach geleisteten Stunden. Den Stundensatz nennt die schriftliche Offerte. Er hängt von Rolle, Dauer, Pensum und Umfeld ab.",
     },
     {
       question: "Vermitteln oder verleihen Sie auch Personal?",
@@ -117,6 +117,6 @@ export const why = {
     title: "Sprechen wir über Ihr Vorhaben",
     text: `Beschreiben Sie kurz die gesuchte Unterstützung und den Zeitraum. Ferhat Demir meldet sich mit einer ersten Einschätzung${responseClause()}.`,
     primary: { label: "Erstgespräch anfragen", href: "/kontakt" },
-    secondary: { label: "Preise ansehen", href: "/preise" },
+    secondary: { label: "Leistungen ansehen", href: "/leistungen" },
   },
 };

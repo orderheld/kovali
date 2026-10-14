@@ -8,7 +8,6 @@ export interface NavItem {
 export const mainNav: NavItem[] = [
   { label: "Leistungen", href: "/leistungen" }, // H1 there: IT Consulting
   { label: "Warum KOVALI", href: "/warum-kovali" },
-  { label: "Preise", href: "/preise" },
   { label: "Für Unternehmen", href: "/unternehmen" },
   { label: "Für Fachleute", href: "/fachleute" },
 ];
@@ -30,7 +29,6 @@ export const footerNav: { title: string; items: NavItem[] }[] = [
       { label: "Übersicht", href: "/leistungen" },
       // `services` is already in the order of the chain from requirement to operation.
       ...services.map((s) => ({ label: s.name, href: serviceHref(s.slug) })),
-      { label: "Preise", href: "/preise" },
     ],
   },
   {

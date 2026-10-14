@@ -108,20 +108,11 @@ export const site = {
   },
 
   /**
-   * Prices and terms (spec 4.6). The hourly range is shown even while unconfirmed (the site
-   * is not indexed before launch); every other clause appears on the site only once its
-   * `confirmed` is true. Changing the range is a one-line edit of `hourly.value`.
+   * Terms of the offer. Each clause appears on the site only once its `confirmed` is true.
+   * The site shows no prices (Ferhat Demir, 14.10.2026).
    */
   offer: {
-    hourly: {
-      value: { min: 100, max: 190 },
-      confirmed: false,
-      note: "Spanne von Ferhat Demir wählen (A 100–190, 115–180 oder 95–195).",
-    } as Confirmable<{ min: number; max: number }>,
-    hoursPerDay: { value: 8, confirmed: false, note: "Tagessatz = 8 oder 8,4 Stunden?" } as Confirmable<number>,
-    paymentDays: { value: 30, confirmed: false, note: "Zahlungsfrist in Tagen." } as Confirmable<number>,
-    costCap: { value: true, confirmed: false, note: "Kostendach für Teilmandate anbieten?" } as Confirmable<boolean>,
-    /** Both sentences about the first call (/unternehmen, /preise) are built from these values. */
+    /** The sentence about the first call on /unternehmen is built from these values. */
     firstCall: {
       value: { minutes: 30, free: true },
       confirmed: false,
@@ -137,8 +128,6 @@ export const site = {
       confirmed: false,
       note: "Endkunden von Beratungen nicht auf eigene Rechnung ansprechen?",
     } as Confirmable<boolean>,
-    /** Rate used in the worked budget example on /preise; not a confirmable fact. */
-    exampleRate: 140,
   },
 
   /** Regions in which the services are offered. */
@@ -178,10 +167,6 @@ export function unconfirmedFields(): { field: string; value: unknown; note?: str
     ["Handelsregister (legal.commercialRegister)", site.legal.commercialRegister],
     ["E-Mail (contact.email)", site.contact.email],
     ["Telefon (contact.phone)", site.contact.phone],
-    ["Preisspanne pro Stunde (offer.hourly)", site.offer.hourly],
-    ["Stunden pro Tagessatz (offer.hoursPerDay)", site.offer.hoursPerDay],
-    ["Zahlungsfrist in Tagen (offer.paymentDays)", site.offer.paymentDays],
-    ["Kostendach für Teilmandate (offer.costCap)", site.offer.costCap],
     ["Erstgespräch (offer.firstCall)", site.offer.firstCall],
     ["Antwortzeit in Arbeitstagen (offer.responseWorkingDays)", site.offer.responseWorkingDays],
     ["Kundenschutz (offer.customerProtection)", site.offer.customerProtection],
@@ -190,7 +175,7 @@ export function unconfirmedFields(): { field: string; value: unknown; note?: str
     .filter(([, c]) => !c.confirmed)
     .map(([field, c]) => ({
       field,
-      // Objects such as the price range print readably in the launch check.
+      // Objects such as the first call print readably in the launch check.
       value: c.value !== null && typeof c.value === "object" ? JSON.stringify(c.value) : c.value,
       note: c.note,
     }));
@@ -209,7 +194,7 @@ export function responseClause(): string {
   return `, in der Regel innert ${days}`;
 }
 
-/** VAT wording next to every price: "allfälliger" until a VAT number is confirmed (spec 4.6). */
+/** VAT wording next to every amount (contracts in the admin area): "allfälliger" until a VAT number is confirmed. */
 export function vatClause(): string {
   const vat = site.legal.vatNumber;
   return vat.confirmed && vat.value ? "zuzüglich 8,1 % MWST" : "zuzüglich allfälliger MWST";

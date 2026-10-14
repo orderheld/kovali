@@ -8,11 +8,9 @@ import { ServiceList } from "@/components/sections/service-list";
 import { JsonLd } from "@/components/seo/json-ld";
 import { ButtonLink } from "@/components/ui/button";
 import { Faq } from "@/components/ui/faq";
-import { RichText } from "@/components/ui/rich-text";
 import { Section, SectionHeader } from "@/components/ui/section";
 import { responseClause } from "@/config/site";
 import { getIndustry } from "@/content/industries";
-import { priceTeasers } from "@/content/pricing";
 import { getService, serviceHref, services } from "@/content/services";
 import { faqJsonLd, pageMetadata, serviceJsonLd } from "@/lib/seo";
 
@@ -52,7 +50,6 @@ export default async function ServicePage({ params }: PageProps<"/leistungen/[sl
         eyebrow="IT Consulting"
         title={service.h1}
         lead={service.intro}
-        note={<RichText text={priceTeasers.discipline} />}
       >
         <ButtonLink href={contactHref} arrow>
           {service.cta}
@@ -149,7 +146,7 @@ export default async function ServicePage({ params }: PageProps<"/leistungen/[sl
         title={service.ctaTitle}
         text={`Beschreiben Sie Vorhaben, Zeitraum und Pensum. Sie erhalten eine erste Einschätzung von Ferhat Demir${responseClause()}.`}
         primary={{ label: service.cta, href: contactHref }}
-        secondary={{ label: "Preise ansehen", href: "/preise" }}
+        secondary={{ label: "Alle Leistungen", href: "/leistungen" }}
       />
 
       <JsonLd data={[serviceJsonLd(service, path), faqJsonLd(service.faq)]} />
