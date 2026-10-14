@@ -19,8 +19,12 @@ export const serverEnv = {
   /**
    * Log instead of sending (local tests, preview deployments). Previews without Resend run in
    * this test mode automatically, so the forms can be tried before e-mail delivery is set up.
+   * Never on the production deployment: a CONTACT_DRY_RUN=true copied to Production would drop
+   * every real request while the visitor is told it arrived.
    */
-  dryRun: process.env.CONTACT_DRY_RUN === "true" || (process.env.VERCEL_ENV === "preview" && !emailVars),
+  dryRun:
+    process.env.VERCEL_ENV !== "production" &&
+    (process.env.CONTACT_DRY_RUN === "true" || (process.env.VERCEL_ENV === "preview" && !emailVars)),
   /** Protects the retention cron endpoint. */
   cronSecret: process.env.CRON_SECRET,
   /** Days after which stored requests are deleted. */
