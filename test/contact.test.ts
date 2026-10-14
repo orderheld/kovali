@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { renderHtml, renderText } from "@/lib/contact/email";
 import { contactSchema, fieldErrors, storageCopy, storedService } from "@/lib/contact/schema";
 
@@ -92,5 +92,35 @@ describe("contact e-mail", () => {
     const html = renderHtml(input, "KOV-20261014-TEST");
     expect(html).toContain("Business Analysis &amp; Requirements Engineering, Testmanagement");
     expect(html).toContain("Voraussetzungen");
+  });
+});
+
+describe("test mode (CONTACT_DRY_RUN)", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  async function dryRunWith(env: Record<string, string>) {
+    for (const key of ["VERCEL_ENV", "CONTACT_DRY_RUN", "RESEND_API_KEY", "CONTACT_TO_EMAIL", "CONTACT_FROM_EMAIL"]) {
+      vi.stubEnv(key, env[key] ?? "");
+    }
+    vi.resetModules();
+    const { serverEnv } = await import("@/lib/env");
+    return serverEnv.dryRun;
+  }
+
+  const resend = { RESEND_API_KEY: "re_test", CONTACT_TO_EMAIL: "info@kovali.ch", CONTACT_FROM_EMAIL: "KOVALI <web@mail.kovali.ch>" };
+
+  it("never applies on the production deployment, even when the flag was copied there", async () => {
+    expect(await dryRunWith({ VERCEL_ENV: "production", CONTACT_DRY_RUN: "true", ...resend })).toBe(false);
+    expect(await dryRunWith({ VERCEL_ENV: "production", CONTACT_DRY_RUN: "true" })).toBe(false);
+  });
+
+  it("applies on previews without Resend and wherever the flag is set outside production", async () => {
+    expect(await dryRunWith({ VERCEL_ENV: "preview" })).toBe(true);
+    expect(await dryRunWith({ VERCEL_ENV: "preview", ...resend })).toBe(false);
+    expect(await dryRunWith({ VERCEL_ENV: "preview", CONTACT_DRY_RUN: "true", ...resend })).toBe(true);
+    expect(await dryRunWith({ CONTACT_DRY_RUN: "true" })).toBe(true);
   });
 });

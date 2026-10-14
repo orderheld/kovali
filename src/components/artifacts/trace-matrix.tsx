@@ -1,12 +1,10 @@
 import { traceability, type TraceSample } from "@/content/work-samples";
-import { cn } from "@/lib/utils";
 import { ArtifactFrame } from "./artifact-frame";
 import { StatusChip } from "./status-chip";
 
 /**
  * Example traceability table: requirement → test case → result, as a real table with
- * caption and column headers. The defect footnote can be limited to small screens where
- * the hero test run (lg only) already shows it.
+ * caption and column headers, and the defect as a footnote.
  */
 export function TraceMatrix({
   trace = traceability,
@@ -14,8 +12,8 @@ export function TraceMatrix({
   className,
 }: {
   trace?: TraceSample;
-  /** "always" (default), "mobile" (hidden from lg, used on home) or "never". */
-  defectNote?: "always" | "mobile" | "never";
+  /** "always" (default) or "never". */
+  defectNote?: "always" | "never";
   className?: string;
 }) {
   return (
@@ -58,12 +56,7 @@ export function TraceMatrix({
         </table>
       </div>
       {defectNote !== "never" ? (
-        <p
-          className={cn(
-            "border-t border-line bg-cloud px-4 py-3 text-[0.8125rem] leading-snug text-slate",
-            defectNote === "mobile" && "lg:hidden",
-          )}
-        >
+        <p className="border-t border-line bg-cloud px-4 py-3 text-[0.8125rem] leading-snug text-slate">
           <span className="font-mono text-xs font-medium text-fail">{trace.defect.id}</span> {trace.defect.text}
         </p>
       ) : null}

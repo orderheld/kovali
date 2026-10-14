@@ -48,7 +48,7 @@ Beim Wechsel zur GmbH: `legal.form` auf `"gmbh"` setzen, Firmenname, UID und Han
 | `CONTACT_TO_EMAIL` | `info@kovali.ch` | `info@kovali.ch` | Empfänger der Anfragen |
 | `CONTACT_FROM_EMAIL` | `KOVALI Website <website@mail.kovali.ch>` | gleich | Absender auf verifizierter Domain |
 | `CONTACT_IP_SALT` | Zufallswert | Zufallswert | `openssl rand -hex 32` |
-| `CONTACT_DRY_RUN` | `false` | `true` | Previews senden keine E-Mails |
+| `CONTACT_DRY_RUN` | `false` | `true` | Previews senden keine E-Mails. In Production wirkt der Wert nicht, dort wird immer versendet |
 | `DATABASE_URL` | optional, Schritt 5 | leer | Ohne Wert nur E-Mail-Versand |
 | `CRON_SECRET` | Zufallswert | – | Nur mit Neon nötig |
 | `CONTACT_RETENTION_DAYS` | `365` | – | Löschfrist gespeicherter Anfragen |

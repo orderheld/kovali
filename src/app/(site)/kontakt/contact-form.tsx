@@ -30,6 +30,7 @@ import {
 import {
   initialContactState,
   type ContactErrorField,
+  type ContactState,
   type ContactTextField,
   type ContactValues,
 } from "@/lib/contact/state";
@@ -61,6 +62,35 @@ const FIELD_LABELS: Record<ContactErrorField, string> = {
   consent: "Datenschutz",
 };
 
+/** The entered values, read in the browser for the error state of a request that failed on the way. */
+function enteredValues(data: FormData): ContactValues {
+  const values: ContactValues = { services: data.getAll("services").filter((v): v is string => typeof v === "string") };
+  for (const field of Object.keys(FIELD_LABELS) as ContactErrorField[]) {
+    if (field === "services" || field === "attachment") continue;
+    const value = data.get(field);
+    if (typeof value === "string") values[field] = value;
+  }
+  return values;
+}
+
+/**
+ * The request as the browser sends it with JavaScript. A dropped connection or a failed function
+ * throws here; without the catch the page would switch to the framework's error screen and the
+ * entered request would be lost. The form stays filled and offers the e-mail address instead.
+ */
+async function submitSafely(prev: ContactState, data: FormData): Promise<ContactState> {
+  try {
+    return await submitContact(prev, data);
+  } catch {
+    return {
+      status: "error",
+      message:
+        "Beim Senden ist ein technischer Fehler aufgetreten. Ihre Angaben sind noch da. Bitte senden Sie die Anfrage erneut oder schreiben Sie per E-Mail.",
+      values: enteredValues(data),
+    };
+  }
+}
+
 /** Quick check in the browser, so an unsuitable file fails before it is uploaded. */
 function attachmentProblem(file: File | undefined): string | undefined {
   if (!file) return undefined;
@@ -80,14 +110,20 @@ export function ContactForm({
   fallbackEmail: string;
   testMode?: boolean;
 }) {
-  const [state, formAction, pending] = useActionState(submitContact, initialContactState);
+  // Without JavaScript the browser posts the form to the Server Action itself.
+  const [postedState, formAction] = useActionState(submitContact, initialContactState);
+  // With JavaScript handleSubmit sends through submitSafely.
+  const [sentState, send, pending] = useActionState(submitSafely, initialContactState);
+  const state = sentState === initialContactState ? postedState : sentState;
   const [fileError, setFileError] = useState<string>();
   const mountedAt = useRef(0);
   const summaryRef = useRef<HTMLDivElement>(null);
   const successRef = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
-    mountedAt.current = performance.now();
+    // Only the first time: when the visitor comes back to the page, for example from the privacy
+    // policy, the form keeps its values and the effect runs again, but the fill time goes on.
+    if (mountedAt.current === 0) mountedAt.current = performance.now();
   }, []);
 
   useEffect(() => {
@@ -127,7 +163,7 @@ export function ContactForm({
     }
     // Fill time on the visitor's own clock, so a wrong system time cannot block the request.
     if (mountedAt.current > 0) data.set("elapsedMs", String(Math.round(performance.now() - mountedAt.current)));
-    startTransition(() => formAction(data));
+    startTransition(() => send(data));
   }
 
   return (
