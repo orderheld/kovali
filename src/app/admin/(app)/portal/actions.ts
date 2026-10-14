@@ -35,18 +35,33 @@ export async function confirmChange(requestId: number): Promise<ActionState> {
   const result = await confirmRequest(id);
   if (!result.ok) return fail(result.error);
   const no = displayNo.candidate(result.candidateId);
-  const firm = result.firm
-    ? result.firm.created
-      ? ` Firma «${result.firm.name}» als Subunternehmer ${displayNo.company(result.firm.companyId)} angelegt und verknüpft.`
-      : ` Firma ${displayNo.company(result.firm.companyId)} aktualisiert und verknüpft.`
+  const outcome = result.firm;
+  const firmNo = outcome ? displayNo.company(outcome.companyId) : "";
+  const firm = outcome
+    ? outcome.created
+      ? ` Firma «${outcome.name}» als Subunternehmer ${firmNo} angelegt und verknüpft.`
+      : outcome.reused
+        ? ` Mit der bestehenden Firma ${firmNo} «${outcome.name}» verknüpft; deren Angaben bleiben unverändert.`
+        : ` Firma ${firmNo} aktualisiert und verknüpft.`
     : "";
   await logActivity({ type: "candidate", id: result.candidateId }, `Kandidatenportal: Änderung «${sectionLabel(result.section)}» bestätigt und übernommen.${firm}`);
-  if (result.firm) {
-    await logActivity({ type: "company", id: result.firm.companyId }, `Firmenangaben aus dem Kandidatenportal übernommen (Kandidat ${no}).`);
+  if (outcome) {
+    await logActivity(
+      { type: "company", id: outcome.companyId },
+      outcome.reused
+        ? `Kandidat ${no} über das Kandidatenportal mit dieser Firma verknüpft; Angaben der Firma unverändert.`
+        : `Firmenangaben aus dem Kandidatenportal übernommen (Kandidat ${no}).`,
+    );
   }
-  await audit("review", { entity: "change_request", entityId: id, summary: `Kandidat ${no}: «${sectionLabel(result.section)}» bestätigt${result.firm ? `, Firma ${displayNo.company(result.firm.companyId)}` : ""}` });
+  const firmAudit = outcome ? `, Firma ${firmNo} ${outcome.created ? "angelegt" : outcome.reused ? "verknüpft" : "aktualisiert"}` : "";
+  await audit("review", { entity: "change_request", entityId: id, summary: `Kandidat ${no}: «${sectionLabel(result.section)}» bestätigt${firmAudit}` });
   refresh();
-  return ok(result.firm?.created ? "Übernommen. Die Firma wurde als Subunternehmer angelegt." : "Übernommen.");
+  if (outcome?.created) return ok("Übernommen. Die Firma wurde als Subunternehmer angelegt.");
+  if (outcome?.reused) {
+    const others = outcome.others ? ` Sie ist auch mit ${outcome.others === 1 ? "1 weiteren Person" : `${outcome.others} weiteren Personen`} verknüpft.` : "";
+    return ok(`Übernommen. Verknüpft mit ${firmNo} «${outcome.name}»; deren Angaben wurden nicht geändert.${others}`);
+  }
+  return ok("Übernommen.");
 }
 
 const rejectSchema = z.object({ note: f.text(1000, "Bitte kurz begründen. Die Person sieht diese Notiz im Portal.") });

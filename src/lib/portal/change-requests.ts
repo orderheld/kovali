@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, ne, sql } from "drizzle-orm";
 import { getDb, type AdminDb } from "@/lib/admin/db/client";
 import { candidates, changeRequests, companies, type ChangeRequest } from "@/lib/admin/db/schema";
 import { formatDateTime } from "@/lib/admin/format";
@@ -9,6 +9,7 @@ import {
   cardValues,
   currentValues,
   editableSections,
+  firmDraft,
   isEditableSection,
   mergeCard,
   parseSection,
@@ -17,6 +18,7 @@ import {
   sectionFields,
   type ChangeSection,
   type EditableSection,
+  type FirmSource,
   type FirmValues,
   type PortalCard,
   type ProfileSource,
@@ -70,6 +72,8 @@ export interface SectionState<S extends EditableSection> {
   pending: SectionValues[S] | null;
   openId: number | null;
   message: string | null;
+  /** The linked company when it is incomplete (see firmDraft), to pre-fill the firm form. */
+  firmDraft: FirmValues | FirmSource | null;
 }
 
 /** Confirmed and pending values of one section of the candidate (portal forms and cards). */
@@ -88,6 +92,7 @@ export async function sectionState<S extends EditableSection>(candidateId: numbe
     pending: parsed?.ok ? parsed.data : null,
     openId: open?.id ?? null,
     message: open?.message ?? null,
+    firmDraft: section === "verfuegbarkeit" ? firmDraft(source) : null,
   };
 }
 
@@ -238,16 +243,84 @@ export async function listOpenRequests() {
     .orderBy(asc(changeRequests.updatedAt), asc(changeRequests.id));
 }
 
+export interface FirmOutcome {
+  companyId: number;
+  /** A new subcontractor was created. */
+  created: boolean;
+  /** An existing company was linked without changing its data. */
+  reused: boolean;
+  name: string;
+  /** Other candidates linked to that company. */
+  others: number;
+}
+
 export type ReviewResult =
-  | { ok: true; candidateId: number; section: string; firm?: { companyId: number; created: boolean; name: string } }
+  | { ok: true; candidateId: number; section: string; firm?: FirmOutcome }
   | { ok: false; error: string };
 
 /**
- * Creates or updates the candidate's firm (companies, kind "subunternehmer") and links it.
- * The linked company is updated; otherwise a subcontractor with the same UID is reused, so
- * one firm does not end up twice.
+ * What confirming a proposed firm does with the companies table:
+ * - "update": the linked company is this candidate's own subcontractor record (same UID, or
+ *   none yet and no other subcontractor has it) and nobody else is linked to it: corrected in place;
+ * - "link": a subcontractor with the proposed UID exists (possibly the linked one, shared with
+ *   others): linked as it is, its data stays. Another firm's record is never overwritten;
+ * - "create": otherwise a new subcontractor. A linked company that is not the same firm (other
+ *   UID, a client, …) stays untouched and only loses this candidate's link.
  */
-async function upsertFirm(tx: Tx, candidateId: number, firm: FirmValues): Promise<{ companyId: number; created: boolean }> {
+export interface FirmPlan {
+  action: "update" | "link" | "create";
+  /** The company that is updated or linked. */
+  target: { id: number; name: string } | null;
+  /** Other candidates linked to the target. */
+  others: number;
+  /** The company linked so far, when the candidate moves away from it. */
+  previous: { id: number; name: string } | null;
+}
+
+async function otherCandidates(db: AdminDb | Tx, companyId: number, candidateId: number): Promise<number> {
+  const [row] = await db
+    .select({ n: count() })
+    .from(candidates)
+    .where(and(eq(candidates.companyId, companyId), ne(candidates.id, candidateId)));
+  return row?.n ?? 0;
+}
+
+/** Decides how a proposed firm is applied (see FirmPlan); also shown in the review before confirming. */
+export async function planFirm(db: AdminDb | Tx, candidateId: number, uid: string): Promise<FirmPlan> {
+  const [candidate] = await db.select({ companyId: candidates.companyId }).from(candidates).where(eq(candidates.id, candidateId)).limit(1);
+  const [linked] = candidate?.companyId
+    ? await db
+        .select({ id: companies.id, name: companies.name, kind: companies.kind, uid: companies.uid })
+        .from(companies)
+        .where(eq(companies.id, candidate.companyId))
+        .limit(1)
+    : [];
+  const [sameUid] = await db
+    .select({ id: companies.id, name: companies.name })
+    .from(companies)
+    .where(and(eq(companies.uid, uid), eq(companies.kind, "subunternehmer"), linked ? ne(companies.id, linked.id) : undefined))
+    .orderBy(asc(companies.id))
+    .limit(1);
+  const linkedOthers = linked ? await otherCandidates(db, linked.id, candidateId) : 0;
+  const ownRecord = linked?.kind === "subunternehmer" && (linked.uid === uid || (!linked.uid && !sameUid));
+  if (linked && ownRecord && linkedOthers === 0) {
+    return { action: "update", target: { id: linked.id, name: linked.name }, others: 0, previous: null };
+  }
+  if (linked && linked.kind === "subunternehmer" && linked.uid === uid) {
+    return { action: "link", target: { id: linked.id, name: linked.name }, others: linkedOthers, previous: null };
+  }
+  const previous = linked ? { id: linked.id, name: linked.name } : null;
+  if (sameUid) {
+    return { action: "link", target: sameUid, others: await otherCandidates(db, sameUid.id, candidateId), previous };
+  }
+  return { action: "create", target: null, others: 0, previous };
+}
+
+/**
+ * Applies a confirmed firm (companies, kind "subunternehmer") and links only this candidate to
+ * it, following planFirm. The candidate row and its linked company are locked first.
+ */
+async function upsertFirm(tx: Tx, candidateId: number, firm: FirmValues): Promise<FirmOutcome> {
   const now = new Date();
   const values = {
     name: firm.name,
@@ -261,28 +334,23 @@ async function upsertFirm(tx: Tx, candidateId: number, firm: FirmValues): Promis
     updatedAt: now,
   };
   const [candidate] = await tx.select({ companyId: candidates.companyId }).from(candidates).where(eq(candidates.id, candidateId)).for("update").limit(1);
-  let companyId = candidate?.companyId ?? null;
-  let created = false;
-  if (!companyId) {
-    const [sameUid] = await tx
-      .select({ id: companies.id })
-      .from(companies)
-      .where(and(eq(companies.uid, firm.uid), eq(companies.kind, "subunternehmer")))
-      .limit(1);
-    companyId = sameUid?.id ?? null;
-  }
-  if (companyId) {
-    await tx.update(companies).set(values).where(eq(companies.id, companyId));
+  if (candidate?.companyId) await tx.select({ id: companies.id }).from(companies).where(eq(companies.id, candidate.companyId)).for("update");
+  const plan = await planFirm(tx, candidateId, firm.uid);
+  let outcome: FirmOutcome;
+  if (plan.action === "update" && plan.target) {
+    await tx.update(companies).set(values).where(eq(companies.id, plan.target.id));
+    outcome = { companyId: plan.target.id, created: false, reused: false, name: firm.name, others: 0 };
+  } else if (plan.action === "link" && plan.target) {
+    outcome = { companyId: plan.target.id, created: false, reused: true, name: plan.target.name, others: plan.others };
   } else {
     const [row] = await tx
       .insert(companies)
       .values({ ...values, kind: "subunternehmer", status: "aktiv" })
       .returning({ id: companies.id });
-    companyId = row.id;
-    created = true;
+    outcome = { companyId: row.id, created: true, reused: false, name: firm.name, others: 0 };
   }
-  await tx.update(candidates).set({ companyId, engagement: "selbstaendig", updatedAt: now }).where(eq(candidates.id, candidateId));
-  return { companyId, created };
+  await tx.update(candidates).set({ companyId: outcome.companyId, engagement: "selbstaendig", updatedAt: now }).where(eq(candidates.id, candidateId));
+  return outcome;
 }
 
 /**
@@ -307,13 +375,13 @@ export async function confirmRequest(requestId: number): Promise<ReviewResult> {
       return { ok: false, error: `Die Angaben sind nicht mehr gültig${detail ? ` (${detail})` : ""}. Bitte ablehnen und die Person um eine neue Eingabe bitten.` };
     }
     const now = new Date();
-    let firm: { companyId: number; created: boolean; name: string } | undefined;
+    let firm: FirmOutcome | undefined;
     if (req.section === "verfuegbarkeit") {
       const proposed = (parsed.data as SectionValues["verfuegbarkeit"]).firm;
       const source = await loadProfileSource(tx, req.candidateId);
       const confirmed = source ? currentValues("verfuegbarkeit", source).firm : null;
       if (proposed && !sameValues(proposed, confirmed)) {
-        firm = { ...(await upsertFirm(tx, req.candidateId, proposed)), name: proposed.name };
+        firm = await upsertFirm(tx, req.candidateId, proposed);
       }
     }
     await tx
@@ -366,6 +434,8 @@ export interface CardState {
   /** The last proposal for this card was rejected (and nothing new is pending). */
   rejected: { note: string | null; at: Date } | null;
   confirmedAt: Date | null;
+  /** Firm card only: the linked company that still needs completing ({ firm }), else null. */
+  draft: Record<string, unknown> | null;
 }
 
 /** Confirmed and pending values of every profile card, plus the master-data messages (portal). */
@@ -399,6 +469,7 @@ export async function profileCards(candidateId: number): Promise<{ cards: Record
       submittedAt: pending && open ? open.updatedAt : null,
       rejected,
       confirmedAt: lastReviewed?.status === "bestaetigt" ? lastReviewed.reviewedAt : null,
+      draft: card === "firma" && !currentPart.firm && firmDraft(source) ? { firm: firmDraft(source) } : null,
     };
   }
   return { cards, stammdaten: requests.stammdaten };

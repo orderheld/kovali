@@ -2,6 +2,7 @@ import "server-only";
 import { asc, count, desc, eq, ilike, or, sql, type Column, type SQL } from "drizzle-orm";
 import { getDb } from "../db/client";
 import { candidates, companies, contacts, contracts, documents, mandates, submissions } from "../db/schema";
+import { retainedContractCounts } from "../privacy";
 import { mandateSearchWhere } from "./mandates";
 import { likePattern, outerColumn } from "./query";
 
@@ -245,7 +246,7 @@ export async function findCandidatesForRequest(input: string, limit = 20) {
     createdAt: candidates.createdAt,
     // For the confirm texts of anonymise/delete on the Auskunft page.
     documents: sql<number>`(select count(*) from ${documents} where ${documents.candidateId} = ${outerColumn(candidates.id)})`.mapWith(Number),
-    contracts: sql<number>`(select count(*) from ${contracts} where ${contracts.candidateId} = ${outerColumn(candidates.id)})`.mapWith(Number),
+    ...retainedContractCounts,
   };
   const target = parseDisplayNumber(input);
   if (target?.kind === "candidate") {

@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -8,7 +8,7 @@ import { logActivity } from "@/lib/admin/activities";
 import { audit } from "@/lib/admin/audit";
 import { requireAdmin } from "@/lib/admin/auth/session";
 import { getDb } from "@/lib/admin/db/client";
-import { companies, contacts } from "@/lib/admin/db/schema";
+import { activities, candidates, companies, contacts } from "@/lib/admin/db/schema";
 import { displayNo } from "@/lib/admin/format";
 import { fail, ok, parseForm, type ActionState } from "@/lib/admin/forms";
 import { companySchema, contactSchema } from "./schema";
@@ -46,9 +46,24 @@ export async function deleteCompany(id: number): Promise<ActionState> {
   const companyId = idSchema.parse(id);
   const db = await getDb();
   // Contacts, notes and documents of the company are deleted with it (on delete cascade);
-  // mandates, contracts and candidates keep their data and lose the link.
-  const [row] = await db.delete(companies).where(eq(companies.id, companyId)).returning({ id: companies.id });
-  if (!row) return fail("Diese Firma gibt es nicht mehr.");
+  // mandates, contracts and candidates keep their data and lose the link. History entries that
+  // also belong to a candidate, mandate or contract (e.g. "Vertrag unterzeichnet") only lose the
+  // company, so they stay on those records; entries of the company alone go with it.
+  const deleted = await db.transaction(async (tx) => {
+    const [company] = await tx.select({ id: companies.id }).from(companies).where(eq(companies.id, companyId)).for("update").limit(1);
+    if (!company) return null;
+    const linked = await tx.select({ id: candidates.id }).from(candidates).where(eq(candidates.companyId, companyId));
+    await tx
+      .update(activities)
+      .set({ companyId: null })
+      .where(and(eq(activities.companyId, companyId), sql`num_nonnulls(${activities.candidateId}, ${activities.mandateId}, ${activities.contractId}) > 0`));
+    await tx.delete(companies).where(eq(companies.id, companyId));
+    return { candidates: linked.map((c) => c.id) };
+  });
+  if (!deleted) return fail("Diese Firma gibt es nicht mehr.");
+  for (const candidateId of deleted.candidates) {
+    await logActivity({ type: "candidate", id: candidateId }, `Eigene Firma ${displayNo.company(companyId)} gelöscht; Verknüpfung entfernt.`);
+  }
   await audit("delete", { entity: "company", entityId: companyId, summary: `Firma ${displayNo.company(companyId)}` });
   redirect("/admin/firmen");
 }

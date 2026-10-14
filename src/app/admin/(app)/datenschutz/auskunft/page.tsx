@@ -24,7 +24,7 @@ const steps = [
   "Identität prüfen: Anfrage von der bekannten E-Mail-Adresse oder Kopie eines Ausweises (danach löschen).",
   "Kandidat suchen und die Auskunft als PDF erstellen. Die JSON-Datei dient der Datenherausgabe in einem gängigen Format (Art. 28 DSG).",
   "Angaben Dritter prüfen: Notizen mit Personendaten anderer Personen oder vertraulichen Angaben von Auftraggebern vor dem Versand schwärzen.",
-  `Innert ${ACCESS_REQUEST_DAYS} Tagen und kostenlos antworten, am besten per E-Mail mit Passwort oder über das Kandidatenportal.`,
+  `Innert ${ACCESS_REQUEST_DAYS} Tagen und kostenlos antworten, am besten per E-Mail, das PDF passwortgeschützt und das Passwort auf separatem Weg.`,
 ];
 
 export default async function AccessRequestPage({ searchParams }: PageProps<"/admin/datenschutz/auskunft">) {
@@ -88,6 +88,7 @@ export default async function AccessRequestPage({ searchParams }: PageProps<"/ad
                               hasConsent={false}
                               documents={c.documents}
                               contracts={c.contracts}
+                              proofContracts={c.proofContracts}
                               anonymiseAction={anonymiseCandidateAction.bind(null, c.id)}
                               deleteAction={deleteCandidateAction.bind(null, c.id)}
                             />

@@ -62,6 +62,7 @@ function DueList({ rows, today, overdue }: { rows: DueRow[]; today: string; over
                   <span>
                     {r.documents === 1 ? "1 Dokument" : `${r.documents} Dokumente`}
                     {r.contracts ? `, ${r.contracts === 1 ? "1 Vertrag" : `${r.contracts} Verträge`}` : ""}
+                    {r.proofContracts ? `, ${r.proofContracts === 1 ? "1 unterzeichnete Einwilligung/NDA" : `${r.proofContracts} unterzeichnete Einwilligungen/NDAs`}` : ""}
                   </span>
                 </p>
               </div>
@@ -71,6 +72,7 @@ function DueList({ rows, today, overdue }: { rows: DueRow[]; today: string; over
                   hasConsent={hasConsent}
                   documents={r.documents}
                   contracts={r.contracts}
+                  proofContracts={r.proofContracts}
                   minDate={addDaysIso(today, 1)}
                   maxDate={maxRetentionDate(hasConsent, today)}
                   extendAction={extendRetention.bind(null, r.id)}

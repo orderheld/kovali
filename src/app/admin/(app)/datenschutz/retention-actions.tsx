@@ -13,7 +13,10 @@ interface RetentionActionsProps {
   no: string;
   hasConsent: boolean;
   documents: number;
+  /** Business contracts (10 years, Art. 958f OR). */
   contracts: number;
+  /** Signed consent forms and NDAs with the person (proof until time-barred, at most 10 years). */
+  proofContracts: number;
   minDate?: string;
   maxDate?: string;
   /** Without it there is no "Verlängern" (e.g. on the Auskunft page). */
@@ -32,9 +35,14 @@ export function RetentionActions(props: RetentionActionsProps) {
   return <RetentionActionsInner key={generation} {...props} />;
 }
 
-function RetentionActionsInner({ no, hasConsent, documents, contracts, minDate, maxDate, extendAction, anonymiseAction, deleteAction }: RetentionActionsProps) {
+function RetentionActionsInner({ no, hasConsent, documents, contracts, proofContracts, minDate, maxDate, extendAction, anonymiseAction, deleteAction }: RetentionActionsProps) {
   const [extending, setExtending] = useState(false);
   const formId = `verlaengern-${no}`;
+  const proofs =
+    proofContracts === 1
+      ? "Die unterzeichnete Einwilligung oder Geheimhaltungsvereinbarung bleibt"
+      : `Die ${proofContracts} unterzeichneten Einwilligungen und Geheimhaltungsvereinbarungen bleiben`;
+  const titles = contracts || proofContracts ? "Im Titel der Verträge steht danach die Nummer statt des Namens." : null;
 
   const anonymiseConfirm = [
     `${no} anonymisieren?`,
@@ -42,22 +50,26 @@ function RetentionActionsInner({ no, hasConsent, documents, contracts, minDate, 
     "Entfernt werden: Name, E-Mail, Telefon, Adresse, Geburtsdatum, Nationalität, Kurzprofil, Notizen, Lohnvorstellung, Kunden in den Projekten, Einwilligung, " +
       `${documents === 1 ? "1 Dokument" : `${documents} Dokumente`}, Portal-Konto, Freigaben, Änderungsanträge und der Verlauf.`,
     "Es bleiben ohne Namen: Rolle, Kompetenzen, Sprachen, Satz und die Vorschläge an Auftraggeber (für die Statistik).",
-    contracts ? `${contracts === 1 ? "Der Vertrag bleibt" : `Die ${contracts} Verträge bleiben`} 10 Jahre aufbewahrt (Art. 958f OR).` : "",
+    contracts ? `${contracts === 1 ? "Der Vertrag bleibt" : `Die ${contracts} Verträge bleiben`} 10 Jahre aufbewahrt (Art. 958f OR).` : null,
+    proofContracts ? `${proofs} als Nachweis bis zur Verjährung aufbewahrt, höchstens 10 Jahre (keine Pflicht nach Art. 958f OR).` : null,
+    titles,
     "",
     "Das lässt sich nicht rückgängig machen.",
   ]
-    .filter((line, i, all) => line !== "" || all[i - 1] !== "")
+    .filter((line) => line !== null)
     .join("\n");
 
   const deleteConfirm = [
     `${no} endgültig löschen?`,
     "",
     "Profil, Dokumente, Vorschläge, Portal-Konto, Freigaben und Verlauf werden vollständig gelöscht. Im Löschprotokoll bleibt nur die Nummer.",
-    contracts ? `${contracts === 1 ? "Der Vertrag bleibt" : `Die ${contracts} Verträge bleiben`} ohne Verknüpfung erhalten (Aufbewahrungspflicht).` : "",
+    contracts ? `${contracts === 1 ? "Der Vertrag bleibt" : `Die ${contracts} Verträge bleiben`} ohne Verknüpfung erhalten (Aufbewahrungspflicht, Art. 958f OR).` : null,
+    proofContracts ? `${proofs} als Nachweis ohne Verknüpfung erhalten, bis zur Verjährung, höchstens 10 Jahre.` : null,
+    titles,
     "",
     "Das lässt sich nicht rückgängig machen.",
   ]
-    .filter((line, i, all) => line !== "" || all[i - 1] !== "")
+    .filter((line) => line !== null)
     .join("\n");
 
   return (

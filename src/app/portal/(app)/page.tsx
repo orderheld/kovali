@@ -129,12 +129,13 @@ export default async function OverviewPage({ searchParams }: PageProps<"/portal"
       </div>
 
       {firmMissing ? (
-        <Notice tone="amber" icon={Building2} title="Bitte erfassen Sie Ihre Firma">
+        <Notice tone="amber" icon={Building2} title={firm.draft ? "Bitte ergänzen Sie die Angaben Ihrer Firma" : "Bitte erfassen Sie Ihre Firma"}>
           <p>
-            KOVALI arbeitet mit Fachleuten über ihre eigene GmbH oder AG zusammen. Bevor KOVALI Ihr Profil für eine Vakanz vorschlagen kann, braucht es Ihre Firma.
+            KOVALI arbeitet mit Fachleuten über ihre eigene GmbH oder AG zusammen. Bevor KOVALI Ihr Profil für eine Vakanz vorschlagen kann, braucht es{" "}
+            {firm.draft ? "die vollständigen Angaben Ihrer Firma (Rechtsform, UID und Adresse)." : "Ihre Firma."}
           </p>
           <Link href="/portal/profil/firma" className="mt-2 inline-flex items-center gap-1 font-medium text-blue-700 underline-offset-2 hover:underline">
-            Firma erfassen <ArrowRight aria-hidden className="size-3.5" />
+            {firm.draft ? "Firma ergänzen" : "Firma erfassen"} <ArrowRight aria-hidden className="size-3.5" />
           </Link>
         </Notice>
       ) : null}
@@ -160,7 +161,7 @@ export default async function OverviewPage({ searchParams }: PageProps<"/portal"
                     {state.pending ? (
                       <Badge tone="amber">Nicht bestätigt</Badge>
                     ) : empty ? (
-                      <Badge tone="neutral">Noch leer</Badge>
+                      <Badge tone="neutral">{card === "firma" && firm.draft ? "Unvollständig" : "Noch leer"}</Badge>
                     ) : state.rejected ? (
                       <Badge tone="red">Nicht übernommen</Badge>
                     ) : (

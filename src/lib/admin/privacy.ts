@@ -1,11 +1,14 @@
 import "server-only";
-import { and, asc, count, desc, eq, gte, isNotNull, isNull, lt, lte, not, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, inArray, isNotNull, isNull, like, lt, lte, not, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
+import { SESSION_ABSOLUTE_MS as PORTAL_SESSION_ABSOLUTE_MS, SESSION_IDLE_MS as PORTAL_SESSION_IDLE_MS } from "@/lib/portal/session";
 import { logActivity } from "./activities";
+import { LOGIN_WINDOW_MINUTES, PER_ACCOUNT_LIMIT, PER_IP_LIMIT } from "./auth/rate-limit";
+import { ABSOLUTE_MS as ADMIN_SESSION_ABSOLUTE_MS, IDLE_MS as ADMIN_SESSION_IDLE_MS } from "./auth/session";
 import { consentMethodLabel } from "./consent";
 import { outerColumn } from "./data/query";
 import { audit } from "./audit";
-import { getDb } from "./db/client";
+import { getDb, type AdminDb } from "./db/client";
 import {
   activities,
   candidateAccounts,
@@ -21,7 +24,7 @@ import {
   type EducationEntry,
   type ExperienceEntry,
 } from "./db/schema";
-import { addMonthsIso, displayNo, formatDate, formatDateTime, formatLongDate, fullName, todayIso } from "./format";
+import { addMonthsIso, displayNo, formatChf, formatDate, formatDateTime, formatLongDate, fullName, todayIso } from "./format";
 import {
   activityKinds,
   candidateSources,
@@ -62,8 +65,13 @@ const subcontractors = alias(companies, "subcontractor");
 export const RETENTION_MONTHS_WITHOUT_CONSENT = 6;
 /** With documented consent for the talent pool: up to 24 months, renewable with a new consent. */
 export const RETENTION_MONTHS_WITH_CONSENT = 24;
-/** Contracts and business records (Art. 958f OR). */
+/** Contracts with clients and subcontractors, accounting records (Art. 958f OR). */
 export const RETENTION_YEARS_BUSINESS_RECORDS = 10;
+/**
+ * Signed consent forms and NDAs with a person are proof, not business records: kept until
+ * possible claims are time-barred, at most ten years (Art. 60 and 127 OR).
+ */
+export const RETENTION_YEARS_PROOF_MAX = 10;
 /** Records due within this many days show up as "bald fällig". */
 export const RETENTION_DUE_SOON_DAYS = 30;
 /** Candidates without consent are flagged after this many days. */
@@ -164,6 +172,71 @@ export function anonymisedCandidateValues(c: Pick<Candidate, "id" | "experience"
   } satisfies Partial<typeof candidates.$inferInsert>;
 }
 
+type Tx = Parameters<Parameters<AdminDb["transaction"]>[0]>[0];
+
+/**
+ * Up to October 2026, sharing a vacancy wrote one entry on the mandate alone, «Im
+ * Kandidatenportal geteilt mit: Vorname Name (K-0042), …», which outlived the anonymisation or
+ * deletion of the people it names. Today each share is an entry of the candidate and the mandate.
+ */
+export const LEGACY_SHARE_PREFIX = "Im Kandidatenportal geteilt mit:";
+
+/** Replaces «Name (K-0042)» by «K-0042» in a legacy share entry, for each given number. */
+export function scrubSharedNames(body: string, numbers: Iterable<string>): string {
+  let out = body;
+  for (const no of numbers) {
+    if (!/^K-\d+$/.test(no)) continue;
+    out = out.replace(new RegExp(`(: |, )[^,]*\\(${no}\\)`, "g"), `$1${no}`);
+  }
+  return out;
+}
+
+/**
+ * Removes names from the legacy share entries: the given candidate's, and those of everyone
+ * already anonymised or deleted (a one-off cleanup of older cases, done with the next
+ * anonymisation or deletion). Names of people still in the pool stay.
+ */
+async function scrubLegacyShareEntries(tx: Tx, id: number): Promise<number> {
+  const rows = await tx
+    .select({ id: activities.id, body: activities.body })
+    .from(activities)
+    .where(and(isNull(activities.candidateId), isNotNull(activities.mandateId), like(activities.body, `${LEGACY_SHARE_PREFIX}%`)))
+    .for("update");
+  if (!rows.length) return 0;
+  const named = new Set<number>();
+  for (const r of rows) for (const m of r.body.matchAll(/\(K-(\d+)\)/g)) named.add(Number(m[1]));
+  named.delete(id);
+  const present = named.size
+    ? await tx.select({ id: candidates.id, firstName: candidates.firstName, lastName: candidates.lastName }).from(candidates).where(inArray(candidates.id, [...named]))
+    : [];
+  const keep = new Set(present.filter((c) => !isAnonymised(c)).map((c) => c.id));
+  const scrub = [id, ...[...named].filter((n) => !keep.has(n))].map((n) => displayNo.candidate(n));
+  let changed = 0;
+  for (const r of rows) {
+    const body = scrubSharedNames(r.body, scrub);
+    if (body === r.body) continue;
+    await tx.update(activities).set({ body }).where(eq(activities.id, r.id));
+    changed++;
+  }
+  return changed;
+}
+
+/**
+ * Contracts stay after an anonymisation or deletion (retention), but their titles name the
+ * person («Einwilligung Profilweitergabe Vorname Name – …»): the number replaces the name, so
+ * the contract list no longer finds or shows the person.
+ */
+async function removeNameFromContractTitles(tx: Tx, c: Pick<Candidate, "id" | "firstName" | "lastName">): Promise<number> {
+  const name = [c.firstName, c.lastName].filter(Boolean).join(" ").trim();
+  if (!name || isAnonymised(c)) return 0;
+  const rows = await tx
+    .update(contracts)
+    .set({ title: sql`replace(${contracts.title}, ${name}, ${displayNo.candidate(c.id)})`, updatedAt: new Date() })
+    .where(and(eq(contracts.candidateId, c.id), sql`strpos(${contracts.title}, ${name}) > 0`))
+    .returning({ id: contracts.id });
+  return rows.length;
+}
+
 export interface AnonymiseResult {
   documents: number;
   changeRequests: number;
@@ -177,8 +250,10 @@ export interface AnonymiseResult {
  * Anonymises a candidate in one transaction: personal fields are cleared (see
  * anonymisedCandidateValues), documents, portal account (sessions cascade), change requests,
  * vacancy shares and history entries are deleted. Submissions stay as statistics without
- * notes, feedback, consent and withdrawal notes or the link to the candidate's own firm. Contracts are kept because of the retention duty for business records.
- * Activities shared with a mandate are deleted too, because their text names the candidate.
+ * notes, feedback, consent and withdrawal notes or the link to the candidate's own firm.
+ * Contracts are kept (retention), with the number instead of the name in their titles.
+ * Activities shared with a mandate are deleted too, because their text names the candidate;
+ * legacy share entries on the mandate alone keep only the number.
  */
 export async function anonymiseCandidate(id: number): Promise<AnonymiseResult | null> {
   const db = await getDb();
@@ -190,6 +265,7 @@ export async function anonymiseCandidate(id: number): Promise<AnonymiseResult | 
       .for("update")
       .limit(1);
     if (!c) return null;
+    await removeNameFromContractTitles(tx, c);
     await tx.update(candidates).set(anonymisedCandidateValues(c)).where(eq(candidates.id, id));
     const docs = await tx.delete(documents).where(eq(documents.candidateId, id)).returning({ id: documents.id });
     const changes = await tx.delete(changeRequests).where(eq(changeRequests.candidateId, id)).returning({ id: changeRequests.id });
@@ -201,6 +277,7 @@ export async function anonymiseCandidate(id: number): Promise<AnonymiseResult | 
       .set({ notes: null, feedback: null, consentNote: null, withdrawalNote: null, subcontractorCompanyId: null, updatedAt: new Date() })
       .where(eq(submissions.candidateId, id))
       .returning({ id: submissions.id });
+    await scrubLegacyShareEntries(tx, id);
     return {
       documents: docs.length,
       changeRequests: changes.length,
@@ -217,14 +294,32 @@ export async function anonymiseCandidate(id: number): Promise<AnonymiseResult | 
 }
 
 /**
- * Deletes a candidate for good. Documents, history, submissions, portal account and shares go
- * with it (on delete cascade); contracts stay (retention duty) and lose the link. Signed
- * contract files belong to the contract (a document has exactly one owner), so they stay too.
+ * Deletes the candidate row in one transaction, without an audit entry (the callers write
+ * their own). Documents, history, submissions, portal account and shares go with it (on delete
+ * cascade); contracts stay (retention duty), lose the link and keep only the number in their
+ * titles. Signed contract files belong to the contract (a document has exactly one owner), so
+ * they stay too. Legacy share entries on mandates keep only the number.
  */
-export async function deleteCandidatePermanently(id: number): Promise<boolean> {
+export async function deleteCandidateRecord(id: number): Promise<boolean> {
   const db = await getDb();
-  const [row] = await db.delete(candidates).where(eq(candidates.id, id)).returning({ id: candidates.id });
-  if (!row) return false;
+  return db.transaction(async (tx) => {
+    const [c] = await tx
+      .select({ id: candidates.id, firstName: candidates.firstName, lastName: candidates.lastName })
+      .from(candidates)
+      .where(eq(candidates.id, id))
+      .for("update")
+      .limit(1);
+    if (!c) return false;
+    await removeNameFromContractTitles(tx, c);
+    await tx.delete(candidates).where(eq(candidates.id, id));
+    await scrubLegacyShareEntries(tx, id);
+    return true;
+  });
+}
+
+/** Deletes a candidate for good (Datenschutz), see deleteCandidateRecord. */
+export async function deleteCandidatePermanently(id: number): Promise<boolean> {
+  if (!(await deleteCandidateRecord(id))) return false;
   await audit("delete", { entity: "candidate", entityId: id, summary: `Kandidat ${displayNo.candidate(id)} gelöscht (Datenschutz)` });
   return true;
 }
@@ -244,6 +339,18 @@ const listColumns = {
   source: candidates.source,
 };
 
+/** Signed consent forms and NDAs with a person (no company): proof, not business records. */
+const proofContractSql = sql`(${contracts.template} = 'einwilligung' or (${contracts.template} = 'nda' and ${contracts.companyId} is null))`;
+
+/**
+ * A candidate's retained contracts by basis, for the confirm texts of anonymise and delete:
+ * business contracts (10 years, Art. 958f OR) and proofs (until time-barred, at most 10 years).
+ */
+export const retainedContractCounts = {
+  contracts: sql<number>`(select count(*) from ${contracts} where ${contracts.candidateId} = ${outerColumn(candidates.id)} and not ${proofContractSql})`.mapWith(Number),
+  proofContracts: sql<number>`(select count(*) from ${contracts} where ${contracts.candidateId} = ${outerColumn(candidates.id)} and ${proofContractSql})`.mapWith(Number),
+};
+
 /** Candidates whose retention date has passed or falls within the next 30 days. */
 export async function retentionDue(today = todayIso()) {
   const db = await getDb();
@@ -252,7 +359,7 @@ export async function retentionDue(today = todayIso()) {
     .select({
       ...listColumns,
       documents: sql<number>`(select count(*) from ${documents} where ${documents.candidateId} = ${outerColumn(candidates.id)})`.mapWith(Number),
-      contracts: sql<number>`(select count(*) from ${contracts} where ${contracts.candidateId} = ${outerColumn(candidates.id)})`.mapWith(Number),
+      ...retainedContractCounts,
     })
     .from(candidates)
     .where(and(isNotNull(candidates.retentionUntil), lte(candidates.retentionUntil, until), not(isAnonymisedSql)))
@@ -413,19 +520,23 @@ export const CROSS_BORDER = [
   "Vercel, Neon und Resend sind US-Unternehmen. Die USA gelten seit 15.9.2024 nur für Firmen mit Zertifizierung unter dem Swiss-U.S. Data Privacy Framework als angemessen. Die Zertifizierung jedes Anbieters ist jährlich zu prüfen; fehlt sie, braucht es Standardvertragsklauseln (Art. 16 Abs. 2 lit. d DSG).",
 ];
 
+const hours = (ms: number) => ms / 3_600_000;
+const days = (ms: number) => ms / 86_400_000;
+
 export const RETENTION_RULES = [
   `Kandidatenprofile ohne Einwilligung: höchstens ${RETENTION_MONTHS_WITHOUT_CONSENT} Monate ab Erfassung, danach Anonymisierung oder Löschung`,
   `Kandidatenprofile mit dokumentierter Einwilligung (Talent-Pool): bis ${RETENTION_MONTHS_WITH_CONSENT} Monate, verlängerbar nur mit erneuter Einwilligung`,
-  `Verträge und Geschäftsunterlagen: ${RETENTION_YEARS_BUSINESS_RECORDS} Jahre (Art. 958f OR)`,
+  `Verträge mit Auftraggebern und Subunternehmern, Buchungsbelege: ${RETENTION_YEARS_BUSINESS_RECORDS} Jahre (Art. 958f OR)`,
+  `Unterzeichnete Einwilligungen und Geheimhaltungsvereinbarungen mit Personen: als Nachweis bis zum Ablauf der Verjährung möglicher Ansprüche, höchstens ${RETENTION_YEARS_PROOF_MAX} Jahre (Art. 60 und 127 OR); keine Aufbewahrungspflicht nach Art. 958f OR. Nach einer Anonymisierung oder Löschung steht im Titel nur noch die Nummer`,
   "Vorschläge an Auftraggeber: bleiben nach einer Anonymisierung als Statistik ohne Namen, Notizen und Rückmeldungen",
-  "Anmeldeversuche: 30 Tage; Sitzungen: höchstens 12 Stunden",
+  `Anmeldeversuche: 30 Tage; Sitzungen Admin-Bereich: höchstens ${hours(ADMIN_SESSION_ABSOLUTE_MS)} Stunden; Sitzungen Kandidatenportal: höchstens ${days(PORTAL_SESSION_ABSOLUTE_MS)} Tage`,
   "Audit-Log: ohne Personendaten (nur Nummern), dient dem Nachweis der Zugriffe",
 ];
 
 export const TOMS = [
   "Verschlüsselung: Dokumente und Lebenslauftexte mit AES-256-GCM vor dem Speichern; Übertragung nur über TLS (HSTS)",
-  "Zugang: nur Ferhat Demir; Passwort als PBKDF2-SHA256-Hash (600’000 Iterationen); Zwei-Faktor-Code (TOTP) empfohlen; höchstens 5 Fehlversuche pro IP in 15 Minuten",
-  "Sitzungen: Cookie HttpOnly/Secure/SameSite, Ende nach 12 Stunden oder 4 Stunden ohne Aktivität, alle Sitzungen beendbar",
+  `Zugang: nur Ferhat Demir; Passwort als PBKDF2-SHA256-Hash (600’000 Iterationen); Zwei-Faktor-Code (TOTP) empfohlen; höchstens ${PER_IP_LIMIT} Fehlversuche pro IP in ${LOGIN_WINDOW_MINUTES} Minuten, im Kandidatenportal zusätzlich höchstens ${PER_ACCOUNT_LIMIT} pro Konto`,
+  `Sitzungen: Cookie HttpOnly/Secure/SameSite; Admin-Bereich Ende nach ${hours(ADMIN_SESSION_ABSOLUTE_MS)} Stunden oder ${hours(ADMIN_SESSION_IDLE_MS)} Stunden ohne Aktivität; Kandidatenportal Ende nach ${days(PORTAL_SESSION_ABSOLUTE_MS)} Tagen oder ${hours(PORTAL_SESSION_IDLE_MS)} Stunden ohne Aktivität; alle Sitzungen beendbar`,
   "Protokoll: jede Anmeldung, Änderung, jeder Dokumentabruf und Export im Audit-Log, ohne Namen",
   "Keine Indexierung und kein Zwischenspeichern: noindex, Cache-Control private/no-store für Admin und Portal",
   "Weitergabe an Auftraggeber technisch nur mit erfasster Einwilligung je Mandat (Datenbank-Regel)",
@@ -503,6 +614,10 @@ export function processingRecordDocModel(now = new Date()): DocModel {
 
 // --- Access report (Art. 25 DSG) --------------------------------------------------------------
 
+/** What the access report leaves out, and why (Art. 26 Abs. 4 DSG: a restriction is stated). */
+export const DISCLOSURE_RESTRICTION =
+  "Nicht enthalten sind die Inhalte der Dokumente (Kopien senden wir Ihnen auf Wunsch zu) und die Verkaufskonditionen von KOVALI gegenüber Auftraggebern. Diese hält KOVALI als Geschäftsgeheimnis zurück (Art. 26 Abs. 2 DSG); den Satz, den KOVALI Ihrer Firma zahlt, finden Sie bei den Weitergaben.";
+
 /**
  * Everything KOVALI holds about one candidate, in a machine-readable form (also for data
  * portability, Art. 28 DSG). Document contents are not included, only their list; the person
@@ -542,6 +657,9 @@ export async function buildDisclosure(id: number, now = new Date()) {
         withdrawalNote: submissions.withdrawalNote,
         submittedAt: submissions.submittedAt,
         subcontractor: subcontractors.name,
+        matchScore: submissions.matchScore,
+        rateBuy: submissions.rateBuy,
+        rateUnit: submissions.rateUnit,
         feedback: submissions.feedback,
         notes: submissions.notes,
         createdAt: submissions.createdAt,
@@ -691,6 +809,10 @@ export async function buildDisclosure(id: number, now = new Date()) {
         widerrufVermerk: s.withdrawalNote,
         weitergegebenAm: iso(s.submittedAt),
         weitergegebenUeber: s.subcontractor,
+        /** Ranking aid of the matching (0–100), see automatisierteEntscheide. */
+        matchingScore: s.matchScore,
+        /** What KOVALI pays the person's firm; KOVALI's sell rate to the client is withheld (nichtEnthalten). */
+        satzIhreFirma: s.rateBuy !== null ? `${formatChf(s.rateBuy)} ${s.rateUnit ? labelOf(rateUnits, s.rateUnit) : ""}`.trim() : null,
         rueckmeldung: s.feedback,
         notizen: s.notes,
         erfasstAm: iso(s.createdAt),
@@ -723,6 +845,7 @@ export async function buildDisclosure(id: number, now = new Date()) {
     vertraege: contractRows.map((k) => ({ nummer: k.number, titel: k.title, status: labelOf(contractStatuses, k.status), gueltigAb: k.validFrom, gueltigBis: k.validUntil })),
     verlauf: acts.map((a) => ({ datum: iso(a.createdAt), art: labelOf(activityKinds, a.kind), text: a.body })),
     automatisierteEntscheide: AUTOMATED_DECISIONS_NOTE,
+    nichtEnthalten: DISCLOSURE_RESTRICTION,
     rechte:
       "Sie können unrichtige Daten berichtigen, Daten löschen oder die Bearbeitung einschränken lassen, soweit keine Aufbewahrungspflicht besteht, und eine erteilte Einwilligung jederzeit widerrufen. Zudem können Sie sich beim Eidgenössischen Datenschutz- und Öffentlichkeitsbeauftragten (EDÖB) beschweren.",
   };
@@ -733,6 +856,20 @@ export type Disclosure = NonNullable<Awaited<ReturnType<typeof buildDisclosure>>
 const dt = (iso: string | null) => (iso ? formatDateTime(iso) : "–");
 const d = (iso: string | null) => (iso ? formatDate(iso) : "–");
 const v = (x: unknown) => (x === null || x === undefined || x === "" ? "–" : String(x));
+
+/** Per submission: matching score, the rate paid to the person's firm, client feedback and notes. */
+function submissionDetails(x: Disclosure): Block[] {
+  const items = x.empfaenger.weitergaben.flatMap((s) => {
+    const parts = [
+      s.matchingScore !== null ? `Matching-Score ${s.matchingScore}/100` : null,
+      s.satzIhreFirma ? `Satz Ihrer Firma: ${s.satzIhreFirma}` : null,
+      s.rueckmeldung ? `Rückmeldung Auftraggeber: ${s.rueckmeldung}` : null,
+      s.notizen ? `Notizen: ${s.notizen}` : null,
+    ].filter((part): part is string => part !== null);
+    return parts.length ? [`${s.mandat}: ${parts.join("; ")}`] : [];
+  });
+  return items.length ? [{ type: "paragraph", text: "Angaben zu den einzelnen Weitergaben:" }, { type: "list", items }] : [];
+}
 
 /** The access report as a letter-style PDF, addressed to the candidate and signed by KOVALI. */
 export function disclosureDocModel(x: Disclosure): DocModel {
@@ -753,7 +890,7 @@ export function disclosureDocModel(x: Disclosure): DocModel {
     },
     {
       type: "paragraph",
-      text: `Guten Tag ${name}. Sie haben Auskunft verlangt, welche Personendaten KOVALI über Sie bearbeitet. Nachfolgend finden Sie alle gespeicherten Angaben mit Stand ${formatLongDate(x.erstelltAm)}. Die Auskunft ist kostenlos. Eine maschinenlesbare Fassung (JSON) senden wir Ihnen auf Wunsch zu.`,
+      text: `Guten Tag ${name}. Sie haben Auskunft verlangt, welche Personendaten KOVALI über Sie bearbeitet. Nachfolgend finden Sie die über Sie gespeicherten Angaben mit Stand ${formatLongDate(x.erstelltAm)}. ${x.nichtEnthalten} Die Auskunft ist kostenlos. Eine maschinenlesbare Fassung (JSON) senden wir Ihnen auf Wunsch zu.`,
     },
     { type: "heading", text: "Stammdaten", number: "1" },
     {
@@ -859,6 +996,7 @@ export function disclosureDocModel(x: Disclosure): DocModel {
           ]),
         }
       : { type: "paragraph", text: "Ihr Profil wurde bisher an keinen Auftraggeber weitergegeben." },
+    ...submissionDetails(x),
     { type: "heading", text: "Dokumente", number: "6" },
     x.dokumente.length
       ? {

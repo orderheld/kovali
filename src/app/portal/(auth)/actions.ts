@@ -6,7 +6,7 @@ import { z } from "zod";
 import { site } from "@/config/site";
 import { logActivity } from "@/lib/admin/activities";
 import { audit } from "@/lib/admin/audit";
-import { loginBlocked, recordLoginAttempt } from "@/lib/admin/auth/rate-limit";
+import { accountThrottleKey, loginBlocked, recordLoginAttempt } from "@/lib/admin/auth/rate-limit";
 import { isAdminConfigured } from "@/lib/admin/env";
 import { displayNo } from "@/lib/admin/format";
 import { f, fail, formObject, ok, type ActionState } from "@/lib/admin/forms";
@@ -19,8 +19,8 @@ import { createCandidateSession } from "@/lib/portal/session";
 
 /**
  * Public actions of the candidate portal: login, invitation and password reset. All of them
- * are throttled per IP (scope "portal", separate from the admin login) and answer without
- * revealing whether an e-mail address has an account.
+ * are throttled per IP (scope "portal", separate from the admin login), the login also per
+ * account (e-mail), and answer without revealing whether an e-mail address has an account.
  */
 
 const TOO_MANY = "Zu viele Versuche. Bitte warten Sie 15 Minuten und versuchen Sie es dann erneut.";
@@ -43,11 +43,13 @@ export async function login(_prev: ActionState, formData: FormData): Promise<Act
   if (!parsed.success) return fail("Bitte E-Mail-Adresse und Passwort eingeben.", issuesToErrors(parsed.error.issues));
 
   const ipHash = await requestIpHash();
-  if (await loginBlocked("portal", ipHash)) return fail(TOO_MANY);
+  // Counted for every address, with or without an account, so the limit reveals nothing.
+  const accountKey = accountThrottleKey(parsed.data.email);
+  if (await loginBlocked("portal", ipHash, accountKey)) return fail(TOO_MANY);
 
   const account = await authenticate(parsed.data.email, parsed.data.password);
   if (!account) {
-    await recordLoginAttempt("portal", ipHash, false);
+    await recordLoginAttempt("portal", ipHash, false, accountKey);
     await audit("portal_login_failed");
     return fail("E-Mail-Adresse oder Passwort ist nicht korrekt.");
   }

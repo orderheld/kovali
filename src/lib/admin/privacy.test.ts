@@ -19,9 +19,13 @@ import {
   isAnonymised,
   maxRetentionDate,
   privacyCounts,
+  processingRecordDocModel,
+  RETENTION_RULES,
   retentionDue,
   retentionExtensionError,
   retentionState,
+  scrubSharedNames,
+  TOMS,
 } from "./privacy";
 
 /** Fictional sample data only. */
@@ -64,6 +68,36 @@ describe("retention rules", () => {
     expect(retentionExtensionError("2028-10-14", true, today)).toMatch(/höchstens 24 Monate/);
     expect(retentionExtensionError("2026-10-13", true, today)).toMatch(/Zukunft/);
     expect(retentionExtensionError("13.10.2027", true, today)).toMatch(/gültiges Datum/);
+  });
+});
+
+describe("record of processing activities", () => {
+  it("states admin and portal sessions separately, from the session constants", () => {
+    const text = JSON.stringify(processingRecordDocModel(new Date("2026-10-14T10:00:00Z")).blocks);
+    expect(TOMS.join(" ")).toMatch(/Admin-Bereich Ende nach 12 Stunden oder 4 Stunden ohne Aktivität; Kandidatenportal Ende nach 7 Tagen oder 8 Stunden ohne Aktivität/);
+    expect(RETENTION_RULES.join(" ")).toMatch(/Sitzungen Admin-Bereich: höchstens 12 Stunden; Sitzungen Kandidatenportal: höchstens 7 Tage/);
+    expect(text).toContain("Kandidatenportal Ende nach 7 Tagen");
+    expect(text).not.toMatch(/Sitzungen: höchstens 12 Stunden/);
+  });
+
+  it("does not put signed consents under the Art. 958f OR retention duty", () => {
+    const business = RETENTION_RULES.find((r) => r.startsWith("Verträge mit Auftraggebern"));
+    const proofs = RETENTION_RULES.find((r) => r.startsWith("Unterzeichnete Einwilligungen"));
+    expect(business).toMatch(/10 Jahre \(Art\. 958f OR\)/);
+    expect(proofs).toMatch(/Nachweis bis zum Ablauf der Verjährung/);
+    expect(proofs).toMatch(/keine Aufbewahrungspflicht nach Art\. 958f OR/);
+  });
+});
+
+describe("legacy share entries", () => {
+  const body = "Im Kandidatenportal geteilt mit: Lea Beispiel (K-0001), Max Muster (K-0002), Nora Test (K-0012)";
+
+  it("keeps only the number of the given candidates", () => {
+    expect(scrubSharedNames(body, ["K-0001"])).toBe("Im Kandidatenportal geteilt mit: K-0001, Max Muster (K-0002), Nora Test (K-0012)");
+    expect(scrubSharedNames(body, ["K-0002", "K-0012"])).toBe("Im Kandidatenportal geteilt mit: Lea Beispiel (K-0001), K-0002, K-0012");
+    // K-0001 does not match K-00012, and running twice changes nothing.
+    expect(scrubSharedNames("Im Kandidatenportal geteilt mit: Ida Muster (K-00012)", ["K-0001"])).toBe("Im Kandidatenportal geteilt mit: Ida Muster (K-00012)");
+    expect(scrubSharedNames(scrubSharedNames(body, ["K-0001"]), ["K-0001"])).toBe(scrubSharedNames(body, ["K-0001"]));
   });
 });
 
@@ -117,7 +151,11 @@ describe.skipIf(!url)("anonymise and delete in the database", () => {
   const today = new Date().toISOString().slice(0, 10);
   let personId = 0;
   let otherId = 0;
+  let stayingId = 0;
   let contractId = 0;
+  let consentFormId = 0;
+  let personNdaId = 0;
+  const no = (id: number) => `K-${String(id).padStart(4, "0")}`;
 
   const one = async <T extends Record<string, unknown>>(text: string, values: unknown[] = []) => (await client.query<T>(text, values)).rows[0]!;
   const n = async (text: string, values: unknown[] = []) => Number((await one<{ n: string }>(text, values)).n);
@@ -148,12 +186,14 @@ describe.skipIf(!url)("anonymise and delete in the database", () => {
       [addDaysIso(today, 10)],
     );
     otherId = Number(other.id);
+    const staying = await one<{ id: string }>("insert into candidates (first_name, last_name, email) values ('Nora', 'Bleibt', 'nora.bleibt@example.com') returning id");
+    stayingId = Number(staying.id);
     await client.query("insert into mandates (title, company_id) values ('Business Analyst Kreditsystem', 1)");
     await client.query(
       `insert into submissions (mandate_id, candidate_id, status, consent_at, consent_method, consent_note, submitted_at, subcontractor_company_id,
-         withdrawn_at, withdrawal_note, notes, feedback)
+         withdrawn_at, withdrawal_note, notes, feedback, match_score, rate_buy, rate_sell, rate_unit)
        values (1, $1, 'vorgeschlagen', now() - interval '3 days', 'email', 'Antwort auf Anfrage', now() - interval '2 days', 2,
-         now() - interval '1 day', 'Telefon: keine Weitergabe mehr', 'gute Wahl', 'Kunde will Interview')`,
+         now() - interval '1 day', 'Telefon: keine Weitergabe mehr', 'gute Wahl', 'Kunde will Interview', 82, 110, 146.5, 'stunde')`,
       [personId],
     );
     await client.query("insert into submissions (mandate_id, candidate_id) values (1, $1)", [otherId]);
@@ -176,6 +216,27 @@ describe.skipIf(!url)("anonymise and delete in the database", () => {
       "insert into documents (contract_id, kind, filename, mime_type, size_bytes, sha256, content) values ($1, 'vertrag', 'Vertrag.pdf', 'application/pdf', 3, 'def', '\\x010203')",
       [contractId],
     );
+    // A signed consent form of Lea and an NDA with Max as a person: proof, not business records.
+    consentFormId = Number(
+      (
+        await one<{ id: string }>(
+          "insert into contracts (number, template, title, candidate_id, mandate_id) values ('V-2026-0002', 'einwilligung', 'Einwilligung Profilweitergabe Lea Beispiel – Business Analyst Kreditsystem', $1, 1) returning id",
+          [personId],
+        )
+      ).id,
+    );
+    personNdaId = Number(
+      (
+        await one<{ id: string }>(
+          "insert into contracts (number, template, title, candidate_id) values ('V-2026-0003', 'nda', 'Geheimhaltungsvereinbarung mit Max Muster', $1) returning id",
+          [otherId],
+        )
+      ).id,
+    );
+    // Written by the old share action on the mandate alone; K-0999 was deleted long ago.
+    await client.query("insert into activities (mandate_id, kind, body) values (1, 'system', $1)", [
+      `Im Kandidatenportal geteilt mit: Lea Beispiel (${no(personId)}), Max Muster (${no(otherId)}), Nora Bleibt (${no(stayingId)}), Alt Gelöscht (K-0999)`,
+    ]);
   });
 
   afterAll(async () => {
@@ -187,9 +248,10 @@ describe.skipIf(!url)("anonymise and delete in the database", () => {
   it("lists overdue and soon due profiles", async () => {
     const due = await retentionDue(today);
     expect(due.overdue.map((r) => r.id)).toEqual([personId]);
-    expect(due.overdue[0]).toMatchObject({ documents: 1, contracts: 0 });
+    // Business contracts and proofs (consent forms, NDAs with the person) are counted apart.
+    expect(due.overdue[0]).toMatchObject({ documents: 1, contracts: 0, proofContracts: 1 });
     expect(due.dueSoon.map((r) => r.id)).toEqual([otherId]);
-    expect(due.dueSoon[0]).toMatchObject({ documents: 1, contracts: 1 });
+    expect(due.dueSoon[0]).toMatchObject({ documents: 1, contracts: 1, proofContracts: 1 });
     expect(await privacyCounts(today)).toMatchObject({ overdue: 1, dueSoon: 1 });
   });
 
@@ -221,6 +283,18 @@ describe.skipIf(!url)("anonymise and delete in the database", () => {
     expect(recipients?.type === "table" && recipients.columns.map((c) => c.label)).toContain("Widerrufen");
     expect(recipients?.type === "table" && recipients.rows[0][2]).toMatch(/\(E-Mail\)$/);
     expect(doc.confidential).toBe(true);
+
+    // Assessments about the person are part of the report; KOVALI's sell rate is withheld, and the letter says so.
+    expect(report!.empfaenger.weitergaben[0]).toMatchObject({ matchingScore: 82, satzIhreFirma: "CHF 110.00 pro Stunde", rueckmeldung: "Kunde will Interview", notizen: "gute Wahl" });
+    expect(JSON.stringify(report)).not.toMatch(/146/);
+    expect(report!.nichtEnthalten).toMatch(/Geschäftsgeheimnis zurück \(Art\. 26 Abs\. 2 DSG\)/);
+    const details = doc.blocks.find((b) => b.type === "list" && b.items.some((i) => i.includes("Matching-Score")));
+    expect(details?.type === "list" && details.items[0]).toBe(
+      "M-0001 Business Analyst Kreditsystem: Matching-Score 82/100; Satz Ihrer Firma: CHF 110.00 pro Stunde; Rückmeldung Auftraggeber: Kunde will Interview; Notizen: gute Wahl",
+    );
+    const intro = doc.blocks.find((b) => b.type === "paragraph" && typeof b.text === "string" && b.text.startsWith("Guten Tag"));
+    expect(intro?.type === "paragraph" && intro.text).toMatch(/die über Sie gespeicherten Angaben .*Verkaufskonditionen .*Art\. 26 Abs\. 2 DSG/);
+    expect(intro?.type === "paragraph" && intro.text).not.toMatch(/alle gespeicherten Angaben/);
   });
 
   it("anonymises a candidate and removes everything that identifies the person", async () => {
@@ -270,6 +344,14 @@ describe.skipIf(!url)("anonymise and delete in the database", () => {
     // Anonymised profiles drop out of the retention list and the counts.
     const due = await retentionDue(today);
     expect(due.overdue).toEqual([]);
+
+    // The retained consent form no longer names the person.
+    const form = await one<{ title: string; candidate_id: string }>("select title, candidate_id from contracts where id = $1", [consentFormId]);
+    expect(form).toEqual({ title: `Einwilligung Profilweitergabe ${no(personId)} – Business Analyst Kreditsystem`, candidate_id: String(personId) });
+    // The legacy share entry on the mandate keeps only the number. People still in the pool keep
+    // their names; K-0999, deleted before this cleanup existed, loses it too.
+    const shared = await one<{ body: string }>("select body from activities where candidate_id is null and body like 'Im Kandidatenportal geteilt mit:%'");
+    expect(shared.body).toBe(`Im Kandidatenportal geteilt mit: ${no(personId)}, Max Muster (${no(otherId)}), Nora Bleibt (${no(stayingId)}), K-0999`);
   });
 
   it("deletes a candidate for good but keeps the contract and its file", async () => {
@@ -282,6 +364,14 @@ describe.skipIf(!url)("anonymise and delete in the database", () => {
     expect(await n("select count(*) as n from documents where contract_id = $1", [contractId])).toBe(1);
     const log = await one<{ summary: string }>("select summary from audit_log where action = 'delete' and entity_id = $1", [otherId]);
     expect(log.summary).not.toMatch(/Max|Muster/);
+    // Titles of retained contracts keep only the number.
+    const nda = await one<{ title: string; candidate_id: string | null }>("select title, candidate_id from contracts where id = $1", [personNdaId]);
+    expect(nda).toEqual({ title: `Geheimhaltungsvereinbarung mit ${no(otherId)}`, candidate_id: null });
+    expect((await one<{ title: string }>("select title from contracts where id = $1", [contractId])).title).toBe("Einsatzvertrag");
+    const shared = await one<{ body: string }>("select body from activities where candidate_id is null and body like 'Im Kandidatenportal geteilt mit:%'");
+    expect(shared.body).toBe(`Im Kandidatenportal geteilt mit: ${no(personId)}, ${no(otherId)}, Nora Bleibt (${no(stayingId)}), K-0999`);
+    const bodies = (await client.query<{ body: string }>("select body from activities")).rows.map((r) => r.body).join("\n");
+    expect(bodies).not.toMatch(/Max Muster|Lea Beispiel/);
     expect(await deleteCandidatePermanently(otherId)).toBe(false);
   });
 });

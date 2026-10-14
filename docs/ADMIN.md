@@ -24,8 +24,8 @@ Lokal: `.env.local` mit denselben Variablen (eine lokale Postgres-Datenbank gen�
 
 ## Sicherheit und Datenschutz
 
-- Anmeldung mit Passwort (PBKDF2-SHA256, 600'000 Iterationen) und optional Zwei-Faktor-Code (TOTP, jeder Code nur einmal gültig). Höchstens 5 Fehlversuche pro IP in 15 Minuten.
-- Sitzungen in der Datenbank (nur der SHA-256 des Tokens), Cookie `__Host-`, HttpOnly, Secure, SameSite=Lax. Ende nach 12 Stunden oder 4 Stunden ohne Aktivität.
+- Anmeldung mit Passwort (PBKDF2-SHA256, 600'000 Iterationen) und optional Zwei-Faktor-Code (TOTP, jeder Code nur einmal gültig). Höchstens 5 Fehlversuche pro IP in 15 Minuten; im Kandidatenportal zusätzlich höchstens 10 pro Konto (Hash der E-Mail-Adresse), und eine erfolgreiche Portal-Anmeldung setzt die Fehlversuche nicht zurück.
+- Sitzungen in der Datenbank (nur der SHA-256 des Tokens), Cookie `__Host-`, HttpOnly, Secure, SameSite=Lax. Admin-Bereich: Ende nach 12 Stunden oder 4 Stunden ohne Aktivität; Kandidatenportal: nach 7 Tagen oder 8 Stunden ohne Aktivität. Das Verzeichnis der Bearbeitungstätigkeiten nimmt die Werte aus den Konstanten in `auth/session.ts` und `portal/session.ts`.
 - Dokumente und extrahierter Lebenslauf-Text sind mit AES-256-GCM verschlüsselt, bevor sie in die Datenbank gehen.
 - Jede Anmeldung, Änderung, jeder Dokumentabruf und Export landet im Audit-Log, ohne Personendaten (nur Nummern wie `K-0042`).
 - Antworten unter `/admin` und `/portal`: `Cache-Control: private, no-store`, `X-Robots-Tag: noindex`.
