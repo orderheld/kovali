@@ -74,4 +74,74 @@ describe.skipIf(!url)("database schema", () => {
       client.query("insert into submissions (mandate_id, candidate_id, submitted_at) values (1, 1, now())"),
     ).rejects.toThrow(/submissions_consent_before_submit/);
   });
+
+  it("keeps consent, withdrawal and objection columns consistent", async () => {
+    await expect(client.query("insert into submissions (mandate_id, candidate_id, consent_at, consent_method) values (1, 1, now(), 'fax')")).rejects.toThrow(
+      /submissions_consent_method_check/,
+    );
+    // A form of consent without its date says nothing.
+    await expect(client.query("insert into submissions (mandate_id, candidate_id, consent_method) values (1, 1, 'email')")).rejects.toThrow(
+      /submissions_consent_method_needs_consent/,
+    );
+    await expect(client.query("insert into submissions (mandate_id, candidate_id, withdrawal_note) values (1, 1, 'E-Mail')")).rejects.toThrow(
+      /submissions_withdrawal_note_needs_date/,
+    );
+    await expect(client.query("update candidates set objection_note = 'E-Mail' where id = 1")).rejects.toThrow(/candidates_objection_note_needs_date/);
+    // A withdrawal after a hand-over keeps the consent it was based on.
+    await client.query(
+      "insert into companies (name, kind) values ('Muster GmbH', 'subunternehmer'); " +
+        "insert into submissions (mandate_id, candidate_id, consent_at, consent_method, submitted_at, subcontractor_company_id, withdrawn_at, withdrawal_note) " +
+        "values (1, 1, now() - interval '2 days', 'portal', now() - interval '1 day', 2, now(), 'Im Kandidatenportal zurückgezogen')",
+    );
+    // The firm is a snapshot: deleting it later keeps the submission.
+    await client.query("delete from companies where id = 2");
+    const { rows } = await client.query("select consent_method, subcontractor_company_id, withdrawal_note from submissions where mandate_id = 1");
+    expect(rows).toEqual([{ consent_method: "portal", subcontractor_company_id: null, withdrawal_note: "Im Kandidatenportal zurückgezogen" }]);
+  });
+
+  it("moves consent and withdrawals written as text into the new columns", async () => {
+    await client.query("drop schema public cascade; create schema public;");
+    const consentColumns = migrations.findIndex((m) => m.id === "0002_consent_columns");
+    for (const m of migrations.slice(0, consentColumns)) await client.query(m.sql);
+    await client.query("insert into candidates (first_name, last_name) values ('Test', 'Person')");
+    await client.query("insert into mandates (title) select 'Mandat ' || n from generate_series(1, 8) n");
+    const legacy: [string | null, string, string | null][] = [
+      ["now()", "Widerruf am 05.10.2026 (E-Mail): möchte nicht mehr", null],
+      [null, "Widerruf am 31.02.2026 (E-Mail)", null],
+      ["now()", "Im Kandidatenportal bestätigt am 14.10.2026, 10:00", null],
+      ["now()", "Im Kandidatenportal bestätigt am 14.10.2026, 10:00; im Kandidatenportal zurückgezogen am 15.10.2026, 11:00, keine weitere Weitergabe", "now()"],
+      [null, "Einwilligung im Kandidatenportal zurückgezogen am 15.10.2026, 11:00", null],
+      ["now()", "Mündlich: Telefon 13.10.2026", null],
+      ["now()", "Einwilligung V-2026-0003", null],
+      ["now()", "E-Mail", null],
+    ];
+    for (const [i, [consentAt, note, submittedAt]] of legacy.entries()) {
+      await client.query(
+        `insert into submissions (mandate_id, candidate_id, consent_at, consent_note, submitted_at) values ($1, 1, ${consentAt ?? "null"}, $2, ${submittedAt ?? "null"})`,
+        [i + 1, note],
+      );
+    }
+    await client.query(migrations[consentColumns].sql);
+    const { rows } = await client.query<{ consent: boolean; consent_method: string | null; consent_note: string | null; withdrawn: string | null; withdrawal_note: string | null }>(
+      "select consent_at is not null as consent, consent_method, consent_note, to_char(withdrawn_at at time zone 'Europe/Zurich', 'YYYY-MM-DD') as withdrawn, withdrawal_note from submissions order by mandate_id",
+    );
+    const today = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Zurich" });
+    expect(rows).toEqual([
+      { consent: true, consent_method: null, consent_note: null, withdrawn: "2026-10-05", withdrawal_note: "E-Mail: möchte nicht mehr" },
+      // An impossible date does not stop the migration; the withdrawal counts from now on.
+      { consent: false, consent_method: null, consent_note: null, withdrawn: today, withdrawal_note: "Widerruf am 31.02.2026 (E-Mail)" },
+      { consent: true, consent_method: "portal", consent_note: "Im Kandidatenportal bestätigt am 14.10.2026, 10:00", withdrawn: null, withdrawal_note: null },
+      {
+        consent: true,
+        consent_method: "portal",
+        consent_note: "Im Kandidatenportal bestätigt am 14.10.2026, 10:00",
+        withdrawn: today,
+        withdrawal_note: "Im Kandidatenportal zurückgezogen am 15.10.2026, 11:00, keine weitere Weitergabe",
+      },
+      { consent: false, consent_method: null, consent_note: null, withdrawn: today, withdrawal_note: "Im Kandidatenportal zurückgezogen am 15.10.2026, 11:00" },
+      { consent: true, consent_method: "muendlich", consent_note: "Telefon 13.10.2026", withdrawn: null, withdrawal_note: null },
+      { consent: true, consent_method: "vertrag", consent_note: "Einwilligung V-2026-0003", withdrawn: null, withdrawal_note: null },
+      { consent: true, consent_method: "email", consent_note: null, withdrawn: null, withdrawal_note: null },
+    ]);
+  });
 });

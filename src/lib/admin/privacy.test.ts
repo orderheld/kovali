@@ -91,6 +91,7 @@ describe("anonymisation values", () => {
       "notes",
       "consentAt",
       "consentNote",
+      "objectionNote",
       "salaryExpectation",
       "rating",
       "regions",
@@ -100,6 +101,8 @@ describe("anonymisation values", () => {
     ] as const) {
       expect(v[key], key).toBeNull();
     }
+    // The objection date stays, so an anonymised profile is never passed on again.
+    expect(v).not.toHaveProperty("objectionAt");
     expect(v.status).toBe("archiviert");
     expect(isAnonymised({ id: 42, firstName: v.firstName, lastName: v.lastName })).toBe(true);
     // A real person called "Anonymisiert" with another number is not mistaken for one.
@@ -139,6 +142,7 @@ describe.skipIf(!url)("anonymise and delete in the database", () => {
       [JSON.stringify(experience), JSON.stringify(education), addDaysIso(today, -3)],
     );
     personId = Number(person.id);
+    await client.query("update candidates set objection_at = now() - interval '1 day', objection_note = 'Telefon: keine Weitergabe mehr' where id = $1", [personId]);
     const other = await one<{ id: string }>(
       "insert into candidates (first_name, last_name, email, retention_until) values ('Max', 'Muster', 'max.muster@example.com', $1) returning id",
       [addDaysIso(today, 10)],
@@ -146,7 +150,10 @@ describe.skipIf(!url)("anonymise and delete in the database", () => {
     otherId = Number(other.id);
     await client.query("insert into mandates (title, company_id) values ('Business Analyst Kreditsystem', 1)");
     await client.query(
-      "insert into submissions (mandate_id, candidate_id, status, consent_at, consent_note, submitted_at, notes, feedback) values (1, $1, 'vorgeschlagen', now(), 'Telefon', now(), 'gute Wahl', 'Kunde will Interview')",
+      `insert into submissions (mandate_id, candidate_id, status, consent_at, consent_method, consent_note, submitted_at, subcontractor_company_id,
+         withdrawn_at, withdrawal_note, notes, feedback)
+       values (1, $1, 'vorgeschlagen', now() - interval '3 days', 'email', 'Antwort auf Anfrage', now() - interval '2 days', 2,
+         now() - interval '1 day', 'Telefon: keine Weitergabe mehr', 'gute Wahl', 'Kunde will Interview')`,
       [personId],
     );
     await client.query("insert into submissions (mandate_id, candidate_id) values (1, $1)", [otherId]);
@@ -191,7 +198,16 @@ describe.skipIf(!url)("anonymise and delete in the database", () => {
     expect(report).not.toBeNull();
     expect(report!.person).toMatchObject({ nummer: `K-${String(personId).padStart(4, "0")}`, vorname: "Lea", eigeneFirma: "Muster IT GmbH" });
     expect(report!.empfaenger.weitergaben).toHaveLength(1);
-    expect(report!.empfaenger.weitergaben[0]).toMatchObject({ empfaengerFirma: "Beispiel Consulting AG" });
+    expect(report!.empfaenger.weitergaben[0]).toMatchObject({
+      empfaengerFirma: "Beispiel Consulting AG",
+      einwilligungForm: "E-Mail",
+      einwilligungVermerk: "Antwort auf Anfrage",
+      widerrufVermerk: "Telefon: keine Weitergabe mehr",
+      weitergegebenUeber: "Muster IT GmbH",
+    });
+    expect(report!.empfaenger.weitergaben[0].widerrufenAm).not.toBeNull();
+    expect(report!.einwilligung.widerspruch).toMatchObject({ vermerk: "Telefon: keine Weitergabe mehr" });
+    expect((await buildDisclosure(otherId))!.einwilligung.widerspruch).toBeNull();
     expect(report!.empfaenger.auftragsbearbeiter.map((p) => p.name.split(" ")[0])).toEqual(["Vercel", "Neon", "Resend"]);
     expect(report!.herkunft).toBe("LinkedIn");
     expect(report!.dokumente).toHaveLength(1);
@@ -199,6 +215,11 @@ describe.skipIf(!url)("anonymise and delete in the database", () => {
     expect(report!.automatisierteEntscheide).toMatch(/von einer Person getroffen/);
     const doc = disclosureDocModel(report!);
     expect(doc.title).toMatch(/^Auskunft K-\d{4} \d{4}-\d{2}-\d{2}$/);
+    const facts = doc.blocks.flatMap((b) => (b.type === "facts" ? b.rows : []));
+    expect(facts.find((r) => r.label === "Widerspruch gegen Weitergabe")?.value).toMatch(/^Seit \d{2}\.\d{2}\.\d{4} \(Telefon: keine Weitergabe mehr\)$/);
+    const recipients = doc.blocks.find((b) => b.type === "table" && b.columns[0].label === "Mandat");
+    expect(recipients?.type === "table" && recipients.columns.map((c) => c.label)).toContain("Widerrufen");
+    expect(recipients?.type === "table" && recipients.rows[0][2]).toMatch(/\(E-Mail\)$/);
     expect(doc.confidential).toBe(true);
   });
 
@@ -213,6 +234,8 @@ describe.skipIf(!url)("anonymise and delete in the database", () => {
       expect(c[col], col).toBeNull();
     }
     expect(c.status).toBe("archiviert");
+    expect(c.objection_note).toBeNull();
+    expect(c.objection_at).not.toBeNull();
     expect(c.skills).toEqual(["BPMN", "Jira"]);
     expect((c.experience as { client: string; description: string }[])[0]).toMatchObject({ client: "", description: "", role: "Business Analyst" });
 
@@ -224,11 +247,21 @@ describe.skipIf(!url)("anonymise and delete in the database", () => {
     const acts = await client.query<{ body: string }>("select body from activities where candidate_id = $1", [personId]);
     expect(acts.rows.map((r) => r.body)).toEqual(["Anonymisiert"]);
     // The submission stays as statistics, without free text.
-    const sub = await one<{ notes: string | null; feedback: string | null; consent_note: string | null; status: string }>(
-      "select notes, feedback, consent_note, status from submissions where candidate_id = $1",
+    const sub = await one<Record<string, unknown>>(
+      `select notes, feedback, consent_note, withdrawal_note, subcontractor_company_id, status, consent_method,
+         withdrawn_at is not null as withdrawn from submissions where candidate_id = $1`,
       [personId],
     );
-    expect(sub).toEqual({ notes: null, feedback: null, consent_note: null, status: "vorgeschlagen" });
+    expect(sub).toEqual({
+      notes: null,
+      feedback: null,
+      consent_note: null,
+      withdrawal_note: null,
+      subcontractor_company_id: null,
+      status: "vorgeschlagen",
+      consent_method: "email",
+      withdrawn: true,
+    });
 
     const log = await one<{ action: string; summary: string }>("select action, summary from audit_log where entity = 'candidate' and entity_id = $1", [personId]);
     expect(log.action).toBe("anonymise");

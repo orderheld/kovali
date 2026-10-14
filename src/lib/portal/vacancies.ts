@@ -1,5 +1,6 @@
 import "server-only";
 import { and, desc, eq, inArray, isNotNull, isNull, or, sql } from "drizzle-orm";
+import { statusAfterConsent, statusAfterWithdrawal } from "@/lib/admin/consent";
 import { getDb, type AdminDb } from "@/lib/admin/db/client";
 import { candidates, mandates, submissions, vacancyShares } from "@/lib/admin/db/schema";
 import { formatDateTime } from "@/lib/admin/format";
@@ -92,16 +93,31 @@ async function findVisible(db: Db, candidateId: number, mandateId: number) {
   return row ?? null;
 }
 
+async function hasObjection(db: Db, candidateId: number): Promise<boolean> {
+  const [row] = await db.select({ at: candidates.objectionAt }).from(candidates).where(eq(candidates.id, candidateId)).limit(1);
+  return Boolean(row?.at);
+}
+
 export async function getVisibleVacancy(candidateId: number, mandateId: number) {
   const db = await getDb();
   const vacancy = await findVisible(db, candidateId, mandateId);
   if (!vacancy) return null;
-  const [submission] = await db
-    .select({ consentAt: submissions.consentAt, submittedAt: submissions.submittedAt })
-    .from(submissions)
-    .where(and(eq(submissions.mandateId, mandateId), eq(submissions.candidateId, candidateId)))
-    .limit(1);
-  return { ...vacancy, consentAt: submission?.consentAt ?? null, submittedAt: submission?.submittedAt ?? null };
+  const [[submission], objection] = await Promise.all([
+    db
+      .select({ consentAt: submissions.consentAt, submittedAt: submissions.submittedAt, withdrawnAt: submissions.withdrawnAt })
+      .from(submissions)
+      .where(and(eq(submissions.mandateId, mandateId), eq(submissions.candidateId, candidateId)))
+      .limit(1),
+    hasObjection(db, candidateId),
+  ]);
+  return {
+    ...vacancy,
+    consentAt: submission?.consentAt ?? null,
+    submittedAt: submission?.submittedAt ?? null,
+    withdrawnAt: submission?.withdrawnAt ?? null,
+    /** The candidate objected to any hand-over (recorded by KOVALI): no interest via the portal. */
+    objection,
+  };
 }
 
 /** Visible vacancies the candidate has not opened yet. */
@@ -131,82 +147,96 @@ export async function markVacancySeen(candidateId: number, mandateId: number): P
 export type VacancyAnswer = { response: "interessiert"; message: string | null; consent: true } | { response: "kein_interesse"; message: string | null };
 
 export type VacancyAnswerResult =
-  | { ok: false }
+  | { ok: false; reason: "not_visible" | "objection" }
   | {
       ok: true;
       shareId: number;
       /** A new submission (status "vorgemerkt") was created with the consent. */
       submissionCreated: boolean;
-      /** Consent that had not been used yet was removed. */
-      consentRemoved: boolean;
-      /** The profile had already been sent; the consent stays on record, the share is marked. */
+      /** Consent recorded on an existing submission that had none. */
+      consentRecorded: boolean;
+      /** Interest again: the earlier withdrawal of a profile not yet sent was lifted. */
+      withdrawalLifted: boolean;
+      /** Interest again after a withdrawal of a profile already sent: kept, Ferhat decides. */
+      withdrawalKept: boolean;
+      /** "Kein Interesse": the submission is now withdrawn (no further hand-over). */
+      withdrawn: boolean;
+      /** The profile had already been sent. */
       alreadySubmitted: boolean;
     };
 
+/** Withdrawal note of a portal answer; the date is in withdrawn_at. */
+export const PORTAL_WITHDRAWAL_NOTE = "Im Kandidatenportal zurückgezogen";
+
 /**
- * Stores the candidate's answer. "Interessiert" requires the consent checkbox and records it
- * on the submission for exactly this mandate (created as "vorgemerkt" when none exists; an
- * existing consent is kept as it was). "Kein Interesse" withdraws a consent that has not been
- * used; a consent already used for a submitted profile stays on record (the database requires
- * it for submitted profiles), the note says it was withdrawn and Ferhat is asked to review.
+ * Stores the candidate's answer.
+ *
+ * "Interessiert" requires the consent checkbox and records it on the submission for exactly
+ * this mandate (consent_method "portal"; created as "vorgemerkt" when none exists; an existing
+ * valid consent is kept as it was). An earlier withdrawal is lifted only while the profile has
+ * not been sent: for a profile already with the client, Ferhat decides and records a renewed
+ * consent himself. An objection recorded by KOVALI blocks the answer altogether.
+ *
+ * "Kein Interesse" marks the submission as withdrawn (withdrawn_at). The consent date stays:
+ * the database requires it for a submitted profile, and for one not yet sent it documents what
+ * was withdrawn; withdrawn_at alone blocks every further hand-over. A profile not yet sent ends
+ * as "zurückgezogen", a sent one keeps its status and Ferhat is asked to review.
  */
 export async function answerVacancy(candidateId: number, mandateId: number, answer: VacancyAnswer): Promise<VacancyAnswerResult> {
   const db = await getDb();
   return db.transaction(async (tx) => {
     const vacancy = await findVisible(tx, candidateId, mandateId);
-    if (!vacancy) return { ok: false } as const;
+    if (!vacancy) return { ok: false, reason: "not_visible" } as const;
+    const interested = answer.response === "interessiert";
+    if (interested && (await hasObjection(tx, candidateId))) return { ok: false, reason: "objection" } as const;
     const now = new Date();
-    const when = formatDateTime(now);
-    const [existing] = await tx
-      .select({ id: submissions.id, consentAt: submissions.consentAt, consentNote: submissions.consentNote, submittedAt: submissions.submittedAt })
-      .from(submissions)
-      .where(and(eq(submissions.mandateId, mandateId), eq(submissions.candidateId, candidateId)))
-      .for("update")
-      .limit(1);
+    const pair = and(eq(submissions.mandateId, mandateId), eq(submissions.candidateId, candidateId));
+    const current = () =>
+      tx
+        .select({ id: submissions.id, status: submissions.status, consentAt: submissions.consentAt, submittedAt: submissions.submittedAt, withdrawnAt: submissions.withdrawnAt })
+        .from(submissions)
+        .where(pair)
+        .for("update")
+        .limit(1)
+        .then((rows) => rows[0] ?? null);
+    let existing = await current();
 
-    let submissionCreated = false;
-    let consentRemoved = false;
-    let alreadySubmitted = false;
+    const result = { submissionCreated: false, consentRecorded: false, withdrawalLifted: false, withdrawalKept: false, withdrawn: false, alreadySubmitted: Boolean(existing?.submittedAt) };
+    const consent = { consentAt: now, consentMethod: "portal", consentNote: `Im Kandidatenportal bestätigt am ${formatDateTime(now)}` };
 
-    if (answer.response === "interessiert") {
-      const note = `Im Kandidatenportal bestätigt am ${when}`;
+    if (interested) {
       if (!existing) {
         const inserted = await tx
           .insert(submissions)
-          .values({ mandateId, candidateId, status: "vorgemerkt", consentAt: now, consentNote: note })
+          .values({ mandateId, candidateId, status: "vorgemerkt", ...consent })
           .onConflictDoNothing()
           .returning({ id: submissions.id });
-        submissionCreated = inserted.length > 0;
-        if (!submissionCreated) {
-          // Created in the meantime (Ferhat added the person): only record the consent.
-          await tx
-            .update(submissions)
-            .set({ consentAt: now, consentNote: note, updatedAt: now })
-            .where(and(eq(submissions.mandateId, mandateId), eq(submissions.candidateId, candidateId), isNull(submissions.consentAt)));
-        }
-      } else if (!existing.consentAt) {
-        await tx.update(submissions).set({ consentAt: now, consentNote: note, updatedAt: now }).where(eq(submissions.id, existing.id));
+        result.submissionCreated = inserted.length > 0;
+        // Created in the meantime (Ferhat added the person): continue with that row.
+        if (!result.submissionCreated) existing = await current();
       }
-    } else if (existing?.consentAt) {
-      if (existing.submittedAt) {
-        alreadySubmitted = true;
-        const note = `${existing.consentNote ? `${existing.consentNote}; ` : ""}im Kandidatenportal zurückgezogen am ${when}, keine weitere Weitergabe`;
-        await tx.update(submissions).set({ consentNote: note.slice(0, 1000), updatedAt: now }).where(eq(submissions.id, existing.id));
-      } else {
-        consentRemoved = true;
+      if (existing?.withdrawnAt && existing.submittedAt) {
+        result.withdrawalKept = true;
+      } else if (existing?.withdrawnAt || (existing && !existing.consentAt)) {
+        result.withdrawalLifted = Boolean(existing.withdrawnAt);
+        result.consentRecorded = true;
         await tx
           .update(submissions)
-          .set({ consentAt: null, consentNote: `Einwilligung im Kandidatenportal zurückgezogen am ${when}`, updatedAt: now })
+          .set({ ...consent, withdrawnAt: null, withdrawalNote: null, status: statusAfterConsent(existing), updatedAt: now })
           .where(eq(submissions.id, existing.id));
       }
-    } else if (existing?.submittedAt) {
-      alreadySubmitted = true;
+    } else if (existing && !existing.withdrawnAt) {
+      result.withdrawn = true;
+      await tx
+        .update(submissions)
+        .set({ withdrawnAt: now, withdrawalNote: PORTAL_WITHDRAWAL_NOTE, status: statusAfterWithdrawal(existing), updatedAt: now })
+        .where(eq(submissions.id, existing.id));
     }
 
     // Interest always needs Ferhat's attention; "kein Interesse" only when the person is in
     // his pipeline for this mandate (a submission exists).
-    const hasSubmission = Boolean(existing) || submissionCreated;
-    const reviewedAt = answer.response === "interessiert" || hasSubmission ? null : now;
+    const hasSubmission = Boolean(existing) || result.submissionCreated;
+    const reviewedAt = interested || hasSubmission ? null : now;
     const [share] = await tx
       .insert(vacancyShares)
       .values({
@@ -230,6 +260,6 @@ export async function answerVacancy(candidateId: number, mandateId: number, answ
         },
       })
       .returning({ id: vacancyShares.id });
-    return { ok: true, shareId: share.id, submissionCreated, consentRemoved, alreadySubmitted } as const;
+    return { ok: true, shareId: share.id, ...result } as const;
   });
 }

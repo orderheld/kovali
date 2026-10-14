@@ -29,6 +29,7 @@ import { displayNo, formatChf, formatDate, formatMonthRange, todayIso } from "@/
 import {
   candidateSources,
   candidateStatuses,
+  consentMethods,
   disciplines,
   engagements,
   labelOf,
@@ -40,16 +41,22 @@ import {
   workPermits,
 } from "@/lib/admin/options";
 import type { Tone } from "@/lib/admin/options";
+import { cn } from "@/lib/utils";
 import { ActivityFeed } from "../../_shared/activity-feed";
 import { DocumentsCard } from "../../_shared/documents-card";
-import { adoptDetectedSkills, linkOwnFirm, unlinkOwnFirm } from "../actions";
+import { adoptDetectedSkills, liftCandidateObjection, linkOwnFirm, recordCandidateObjection, unlinkOwnFirm } from "../actions";
 import { ageOn, isCapitalCompany, retentionState } from "../rules";
 import { DetectedSkills } from "./detected-skills";
 import { DossierMenu } from "./dossier-menu";
+import { LiftObjectionForm, ObjectionForm } from "./objection-forms";
 import { OwnFirmForm } from "./own-firm-form";
 
 /** Admin pages read the session and the database per request and may block. */
 export const instant = false;
+
+const detailsClass = "rounded-md border border-line bg-white [&[open]>summary]:border-b [&[open]>summary]:border-line";
+const summaryClass =
+  "cursor-pointer list-none rounded-md px-3 py-2 text-[0.8125rem] font-medium text-blue select-none hover:bg-mist focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue [&::-webkit-details-marker]:hidden";
 
 export async function generateMetadata({ params }: PageProps<"/admin/kandidaten/[id]">): Promise<Metadata> {
   const id = parseId((await params).id);
@@ -117,6 +124,12 @@ export default async function CandidatePage({ params }: PageProps<"/admin/kandid
           <>
             <Badge tone={toneOf(candidateStatuses, c.status)}>{labelOf(candidateStatuses, c.status)}</Badge>
             <Mono>{no}</Mono>
+            {c.objectionAt ? (
+              <Badge tone="red">
+                <ShieldAlert aria-hidden className="size-3" />
+                Widerspruch gegen Weitergabe
+              </Badge>
+            ) : null}
             {company ? null : (
               <Badge tone="amber">
                 <Building2 aria-hidden className="size-3" />
@@ -279,10 +292,15 @@ export default async function CandidatePage({ params }: PageProps<"/admin/kandid
                     </div>
                     <span className="flex flex-wrap items-center gap-1.5">
                       <Badge tone={toneOf(submissionStatuses, p.status)}>{labelOf(submissionStatuses, p.status)}</Badge>
-                      {p.consentAt ? (
+                      {p.withdrawnAt ? (
+                        <Badge tone="red">
+                          <ShieldAlert aria-hidden className="size-3" />
+                          Widerrufen am {formatDate(p.withdrawnAt)}
+                        </Badge>
+                      ) : p.consentAt ? (
                         <Badge tone="green">
                           <ShieldCheck aria-hidden className="size-3" />
-                          Einwilligung
+                          Einwilligung{p.consentMethod ? ` (${labelOf(consentMethods, p.consentMethod)})` : ""}
                         </Badge>
                       ) : (
                         <Badge tone="amber">
@@ -493,6 +511,24 @@ export default async function CandidatePage({ params }: PageProps<"/admin/kandid
                   Einwilligung einholen und Frist verlängern, sonst das Profil löschen.
                 </Notice>
               ) : null}
+              {c.objectionAt ? (
+                <Notice tone="red" icon={ShieldAlert} title="Widerspruch gegen jede Weitergabe">
+                  <p>
+                    Seit {formatDate(c.objectionAt)}
+                    {c.objectionNote ? `: ${c.objectionNote}` : ""}.
+                  </p>
+                  <p className="mt-1">
+                    Kein Vormerken, keine Einwilligung und kein Vorschlag bei irgendeinem Mandat. Erst eine neue, ausdrückliche Einwilligung für ein Mandat hebt
+                    den Widerspruch auf, oder du hebst ihn hier mit Begründung auf.
+                  </p>
+                  <details className={cn(detailsClass, "mt-3 text-ink")}>
+                    <summary className={summaryClass}>Widerspruch aufheben</summary>
+                    <div className="p-3">
+                      <LiftObjectionForm action={liftCandidateObjection.bind(null, id)} />
+                    </div>
+                  </details>
+                </Notice>
+              ) : null}
               {!c.consentAt ? (
                 <Notice tone="amber" icon={ShieldAlert} title={c.consentNote ? "Keine gültige Einwilligung" : "Keine Einwilligung erfasst"}>
                   {c.consentNote ? <span className="whitespace-pre-line">{c.consentNote}. </span> : null}
@@ -519,6 +555,18 @@ export default async function CandidatePage({ params }: PageProps<"/admin/kandid
                   { label: "Herkunft der Daten", value: labelOf(candidateSources, c.source) },
                 ]}
               />
+              {c.objectionAt ? null : (
+                <details className={detailsClass}>
+                  <summary className={summaryClass}>Widerspruch erfassen (keine Weitergabe mehr)</summary>
+                  <div className="space-y-3 p-3">
+                    <p className="text-[0.8125rem] text-slate">
+                      Gilt für alle Mandate: offene Vorschläge gelten als widerrufen, neues Vormerken ist gesperrt. Für ein einzelnes Mandat erfasst du den
+                      Widerruf im Mandat.
+                    </p>
+                    <ObjectionForm action={recordCandidateObjection.bind(null, id)} today={today} />
+                  </div>
+                </details>
+              )}
             </CardBody>
           </Card>
 

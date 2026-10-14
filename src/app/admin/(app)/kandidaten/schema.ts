@@ -8,6 +8,7 @@ import {
   disciplines,
   engagements,
   languageLevels,
+  manualConsentMethods,
   rateUnits,
   remoteOptions,
   seniorities,
@@ -194,4 +195,27 @@ export function parseCandidateForm(
 export const adoptSkillsSchema = z.object({
   id: z.number().int().positive(),
   skills: z.array(z.string().trim().min(1).max(80)).min(1, "Bitte mindestens ein Stichwort auswählen.").max(200),
+});
+
+/** Required ISO date (YYYY-MM-DD), not in the future. */
+const pastDate = () =>
+  z.preprocess(
+    (v) => (typeof v === "string" ? v.trim() : v),
+    z
+      .string({ error: "Bitte ein Datum eingeben." })
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Bitte ein gültiges Datum eingeben.")
+      .refine((s) => !Number.isNaN(Date.parse(`${s}T00:00:00Z`)), "Bitte ein gültiges Datum eingeben.")
+      .refine((s) => s <= todayIso(), "Das Datum liegt in der Zukunft."),
+  );
+
+/** Objection to any further hand-over (Widerspruch), as the candidate communicated it. */
+export const objectionSchema = z.object({
+  objectionDate: pastDate(),
+  objectionMethod: f.enum(valuesOf(manualConsentMethods), "Bitte wählen, wie der Widerspruch mitgeteilt wurde."),
+  objectionReason: f.optText(300),
+});
+
+/** Lifting an objection needs a reason; it ends up in the history. */
+export const liftObjectionSchema = z.object({
+  liftNote: f.text(300, "Bitte festhalten, warum der Widerspruch aufgehoben wird."),
 });

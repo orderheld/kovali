@@ -115,7 +115,11 @@ export function PortalCard({
                           Vorschlag {displayNo.submission(submission.id)}
                         </a>
                         : {labelOf(submissionStatuses, submission.status)}
-                        {submission.consentAt ? ` · Einwilligung ${formatDate(submission.consentAt)}` : " · noch ohne Einwilligung"}
+                        {submission.withdrawnAt
+                          ? ` · widerrufen am ${formatDate(submission.withdrawnAt)}`
+                          : submission.consentAt
+                            ? ` · Einwilligung ${formatDate(submission.consentAt)}`
+                            : " · noch ohne Einwilligung"}
                       </p>
                     ) : null}
                   </div>

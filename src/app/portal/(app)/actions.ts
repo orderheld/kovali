@@ -218,13 +218,17 @@ const interestSchema = z
   .object({ consent: f.checkbox(), message: f.optText(2000) })
   .refine((v) => v.consent, { message: "Bitte bestätigen Sie die Einwilligung. Ohne sie kann KOVALI Ihr Profil nicht weitergeben.", path: ["consent"] });
 
+/** Shown when KOVALI recorded the candidate's objection to any hand-over. */
+const OBJECTION_MESSAGE =
+  "Sie haben KOVALI mitgeteilt, dass Ihr Profil nicht weitergegeben werden soll. Möchten Sie sich für diese Vakanz melden, wenden Sie sich bitte direkt an KOVALI.";
+
 export async function markInterested(mandateId: number, _prev: ActionState, formData: FormData): Promise<ActionState> {
   const session = await requireCandidate();
   const id = idSchema.parse(mandateId);
   const parsed = interestSchema.safeParse(formObject(formData));
   if (!parsed.success) return fail("Bitte prüfen Sie die markierten Angaben.", issuesToErrors(parsed.error.issues));
   const result = await answerVacancy(session.candidateId, id, { response: "interessiert", consent: true, message: parsed.data.message });
-  if (!result.ok) return fail("Diese Vakanz ist nicht mehr verfügbar.");
+  if (!result.ok) return fail(result.reason === "objection" ? OBJECTION_MESSAGE : "Diese Vakanz ist nicht mehr verfügbar.");
   const firm = await hasConfirmedFirm(session.candidateId);
   const mandateNo = displayNo.mandate(id);
   await logActivity(
@@ -233,16 +237,26 @@ export async function markInterested(mandateId: number, _prev: ActionState, form
       { type: "mandate", id },
     ],
     [
-      `Kandidatenportal: Interesse an ${mandateNo} gemeldet. Einwilligung zur Weitergabe des Profils für dieses Mandat erteilt.`,
+      result.withdrawalKept
+        ? `Kandidatenportal: erneut Interesse an ${mandateNo} gemeldet. Das Profil wurde bereits weitergegeben und die Einwilligung danach widerrufen; der Widerruf bleibt bis zu einer erneuten Einwilligung im Mandat.`
+        : `Kandidatenportal: Interesse an ${mandateNo} gemeldet. Einwilligung zur Weitergabe des Profils für dieses Mandat erteilt${result.withdrawalLifted ? " (früherer Widerruf aufgehoben)" : ""}.`,
       firm ? null : "Noch keine bestätigte Firma (GmbH/AG) erfasst.",
       parsed.data.message ? `Nachricht: ${parsed.data.message}` : null,
     ]
       .filter(Boolean)
       .join("\n"),
   );
-  await portalAudit(session, { entity: "vacancy_share", entityId: result.shareId, text: `Interesse an ${mandateNo}, Einwilligung erteilt` });
+  await portalAudit(session, {
+    entity: "vacancy_share",
+    entityId: result.shareId,
+    text: `Interesse an ${mandateNo}${result.withdrawalKept ? ", Widerruf bleibt" : ", Einwilligung erteilt"}`,
+  });
   refresh();
-  return ok("Danke! Ihr Interesse ist bei KOVALI angekommen.");
+  return ok(
+    result.withdrawalKept
+      ? "Danke! KOVALI meldet sich bei Ihnen, bevor Ihr Profil für diese Vakanz wieder verwendet wird."
+      : "Danke! Ihr Interesse ist bei KOVALI angekommen.",
+  );
 }
 
 export async function markNotInterested(mandateId: number): Promise<ActionState> {
@@ -251,7 +265,7 @@ export async function markNotInterested(mandateId: number): Promise<ActionState>
   const result = await answerVacancy(session.candidateId, id, { response: "kein_interesse", message: null });
   if (!result.ok) return fail("Diese Vakanz ist nicht mehr verfügbar.");
   const mandateNo = displayNo.mandate(id);
-  if (result.consentRemoved || result.alreadySubmitted) {
+  if (result.withdrawn) {
     await logActivity(
       [
         { type: "candidate", id: session.candidateId },
@@ -259,10 +273,10 @@ export async function markNotInterested(mandateId: number): Promise<ActionState>
       ],
       result.alreadySubmitted
         ? `Kandidatenportal: Interesse an ${mandateNo} zurückgezogen. Das Profil wurde bereits weitergegeben; keine weitere Weitergabe.`
-        : `Kandidatenportal: Interesse an ${mandateNo} zurückgezogen, Einwilligung widerrufen.`,
+        : `Kandidatenportal: Interesse an ${mandateNo} zurückgezogen, Einwilligung für dieses Mandat widerrufen.`,
     );
   }
-  await portalAudit(session, { entity: "vacancy_share", entityId: result.shareId, text: `kein Interesse an ${mandateNo}${result.consentRemoved ? ", Einwilligung widerrufen" : ""}` });
+  await portalAudit(session, { entity: "vacancy_share", entityId: result.shareId, text: `kein Interesse an ${mandateNo}${result.withdrawn ? ", Einwilligung widerrufen" : ""}` });
   refresh();
   return ok(result.alreadySubmitted ? "Gespeichert. KOVALI ist informiert und gibt Ihr Profil nicht weiter." : "Gespeichert.");
 }

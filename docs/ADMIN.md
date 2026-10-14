@@ -30,6 +30,7 @@ Lokal: `.env.local` mit denselben Variablen (eine lokale Postgres-Datenbank gen�
 - Jede Anmeldung, Änderung, jeder Dokumentabruf und Export landet im Audit-Log, ohne Personendaten (nur Nummern wie `K-0042`).
 - Antworten unter `/admin` und `/portal`: `Cache-Control: private, no-store`, `X-Robots-Tag: noindex`.
 - Weitergabe eines Profils an eine Firma nur mit erfasster Einwilligung für genau dieses Mandat (Datenbank-Regel `submissions_consent_before_submit`).
+- Einwilligung, Widerruf und Widerspruch stehen in eigenen Spalten: `submissions.consent_method`, `withdrawn_at` und `withdrawal_note` je Mandat, `candidates.objection_at` und `objection_note` für einen Widerspruch gegen jede Weitergabe (sperrt Vormerken, Einwilligung und Vorschlag bei allen Mandaten). Gemeinsame Logik in `src/lib/admin/consent.ts`.
 
 ## Für Entwickler: Aufbau
 

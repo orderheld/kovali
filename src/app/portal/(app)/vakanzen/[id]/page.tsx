@@ -52,7 +52,10 @@ export default async function VacancyPage({ params }: PageProps<"/portal/vakanze
   const reference = displayNo.mandate(vacancy.id);
   const unit = vacancy.portalRateUnit === "tag" ? "tag" : "stunde";
   const example = rateExample(vacancy.portalRate, unit, vacancy.workload);
-  const interested = vacancy.response === "interessiert" && Boolean(vacancy.consentAt);
+  // Withdrawn consent does not count as interest, even if the last answer was "interessiert".
+  const interested = vacancy.response === "interessiert" && Boolean(vacancy.consentAt) && !vacancy.withdrawnAt;
+  // Interest again after the profile was sent and the consent withdrawn: KOVALI decides.
+  const pendingRenewal = vacancy.response === "interessiert" && Boolean(vacancy.withdrawnAt && vacancy.submittedAt);
   const declined = vacancy.response === "kein_interesse";
   const recipient = `Auftraggeber von KOVALI für dieses Projektmandat (Referenz ${reference})`;
 
@@ -164,7 +167,17 @@ export default async function VacancyPage({ params }: PageProps<"/portal/vakanze
               </Notice>
             ) : null}
 
-            {interested ? (
+            {vacancy.objection && !interested ? (
+              <Notice tone="neutral" icon={Info} title="Keine Weitergabe Ihres Profils">
+                Sie haben KOVALI mitgeteilt, dass Ihr Profil nicht weitergegeben werden soll. Möchten Sie sich für diese Vakanz melden, wenden Sie sich bitte
+                direkt an KOVALI.
+              </Notice>
+            ) : pendingRenewal ? (
+              <Notice tone="neutral" icon={Info} title={`Interesse gemeldet am ${formatDateTime(vacancy.responseAt)}`}>
+                Ihr Profil wurde für diese Vakanz bereits weitergegeben, danach haben Sie Ihre Einwilligung zurückgezogen. KOVALI meldet sich bei Ihnen, bevor
+                Ihr Profil für diese Vakanz wieder verwendet wird.
+              </Notice>
+            ) : interested ? (
               <>
                 <Notice tone="green" icon={CheckCircle2} title={`Interesse gemeldet am ${formatDateTime(vacancy.responseAt ?? vacancy.consentAt)}`}>
                   <p>

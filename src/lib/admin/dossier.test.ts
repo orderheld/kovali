@@ -4,11 +4,13 @@ import {
   buildDossier,
   CONDITIONS_ON_REQUEST,
   DRAFT_NOTICE,
+  DRAFT_REASON_OBJECTION,
   dossierFileName,
   dossierHref,
   dossierPeriod,
   formatWorkload,
   makeScrubber,
+  mandateDraftReasons,
   sortExperience,
   type DossierCandidate,
 } from "./dossier";
@@ -245,6 +247,31 @@ describe("dossier for a mandate", () => {
     expect(both.type === "box" && inlineText(both.text)).toBe(
       "Entwurf: Einwilligung der Kandidatin/des Kandidaten für dieses Mandat fehlt. Keine eigene Firma (Subunternehmen) erfasst. Nicht weitergeben.",
     );
+  });
+
+  it("stays a draft after a withdrawal or while the candidate objects, even with consent", () => {
+    const consentAt = new Date("2026-10-10T08:00:00Z");
+    const withdrawn = buildDossier(anna, {
+      variant: "anonym",
+      mandate,
+      submission: { consentAt, withdrawnAt: new Date("2026-10-12T08:00:00Z"), rateSell: 135, rateUnit: "stunde" },
+      company: firm,
+      today: TODAY,
+    });
+    const first = withdrawn.blocks[0];
+    expect(first.type === "box" && inlineText(first.text)).toBe("Entwurf: Einwilligung der Kandidatin/des Kandidaten für dieses Mandat widerrufen. Nicht weitergeben.");
+    expect(withdrawn.reference).toBe("K-0042 · M-0007 · Entwurf");
+    const objecting = buildDossier(anna, {
+      variant: "namentlich",
+      mandate,
+      submission: { consentAt, rateSell: 135, rateUnit: "stunde" },
+      company: firm,
+      objection: true,
+      today: TODAY,
+    }).blocks[0];
+    expect(objecting.type === "box" && inlineText(objecting.text)).toBe("Entwurf: Die Kandidatin/der Kandidat hat jeder Weitergabe widersprochen. Nicht weitergeben.");
+    expect(mandateDraftReasons({ submission: { consentAt, rateSell: null, rateUnit: null }, company: firm })).toEqual([]);
+    expect(mandateDraftReasons({ submission: { consentAt, rateSell: null, rateUnit: null }, company: firm, objection: true })).toEqual([DRAFT_REASON_OBJECTION]);
   });
 
   it("keeps conditions on request when the proposal has no selling rate", () => {

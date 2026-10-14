@@ -1,19 +1,20 @@
 "use server";
 
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { logActivity } from "@/lib/admin/activities";
 import { audit } from "@/lib/admin/audit";
 import { requireAdmin } from "@/lib/admin/auth/session";
+import { applySignedConsent } from "@/lib/admin/contracts/consent";
 import { getContract, linkLookup } from "@/lib/admin/contracts/data";
 import { insertContractWithNumber } from "@/lib/admin/contracts/numbering";
 import { getTemplate } from "@/lib/admin/contracts/templates";
 import type { LinkKey, LinkMode, TemplateDefinition } from "@/lib/admin/contracts/types";
-import { getDb } from "@/lib/admin/db/client";
-import { contracts, submissions } from "@/lib/admin/db/schema";
-import { addMonthsIso, formatDate, todayIso } from "@/lib/admin/format";
+import { getDb, type AdminDb } from "@/lib/admin/db/client";
+import { contracts } from "@/lib/admin/db/schema";
+import { addMonthsIso, displayNo, formatDate, todayIso } from "@/lib/admin/format";
 import { fail, formObject, ok, parseForm, type ActionState } from "@/lib/admin/forms";
 import { companyKinds, labelOf } from "@/lib/admin/options";
 import type { OwnerRef } from "@/lib/admin/owner";
@@ -232,16 +233,54 @@ export async function signContract(id: number, _prev: ActionState, formData: For
   await audit("update", { entity: "contract", entityId: contractId, summary: `Vertrag ${current.number}: unterzeichnet` });
 
   // A signed consent for a mandate is the consent of the matching submission (if none is recorded yet).
+  let note: string | null = null;
   if (template?.id === "einwilligung" && current.candidateId && current.mandateId) {
-    const [sub] = await db
-      .update(submissions)
-      .set({ consentAt: new Date(`${date}T12:00:00Z`), consentNote: `Einwilligung ${current.number}`, updatedAt: new Date() })
-      .where(and(eq(submissions.candidateId, current.candidateId), eq(submissions.mandateId, current.mandateId), isNull(submissions.consentAt)))
-      .returning({ id: submissions.id });
-    if (sub) await audit("consent", { entity: "submission", entityId: sub.id, summary: `Einwilligung aus Vertrag ${current.number}` });
+    note = await takeOverSignedConsent(db, contractId, { number: current.number, candidateId: current.candidateId, mandateId: current.mandateId, signedOn: date });
   }
   refresh();
-  return ok("Als unterzeichnet erfasst.");
+  return ok(note ? `Als unterzeichnet erfasst. ${note}` : "Als unterzeichnet erfasst.");
+}
+
+/**
+ * Applies a signed consent form to the submission of its mandate and logs what happened. A
+ * withdrawal or objection is only lifted by a form signed after it; otherwise it stays and
+ * the history says why. Returns a note for Ferhat when the consent was not taken over.
+ */
+async function takeOverSignedConsent(
+  db: AdminDb,
+  contractId: number,
+  contract: { number: string; candidateId: number; mandateId: number; signedOn: string },
+): Promise<string | null> {
+  const outcome = await applySignedConsent(db, contract);
+  const owners: OwnerRef[] = [
+    { type: "candidate", id: contract.candidateId },
+    { type: "mandate", id: contract.mandateId },
+    { type: "contract", id: contractId },
+  ];
+  const source = `Einwilligung aus Vertrag ${contract.number} (unterzeichnet am ${formatDate(contract.signedOn)})`;
+  if (outcome.applied) {
+    const lifted = [
+      outcome.withdrawalLifted ? `Widerruf vom ${formatDate(outcome.withdrawalLifted.at)} aufgehoben` : null,
+      outcome.objectionLifted ? `Widerspruch vom ${formatDate(outcome.objectionLifted.at)} aufgehoben` : null,
+    ].filter(Boolean);
+    await logActivity(owners, `${source} für den Vorschlag ${displayNo.submission(outcome.submissionId)} übernommen${lifted.length ? `; ${lifted.join(", ")}` : ""}.`);
+    await audit("consent", {
+      entity: "submission",
+      entityId: outcome.submissionId,
+      summary: `Einwilligung aus Vertrag ${contract.number}${outcome.withdrawalLifted ? ", Widerruf aufgehoben" : ""}${outcome.objectionLifted ? ", Widerspruch aufgehoben" : ""}`,
+    });
+    return null;
+  }
+  if (outcome.reason === "withdrawn_later" || outcome.reason === "objection_later") {
+    const blocker = outcome.reason === "withdrawn_later" ? `Der Widerruf vom ${formatDate(outcome.withdrawnAt)}` : `Der Widerspruch vom ${formatDate(outcome.objectionAt)}`;
+    await logActivity(
+      owners,
+      `${source} nicht übernommen: ${blocker} liegt nicht vor der Unterschrift. Eine erneute Einwilligung im Mandat erfassen, wenn die Fachperson sie bestätigt.`,
+    );
+    await audit("consent", { entity: "submission", entityId: outcome.submissionId, summary: `Einwilligung aus Vertrag ${contract.number} nicht übernommen (${outcome.reason})` });
+    return `Die Einwilligung wurde nicht beim Vorschlag übernommen: ${blocker} liegt nicht vor der Unterschrift.`;
+  }
+  return null;
 }
 
 export async function endContract(id: number, _prev: ActionState, formData: FormData): Promise<ActionState> {

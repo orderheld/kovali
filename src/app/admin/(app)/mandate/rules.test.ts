@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { withdrawalNoteText } from "@/lib/admin/consent";
 import { monthlyExample } from "@/lib/admin/rates";
 import {
   confidentialMentions,
   consentTimestamp,
   CONSENT_MISSING,
   CONSENT_WITHDRAWN,
-  consentNoteText,
   deadlineUrgency,
   defaultSubmissionRates,
   formatRate,
@@ -15,6 +15,7 @@ import {
   marginInfo,
   monthlyExampleText,
   nextClosedAt,
+  OBJECTION_ACTIVE,
   parseAmountInput,
   parseGroup,
   RECIPIENT_MISSING,
@@ -23,8 +24,6 @@ import {
   suggestedShareIds,
   topMatches,
   urgencyTone,
-  withdrawalIsoDate,
-  withdrawalNoteText,
 } from "./rules";
 
 const now = new Date("2026-10-13T08:30:00Z");
@@ -125,36 +124,60 @@ describe("submission status changes", () => {
   });
 
   it("blocks every new hand-over after a withdrawal until consent is recorded again", () => {
-    const withdrawn = withdrawalNoteText("14.10.2026", "e_mail", "Möchte nicht mehr vorgeschlagen werden");
-    expect(withdrawn).toBe("Widerruf am 14.10.2026 (E-Mail): Möchte nicht mehr vorgeschlagen werden");
-    expect(isWithdrawn(withdrawn)).toBe(true);
+    const withdrawnAt = new Date("2026-10-12T10:00:00Z");
     const first = new Date("2026-10-11T09:00:00Z");
-    expect(submissionStatusChange({ consentAt: null, consentNote: withdrawn, submittedAt: null }, "vorgeschlagen", now)).toEqual({
+    expect(isWithdrawn({ withdrawnAt })).toBe(true);
+    expect(isWithdrawn({ withdrawnAt: null })).toBe(false);
+    expect(isWithdrawn({})).toBe(false);
+    // Declined before any consent, and withdrawn after it: both block the hand-over.
+    expect(submissionStatusChange({ consentAt: null, withdrawnAt, submittedAt: null }, "vorgeschlagen", now)).toEqual({
       ok: false,
       error: CONSENT_WITHDRAWN,
     });
-    expect(submissionStatusChange({ consentAt: consent, consentNote: withdrawn, submittedAt: first }, "interview", now).ok).toBe(false);
-    expect(submissionStatusChange({ consentAt: consent, consentNote: withdrawn, submittedAt: first }, "zurueckgezogen", now).ok).toBe(true);
-    const renewed = consentNoteText("muendlich", "Telefon 20.10.2026");
-    expect(renewed).toBe("Mündlich: Telefon 20.10.2026");
-    expect(isWithdrawn(renewed)).toBe(false);
-    expect(submissionStatusChange({ consentAt: consent, consentNote: renewed, submittedAt: null }, "vorgeschlagen", now).ok).toBe(true);
+    expect(submissionStatusChange({ consentAt: consent, withdrawnAt, submittedAt: null }, "vorgeschlagen", now)).toEqual({
+      ok: false,
+      error: CONSENT_WITHDRAWN,
+    });
+    expect(submissionStatusChange({ consentAt: consent, withdrawnAt, submittedAt: first }, "interview", now).ok).toBe(false);
+    expect(submissionStatusChange({ consentAt: consent, withdrawnAt, submittedAt: first }, "zurueckgezogen", now).ok).toBe(true);
+    expect(submissionStatusChange({ consentAt: consent, withdrawnAt, submittedAt: first }, "absage", now).ok).toBe(true);
+    // A renewed consent clears withdrawn_at, so the hand-over is open again.
+    expect(submissionStatusChange({ consentAt: now, withdrawnAt: null, submittedAt: null }, "vorgeschlagen", now).ok).toBe(true);
   });
 
-  it("writes the form of consent into the note", () => {
-    expect(consentNoteText("e_mail", "")).toBe("E-Mail");
-    expect(consentNoteText("schriftlich", " unterschriebenes Formular ")).toBe("Schriftlich: unterschriebenes Formular");
-    expect(isWithdrawn("Im Kandidatenportal bestätigt")).toBe(false);
-    expect(isWithdrawn(null)).toBe(false);
+  it("blocks every hand-over while the candidate objects, even with consent for this mandate", () => {
+    const objectionAt = new Date("2026-10-12T10:00:00Z");
+    expect(submissionStatusChange({ consentAt: consent, objectionAt, submittedAt: null }, "vorgeschlagen", now)).toEqual({
+      ok: false,
+      error: OBJECTION_ACTIVE,
+    });
+    // The objection is reported before a withdrawal or missing consent.
+    expect(submissionStatusChange({ consentAt: null, withdrawnAt: objectionAt, objectionAt, submittedAt: null }, "vorgeschlagen", now)).toEqual({
+      ok: false,
+      error: OBJECTION_ACTIVE,
+    });
+    expect(submissionStatusChange({ consentAt: consent, objectionAt, submittedAt: new Date("2026-10-11T09:00:00Z") }, "angebot", now).ok).toBe(false);
+    expect(submissionStatusChange({ consentAt: consent, objectionAt, submittedAt: null }, "absage", now).ok).toBe(true);
   });
 
-  it("accepts a renewed consent only on or after the withdrawal date", () => {
-    const withdrawn = withdrawalNoteText("14.10.2026", "muendlich", null);
-    expect(withdrawalIsoDate(withdrawn)).toBe("2026-10-14");
-    expect(withdrawalIsoDate("E-Mail")).toBeNull();
-    expect(renewedConsentError("2026-10-13", withdrawn)).toBe("Die Einwilligung muss am oder nach dem Widerruf vom 14.10.2026 liegen.");
-    expect(renewedConsentError("2026-10-14", withdrawn)).toBeNull();
-    expect(renewedConsentError("2026-10-01", undefined)).toBeNull();
+  it("notes how a withdrawal was communicated", () => {
+    expect(withdrawalNoteText("email", "")).toBe("E-Mail");
+    expect(withdrawalNoteText("email", null)).toBe("E-Mail");
+    expect(withdrawalNoteText("schriftlich", " Brief vom 12.10.2026 ")).toBe("Schriftlich: Brief vom 12.10.2026");
+    // The hint "(mit Notiz)" belongs to the form, not to the record.
+    expect(withdrawalNoteText("muendlich", "Telefon")).toBe("Mündlich: Telefon");
+  });
+
+  it("accepts a renewed consent only on or after the withdrawal or objection", () => {
+    const withdrawnAt = new Date("2026-10-14T08:00:00Z");
+    expect(renewedConsentError("2026-10-13", { withdrawnAt })).toBe("Die Einwilligung muss am oder nach dem Widerruf vom 14.10.2026 liegen.");
+    expect(renewedConsentError("2026-10-14", { withdrawnAt })).toBeNull();
+    expect(renewedConsentError("2026-10-15", { withdrawnAt })).toBeNull();
+    const objectionAt = new Date("2026-10-12T22:30:00Z"); // 13.10.2026 in Zurich
+    expect(renewedConsentError("2026-10-12", { objectionAt })).toBe("Die Einwilligung muss am oder nach dem Widerspruch vom 13.10.2026 liegen.");
+    expect(renewedConsentError("2026-10-13", { objectionAt })).toBeNull();
+    expect(renewedConsentError("2026-10-01", {})).toBeNull();
+    expect(renewedConsentError("2026-10-01", { withdrawnAt: null, objectionAt: null })).toBeNull();
   });
 
   it("dates consent on the chosen day, never in the future", () => {

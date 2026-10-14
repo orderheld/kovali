@@ -2,8 +2,9 @@ import Link from "next/link";
 import { AlertTriangle, Check, FileSearch, Scale, UserSearch, X } from "lucide-react";
 import { Badge, buttonClass, Card, CardBody, CardHeader, EmptyState, LinkButton, Mono, Notice } from "@/components/admin/ui";
 import type { MatchPoolCandidate } from "@/lib/admin/data/mandates";
-import { firmOf, NO_OWN_FIRM, subcontractorCheck } from "@/lib/admin/data/submissions";
-import { displayNo, fullName } from "@/lib/admin/format";
+import { objectionSummary } from "@/lib/admin/consent";
+import { firmOf, NO_OWN_FIRM, subcontractorCheck, type CandidateConsentBlock } from "@/lib/admin/data/submissions";
+import { displayNo, formatDate, fullName } from "@/lib/admin/format";
 import type { MatchResult } from "@/lib/admin/matching";
 import { candidateStatuses, labelOf, submissionStatuses, toneOf } from "@/lib/admin/options";
 import { cn } from "@/lib/utils";
@@ -107,7 +108,7 @@ export function MatchingCard({
   highlightId: number | null;
   hasCriteria: boolean;
   submissionByCandidate: Map<number, { id: number; status: string }>;
-  withdrawals: Map<number, { note: string }>;
+  withdrawals: Map<number, CandidateConsentBlock>;
   toggleHref: string;
 }) {
   return (
@@ -156,7 +157,11 @@ export function MatchingCard({
             const highlighted = c.id === highlightId;
             const submission = submissionByCandidate.get(c.id);
             const firm = subcontractorCheck(firmOf(c));
-            const withdrawal = withdrawals.get(c.id);
+            const block = withdrawals.get(c.id);
+            const objection = block?.objection ? objectionSummary({ objectionAt: block.objection.at, objectionNote: block.objection.note }) : null;
+            const withdrawal = block?.latestWithdrawal
+              ? `Einwilligung bei ${displayNo.mandate(block.latestWithdrawal.mandateId)} am ${formatDate(block.latestWithdrawal.at)} widerrufen`
+              : null;
             const candidateHref = `/admin/kandidaten/${c.id}`;
             return (
               <li
@@ -186,7 +191,19 @@ export function MatchingCard({
                         <Badge tone={toneOf(submissionStatuses, submission.status)}>{labelOf(submissionStatuses, submission.status)}</Badge>
                         <span>zum Vorschlag</span>
                       </a>
-                    ) : c.status === "archiviert" ? null : firm.ok ? (
+                    ) : c.status === "archiviert" ? null : c.objectionAt ? (
+                      <span className="flex flex-col items-start gap-1 sm:items-end">
+                        <button type="button" disabled aria-describedby={`widerspruch-${c.id}`} className={buttonClass("secondary", "sm")}>
+                          Vormerken
+                        </button>
+                        <span id={`widerspruch-${c.id}`} className="max-w-56 text-xs text-red-700 sm:text-right">
+                          Widerspruch gegen jede Weitergabe.{" "}
+                          <Link href={candidateHref} className="font-medium underline">
+                            Zum Kandidaten
+                          </Link>
+                        </span>
+                      </span>
+                    ) : firm.ok ? (
                       <ReserveButton action={reserveCandidate.bind(null, mandateId, c.id)} candidateHref={candidateHref} firmError={NO_OWN_FIRM} />
                     ) : (
                       <span className="flex flex-col items-start gap-1 sm:items-end">
@@ -231,12 +248,18 @@ export function MatchingCard({
                   </dl>
                 ) : null}
                 {match.reasons.length ? <p className="mt-2 text-xs text-slate">{match.reasons.join(" · ")}</p> : null}
-                {match.warnings.length || withdrawal ? (
+                {match.warnings.length || objection || withdrawal ? (
                   <ul className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs">
+                    {objection ? (
+                      <li className="flex items-center gap-1 font-medium text-red-700">
+                        <AlertTriangle aria-hidden className="size-3.5" />
+                        {objection}
+                      </li>
+                    ) : null}
                     {withdrawal ? (
                       <li className="flex items-center gap-1 font-medium text-red-700">
                         <AlertTriangle aria-hidden className="size-3.5" />
-                        {withdrawal.note}
+                        {withdrawal}
                       </li>
                     ) : null}
                     {match.warnings.map((w) => (

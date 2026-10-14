@@ -178,6 +178,8 @@ const matchColumns = {
   rateUnit: candidates.rateUnit,
   consentAt: candidates.consentAt,
   retentionUntil: candidates.retentionUntil,
+  // Objection to any hand-over: no new shortlist entries while it is set.
+  objectionAt: candidates.objectionAt,
   // The candidate's own firm: profiles are only passed on through it.
   firmId: companies.id,
   firmName: companies.name,

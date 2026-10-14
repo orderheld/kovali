@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { experienceField, languagesField, normalizeMonth, parseCandidateForm } from "./schema";
+import { parseForm } from "@/lib/admin/forms";
+import { experienceField, languagesField, liftObjectionSchema, normalizeMonth, objectionSchema, parseCandidateForm } from "./schema";
 
 const minimal = { firstName: "Anna", lastName: "Beispiel", country: "Schweiz", engagement: "offen", status: "neu", source: "netzwerk" };
 
@@ -91,5 +92,25 @@ describe("candidate form", () => {
         consentAt: "Die Einwilligung kann nicht in der Zukunft liegen.",
       });
     }
+  });
+});
+
+describe("objection to any further hand-over", () => {
+  const errorsOf = (result: ReturnType<typeof parseForm>) => (result.ok ? {} : result.state.status === "error" ? (result.state.errors ?? {}) : {});
+
+  it("needs a date that is not in the future and how it was communicated", () => {
+    expect(parseForm(objectionSchema, { objectionDate: "2026-10-01", objectionMethod: "email", objectionReason: "" })).toMatchObject({
+      ok: true,
+      data: { objectionDate: "2026-10-01", objectionMethod: "email", objectionReason: null },
+    });
+    expect(Object.keys(errorsOf(parseForm(objectionSchema, { objectionDate: "2999-01-01", objectionMethod: "portal" }))).sort()).toEqual([
+      "objectionDate",
+      "objectionMethod",
+    ]);
+  });
+
+  it("is only lifted with a reason", () => {
+    expect(errorsOf(parseForm(liftObjectionSchema, { liftNote: "  " }))).toHaveProperty("liftNote");
+    expect(parseForm(liftObjectionSchema, { liftNote: "Irrtümlich erfasst" }).ok).toBe(true);
   });
 });

@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, inArray, isNull, ne, notInArray } from "drizzle-orm";
+import { and, eq, inArray, ne } from "drizzle-orm";
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -8,25 +8,35 @@ import { logActivity } from "@/lib/admin/activities";
 import { audit } from "@/lib/admin/audit";
 import { requireAdmin } from "@/lib/admin/auth/session";
 import { companyExists, contactCompanyId, getMandate, matchCandidateRow } from "@/lib/admin/data/mandates";
-import { candidateWithdrawals, firmOf, getShareContext, getSubmissionContext, subcontractorCheck, type CandidateFirm } from "@/lib/admin/data/submissions";
+import { consentSummary, objectionSummary, withdrawalNoteText } from "@/lib/admin/consent";
+import {
+  firmOf,
+  getShareContext,
+  getSubmissionContext,
+  giveSubmissionConsent,
+  markSubmissionStatus,
+  subcontractorCheck,
+  withdrawSubmission,
+  type CandidateFirm,
+} from "@/lib/admin/data/submissions";
 import { getDb } from "@/lib/admin/db/client";
 import { candidates, mandates, submissions, vacancyShares } from "@/lib/admin/db/schema";
 import { displayNo, formatDate, formatDateTime, fullName, todayIso } from "@/lib/admin/format";
 import { fail, ok, parseForm, type ActionState } from "@/lib/admin/forms";
 import { matchCandidate } from "@/lib/admin/matching";
-import { labelOf, mandateStatuses, portalVisibilities, profileVariants, submissionStatuses } from "@/lib/admin/options";
+import { consentMethods, labelOf, mandateStatuses, portalVisibilities, profileVariants, submissionStatuses } from "@/lib/admin/options";
 import type { OwnerRef } from "@/lib/admin/owner";
 import { normalizeSkills } from "@/lib/admin/skills";
 import {
-  consentNoteText,
   consentTimestamp,
   CONSENT_MISSING,
   defaultSubmissionRates,
   isWithdrawn,
   nextClosedAt,
+  OBJECTION_ACTIVE,
   renewedConsentError,
   submissionStatusChange,
-  withdrawalNoteText,
+  submittedStatuses,
 } from "./rules";
 import {
   consentSchema,
@@ -183,6 +193,8 @@ export async function reserveCandidate(mandateId: number, candidateId: number): 
   if (!mandate) return fail("Dieses Mandat gibt es nicht mehr.");
   if (!candidate) return fail("Diesen Kandidaten gibt es nicht mehr.");
   if (candidate.status === "archiviert") return fail("Archivierte Kandidaten können nicht vorgemerkt werden.");
+  // An objection to any hand-over also rules out new shortlist entries.
+  if (candidate.objectionAt) return fail(OBJECTION_ACTIVE);
   // Candidates are only passed on through their own firm (subcontractor of KOVALI).
   const firm = subcontractorCheck(firmOf(candidate));
   if (!firm.ok) return fail(firm.error);
@@ -215,15 +227,21 @@ async function changeSubmissionStatus(submissionId: number, status: string, { on
   const firm = subcontractorCheck(firmOf(current));
   // The firm is checked again at the hand-over: it may have been unlinked since the shortlist.
   if (change.submittedAt && !current.submittedAt && !firm.ok) return fail(firm.error);
-  const db = await getDb();
+  const firstSubmission = !current.submittedAt && change.submittedAt;
   try {
-    await db.update(submissions).set({ status: next.data, submittedAt: change.submittedAt, updatedAt: now }).where(eq(submissions.id, submissionId));
+    // The first hand-over keeps the firm it went through, even if the candidate's firm changes later.
+    const saved = await markSubmissionStatus(submissionId, {
+      status: next.data,
+      submittedAt: change.submittedAt,
+      subcontractorCompanyId: firstSubmission && firm.ok ? firm.firm.id : undefined,
+      toClient: (submittedStatuses as readonly string[]).includes(next.data),
+    });
+    if (!saved) return fail("Die Fachperson hat inzwischen widerrufen oder widersprochen. Bitte lade die Seite neu.");
   } catch (error) {
     // The consent may have been removed in the meantime; the database rule has the last word.
     if (violates(error, "submissions_consent_before_submit")) return fail(CONSENT_MISSING);
     throw error;
   }
-  const firstSubmission = !current.submittedAt && change.submittedAt;
   const label = submissionLabel(current);
   const recipient = current.recipientCompanyId ? `${current.recipientCompanyName} (${displayNo.company(current.recipientCompanyId)})` : "–";
   // The history documents each hand-over: who, to whom, which dossier, when, on which consent.
@@ -232,7 +250,7 @@ async function changeSubmissionStatus(submissionId: number, status: string, { on
     firstSubmission
       ? `Profil vorgeschlagen an ${recipient}: ${label}, über ${firm.ok ? firmLabel(firm.firm) : "–"}. ` +
           `Dossier ${labelOf(profileVariants, current.profileVariant).toLowerCase()}, ${formatDateTime(now)}. ` +
-          `Einwilligung ${formatDate(current.consentAt)} (${current.consentNote ?? "ohne Notiz"}).`
+          `Einwilligung ${consentSummary(current)}.`
       : `Vorschlag ${label}: ${labelOf(submissionStatuses, current.status)} → ${labelOf(submissionStatuses, next.data)}`,
   );
   await audit("update", {
@@ -268,40 +286,36 @@ export async function recordConsent(submissionId: number, _prev: ActionState, fo
   const now = new Date();
   const at = consentTimestamp(parsed.data.consentDate, todayIso(now), now);
   if (!(at instanceof Date)) return fail("Bitte prüfe die markierten Felder.", { consentDate: at.error });
-  // The latest withdrawal of this candidate, on this or another mandate, must not postdate the consent.
-  const withdrawal = isWithdrawn(current.consentNote) ? current.consentNote : (await candidateWithdrawals([current.candidateId])).get(current.candidateId)?.note;
-  const tooEarly = renewedConsentError(parsed.data.consentDate, withdrawal);
+  // A renewed consent must not predate the withdrawal of this submission or the candidate's objection.
+  const tooEarly = renewedConsentError(parsed.data.consentDate, current);
   if (tooEarly) return fail("Bitte prüfe die markierten Felder.", { consentDate: tooEarly });
-  const note = consentNoteText(parsed.data.consentMethod, parsed.data.consentNote);
-  const db = await getDb();
-  await db
-    .update(submissions)
-    .set({
-      consentAt: at,
-      // Replaces a withdrawal note: the candidate has agreed again.
-      consentNote: note,
-      // Waiting for consent is over once it is given; a withdrawal that ended an unproposed
-      // submission is lifted, so it is back to "vorgemerkt".
-      status:
-        current.status === "einwilligung_offen" || (current.status === "zurueckgezogen" && !current.submittedAt && isWithdrawn(current.consentNote))
-          ? "vorgemerkt"
-          : current.status,
-      updatedAt: now,
-    })
-    .where(eq(submissions.id, sid));
-  await logActivity(
-    [mandateOwner(current.mandateId), candidateOwner(current.candidateId)],
-    `${isWithdrawn(current.consentNote) ? "Erneute Einwilligung" : "Einwilligung"} erfasst: ${submissionLabel(current)}, ${formatDate(at)} (${note})`,
-  );
-  await audit("consent", { entity: "submission", entityId: sid, summary: `${submissionSummary(current)}: Einwilligung erfasst (${parsed.data.consentMethod})` });
+  const consent = { at, method: parsed.data.consentMethod, note: parsed.data.consentNote };
+  const result = await giveSubmissionConsent(sid, consent);
+  if (!result) return fail("Diesen Vorschlag gibt es nicht mehr.");
+  const owners = [mandateOwner(current.mandateId), candidateOwner(current.candidateId)];
+  const summary = consentSummary({ consentAt: at, consentMethod: consent.method, consentNote: consent.note });
+  await logActivity(owners, `${result.withdrawalLifted ? "Erneute Einwilligung" : "Einwilligung"} erfasst: ${submissionLabel(current)}, ${summary}`);
+  await audit("consent", { entity: "submission", entityId: sid, summary: `${submissionSummary(current)}: Einwilligung erfasst (${consent.method})` });
+  if (result.objectionLifted) {
+    // The objection is a fact on the candidate: its end is recorded there as well.
+    await logActivity(
+      candidateOwner(current.candidateId),
+      `Widerspruch aufgehoben durch die erneute Einwilligung für «${current.mandateTitle}» (${displayNo.mandate(current.mandateId)}). Vorher: ${objectionSummary({ objectionAt: result.objectionLifted.at, objectionNote: result.objectionLifted.note })}`,
+    );
+    await audit("consent", {
+      entity: "candidate",
+      entityId: current.candidateId,
+      summary: `Kandidat ${displayNo.candidate(current.candidateId)}: Widerspruch aufgehoben durch Einwilligung ${displayNo.submission(sid)}`,
+    });
+  }
   refresh();
-  return ok("Einwilligung erfasst.");
+  return ok(result.objectionLifted ? "Einwilligung erfasst. Der Widerspruch ist damit aufgehoben." : "Einwilligung erfasst.");
 }
 
 /**
- * The candidate withdraws consent or objects to further hand-overs. Profiles already proposed
- * stay documented (the database keeps their consent date); everything not yet proposed loses
- * its consent, so no further hand-over is possible until the candidate agrees again.
+ * The candidate withdraws consent for this mandate, or objects to every further hand-over
+ * ("Für alle Mandate"). The consent date stays as record of earlier hand-overs; withdrawn_at
+ * blocks any further one until the candidate agrees again.
  */
 export async function recordWithdrawal(submissionId: number, _prev: ActionState, formData: FormData): Promise<ActionState> {
   await requireAdmin();
@@ -310,49 +324,38 @@ export async function recordWithdrawal(submissionId: number, _prev: ActionState,
   if (!parsed.ok) return parsed.state;
   const current = await getSubmissionContext(sid);
   if (!current) return fail("Diesen Vorschlag gibt es nicht mehr.");
+  if (isWithdrawn(current)) return fail("Der Widerruf ist bereits erfasst. Einen Widerspruch für alle Mandate erfasst du beim Kandidaten.");
   const now = new Date();
   const at = consentTimestamp(parsed.data.withdrawalDate, todayIso(now), now);
   if (!(at instanceof Date)) return fail("Bitte prüfe die markierten Felder.", { withdrawalDate: at.error });
-  const note = withdrawalNoteText(formatDate(at), parsed.data.withdrawalMethod, parsed.data.withdrawalReason);
-  const db = await getDb();
-  const others = await db.transaction(async (tx) => {
-    await tx
-      .update(submissions)
-      .set({ consentAt: current.submittedAt ? current.consentAt : null, consentNote: note, status: "zurueckgezogen", updatedAt: now })
-      .where(eq(submissions.id, sid));
-    if (!parsed.data.allMandates) return [];
-    // Other mandates: open shortlist entries wait for consent again; closed ones keep their status.
-    return tx
-      .update(submissions)
-      .set({ consentAt: null, consentNote: note, updatedAt: now })
-      .where(and(eq(submissions.candidateId, current.candidateId), ne(submissions.id, sid), isNull(submissions.submittedAt)))
-      .returning({ id: submissions.id, mandateId: submissions.mandateId, status: submissions.status });
-  });
-  if (others.length) {
-    await db
-      .update(submissions)
-      .set({ status: "einwilligung_offen" })
-      .where(and(inArray(submissions.id, others.map((o) => o.id)), notInArray(submissions.status, ["absage", "zurueckgezogen"])));
-  }
-  const scope = parsed.data.allMandates ? "für alle Mandate" : "für dieses Mandat";
+  const note = withdrawalNoteText(parsed.data.withdrawalMethod, parsed.data.withdrawalReason);
+  const allMandates = parsed.data.allMandates;
+  const result = await withdrawSubmission(sid, { at, note, allMandates });
+  if (!result) return fail("Der Widerruf ist bereits erfasst.");
+  const { others } = result;
+  const scope = allMandates ? "Widerspruch gegen jede weitere Weitergabe" : "Einwilligung für dieses Mandat widerrufen";
   await logActivity(
     [mandateOwner(current.mandateId), candidateOwner(current.candidateId)],
-    `Einwilligung widerrufen (${scope}): ${submissionLabel(current)}. ${note}`,
+    `${scope}: ${submissionLabel(current)}, am ${formatDate(at)} (${note}).`,
   );
   for (const o of others) {
-    await logActivity(mandateOwner(o.mandateId), `Einwilligung von ${displayNo.candidate(current.candidateId)} widerrufen (für alle Mandate). ${note}`);
+    await logActivity(
+      mandateOwner(o.mandateId),
+      `Widerspruch von ${displayNo.candidate(current.candidateId)} gegen jede weitere Weitergabe, am ${formatDate(at)} (${note}).` +
+        (o.submittedAt ? " Das Profil wurde bereits vorgeschlagen: Auftraggeber informieren." : ""),
+    );
   }
   await audit("consent", {
     entity: "submission",
     entityId: sid,
-    summary: `${submissionSummary(current)}: Widerruf ${parsed.data.allMandates ? "alle Mandate" : "dieses Mandat"} (${others.length} weitere)`,
+    summary: `${submissionSummary(current)}: ${allMandates ? `Widerspruch alle Mandate (${others.length} weitere)` : "Widerruf dieses Mandat"}`,
   });
+  if (allMandates) {
+    await audit("consent", { entity: "candidate", entityId: current.candidateId, summary: `Kandidat ${displayNo.candidate(current.candidateId)}: Widerspruch erfasst` });
+  }
   refresh();
-  return ok(
-    parsed.data.allMandates && others.length
-      ? `Widerruf erfasst. Auch bei ${others.length} weiteren Mandaten ist keine Weitergabe mehr möglich.`
-      : "Widerruf erfasst.",
-  );
+  if (!allMandates) return ok("Widerruf erfasst.");
+  return ok(others.length ? `Widerspruch erfasst. Auch bei ${others.length} weiteren Mandaten ist keine Weitergabe mehr möglich.` : "Widerspruch erfasst.");
 }
 
 /** Removes a consent recorded by mistake; impossible once the profile has been proposed. */
@@ -363,15 +366,18 @@ export async function clearConsent(submissionId: number): Promise<ActionState> {
   if (!current) return fail("Diesen Vorschlag gibt es nicht mehr.");
   const locked = "Das Profil wurde bereits vorgeschlagen; die Einwilligung bleibt dokumentiert.";
   if (current.submittedAt) return fail(locked);
-  if (isWithdrawn(current.consentNote)) return fail("Ein Widerruf bleibt dokumentiert. Erfasse bei Bedarf eine neue Einwilligung.");
+  if (isWithdrawn(current)) return fail("Ein Widerruf bleibt dokumentiert. Erfasse bei Bedarf eine neue Einwilligung.");
   const db = await getDb();
   try {
-    await db.update(submissions).set({ consentAt: null, consentNote: null, updatedAt: new Date() }).where(eq(submissions.id, sid));
+    await db.update(submissions).set({ consentAt: null, consentMethod: null, consentNote: null, updatedAt: new Date() }).where(eq(submissions.id, sid));
   } catch (error) {
     if (violates(error, "submissions_consent_before_submit")) return fail(locked);
     throw error;
   }
-  await logActivity([mandateOwner(current.mandateId), candidateOwner(current.candidateId)], `Einwilligung entfernt: ${submissionLabel(current)}`);
+  await logActivity(
+    [mandateOwner(current.mandateId), candidateOwner(current.candidateId)],
+    `Einwilligung entfernt (Irrtum): ${submissionLabel(current)}, war ${labelOf(consentMethods, current.consentMethod)} vom ${formatDate(current.consentAt)}`,
+  );
   await audit("consent", { entity: "submission", entityId: sid, summary: `${submissionSummary(current)}: Einwilligung entfernt` });
   refresh();
   return ok("Einwilligung entfernt.");

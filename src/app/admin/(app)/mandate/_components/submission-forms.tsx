@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { ActionForm, CheckboxField, SelectField, SubmitButton, TextAreaField, TextField } from "@/components/admin/form";
 import type { ActionState } from "@/lib/admin/forms";
-import { profileVariants, rateUnits } from "@/lib/admin/options";
+import { manualConsentMethods, profileVariants, rateUnits } from "@/lib/admin/options";
 import { cn } from "@/lib/utils";
-import { consentMethods, marginInfo, parseAmountInput } from "../rules";
+import { marginInfo, parseAmountInput } from "../rules";
 
 type Action = (prev: ActionState, fd: FormData) => Promise<ActionState>;
 
@@ -15,7 +15,7 @@ export function ConsentForm({ action, today, submitLabel = "Einwilligung erfasse
     <ActionForm action={action} hideSubmit className="space-y-3">
       <div className="grid gap-3 sm:grid-cols-[10rem_11rem_minmax(0,1fr)]">
         <TextField name="consentDate" label="Datum" type="date" defaultValue={today} max={today} required />
-        <SelectField name="consentMethod" label="Form" options={consentMethods} defaultValue="e_mail" required />
+        <SelectField name="consentMethod" label="Form" options={manualConsentMethods} defaultValue="email" required />
         <TextField name="consentNote" label="Notiz" placeholder="z. B. Telefon 13.10.2026, Antwort auf Anfrage" hint="Bei mündlicher Einwilligung Pflicht." />
       </div>
       <SubmitButton size="sm">{submitLabel}</SubmitButton>
@@ -23,20 +23,22 @@ export function ConsentForm({ action, today, submitLabel = "Einwilligung erfasse
   );
 }
 
-/** Withdrawal or objection; by default it blocks every further hand-over of the candidate. */
+/**
+ * Withdrawal for this mandate, or (checkbox) an objection to every further hand-over of the
+ * candidate, which also blocks new shortlist entries until it is lifted.
+ */
 export function WithdrawalForm({ action, today }: { action: Action; today: string }) {
   return (
     <ActionForm action={action} hideSubmit className="space-y-3">
       <div className="grid gap-3 sm:grid-cols-[10rem_11rem_minmax(0,1fr)]">
         <TextField name="withdrawalDate" label="Datum" type="date" defaultValue={today} max={today} required />
-        <SelectField name="withdrawalMethod" label="Mitgeteilt per" options={consentMethods} defaultValue="e_mail" required />
-        <TextField name="withdrawalReason" label="Notiz" placeholder="z. B. möchte nicht mehr vorgeschlagen werden" />
+        <SelectField name="withdrawalMethod" label="Mitgeteilt per" options={manualConsentMethods} defaultValue="email" required />
+        <TextField name="withdrawalReason" label="Notiz" placeholder="z. B. möchte nicht mehr vorgeschlagen werden" hint="Wer, wie, warum; keine heiklen Angaben." />
       </div>
       <CheckboxField
         name="allMandates"
-        label="Für alle Mandate dieser Fachperson"
-        hint="Widerspruch gegen jede weitere Weitergabe: Bei allen noch nicht vorgeschlagenen Mandaten wird die Einwilligung entfernt."
-        defaultChecked
+        label="Widerspruch für alle Mandate dieser Fachperson"
+        hint="Keine weitere Weitergabe und kein neues Vormerken, bei keinem Mandat. Alle offenen Vorschläge gelten als widerrufen."
       />
       <SubmitButton size="sm" variant="danger">
         Widerruf erfassen

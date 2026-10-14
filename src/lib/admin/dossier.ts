@@ -62,6 +62,8 @@ export interface DossierMandate {
 
 export interface DossierSubmission {
   consentAt: Date | null;
+  /** Consent withdrawn: the dossier is a draft, whatever the consent date says. */
+  withdrawnAt?: Date | null;
   /** Rate offered to the firm (selling rate). The candidate's own rate never appears. */
   rateSell: number | null;
   rateUnit: string | null;
@@ -76,12 +78,16 @@ export interface DossierOptions {
    * KOVALI); the named variant shows its name, the anonymised one only that it exists.
    */
   company?: { name: string } | null;
+  /** The candidate objects to any hand-over (candidates.objection_at): a mandate dossier is a draft. */
+  objection?: boolean;
   template?: DossierTemplate;
   /** Today in Zurich (YYYY-MM-DD); decides "sofort" and the date line. */
   today?: string;
 }
 
 export const DRAFT_REASON_CONSENT = "Einwilligung der Kandidatin/des Kandidaten für dieses Mandat fehlt.";
+export const DRAFT_REASON_WITHDRAWN = "Einwilligung der Kandidatin/des Kandidaten für dieses Mandat widerrufen.";
+export const DRAFT_REASON_OBJECTION = "Die Kandidatin/der Kandidat hat jeder Weitergabe widersprochen.";
 export const DRAFT_REASON_FIRM = "Keine eigene Firma (Subunternehmen) erfasst.";
 export const DRAFT_NOTICE = `${DRAFT_REASON_CONSENT} Nicht weitergeben.`;
 export const CONDITIONS_ON_REQUEST = "Konditionen auf Anfrage";
@@ -239,6 +245,16 @@ function list<T>(value: unknown): T[] {
   return Array.isArray(value) ? (value as T[]) : [];
 }
 
+/**
+ * Why a dossier for a mandate may not leave KOVALI yet: an objection, a withdrawn or missing
+ * consent for this mandate, or no own firm. Empty when it may be passed on.
+ */
+export function mandateDraftReasons(opts: Pick<DossierOptions, "submission" | "company" | "objection">): string[] {
+  const s = opts.submission;
+  const consent = s?.withdrawnAt ? DRAFT_REASON_WITHDRAWN : s?.consentAt ? null : DRAFT_REASON_CONSENT;
+  return [opts.objection ? DRAFT_REASON_OBJECTION : null, consent, opts.company ? null : DRAFT_REASON_FIRM].filter((r) => r !== null);
+}
+
 export function dossierContent(c: DossierCandidate, opts: DossierOptions): DossierContent {
   const today = opts.today ?? todayIso();
   const named = opts.variant === "namentlich";
@@ -281,9 +297,7 @@ export function dossierContent(c: DossierCandidate, opts: DossierOptions): Dossi
     heading: named ? `${c.firstName} ${c.lastName}`.trim() : `Profil ${number}`,
     headline: clean(c.headline),
     mandate: mandate ? { number: displayNo.mandate(mandate.id), title: mandate.title, reference: mandate.reference } : null,
-    draftReasons: mandate
-      ? [opts.submission?.consentAt ? null : DRAFT_REASON_CONSENT, opts.company ? null : DRAFT_REASON_FIRM].filter((r) => r !== null)
-      : [],
+    draftReasons: mandate ? mandateDraftReasons(opts) : [],
     facts,
     summary: clean(c.summary),
     skills: cleanList(c.skills),

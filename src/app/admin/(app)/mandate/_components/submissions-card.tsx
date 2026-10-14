@@ -2,12 +2,13 @@ import Link from "next/link";
 import { AlertTriangle, Building2, FileDown, Send, ShieldAlert, ShieldCheck, Users } from "lucide-react";
 import { ActionButton } from "@/components/admin/form";
 import { Badge, Card, CardHeader, EmptyState, LinkButton, Mono, Notice } from "@/components/admin/ui";
-import { firmOf, subcontractorCheck, type MandateSubmission } from "@/lib/admin/data/submissions";
+import { consentState, consentSummary, hasValidConsent, objectionSummary, withdrawalSummary } from "@/lib/admin/consent";
+import { firmOf, subcontractorCheck, type CandidateConsentBlock, type MandateSubmission } from "@/lib/admin/data/submissions";
 import { displayNo, formatDate, formatDateTime, fullName } from "@/lib/admin/format";
 import { labelOf, profileVariants, submissionStatuses, toneOf } from "@/lib/admin/options";
 import { cn } from "@/lib/utils";
 import { clearConsent, markSubmitted, recordConsent, recordWithdrawal, removeSubmission, setSubmissionStatus, updateSubmissionTerms } from "../actions";
-import { formatRate, isWithdrawn, marginInfo } from "../rules";
+import { formatRate, marginInfo } from "../rules";
 import { StatusControl } from "./status-control";
 import { ConsentForm, TermsForm, WithdrawalForm } from "./submission-forms";
 
@@ -15,45 +16,62 @@ const detailsClass = "rounded-md border border-line bg-white [&[open]>summary]:b
 const summaryClass =
   "cursor-pointer list-none rounded-md px-3 py-2 text-[0.8125rem] font-medium text-blue select-none hover:bg-mist focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue [&::-webkit-details-marker]:hidden";
 
+/** The candidate objects to any further hand-over; a new explicit consent lifts it. */
+function ObjectionNotice({ s }: { s: MandateSubmission }) {
+  if (!s.objectionAt) return null;
+  return (
+    <Notice tone="red" icon={ShieldAlert} title="Widerspruch gegen jede Weitergabe">
+      <p>{objectionSummary(s)}</p>
+      <p className="mt-1">
+        Kein Profil geht weiter. Erst eine neue, ausdrückliche Einwilligung für dieses Mandat (ab {formatDate(s.objectionAt)}) hebt den Widerspruch auf, oder du hebst
+        ihn beim Kandidaten mit Begründung auf.
+      </p>
+    </Notice>
+  );
+}
+
 /** Consent of the candidate for this mandate: recorded, withdrawn or still missing. */
 function ConsentBlock({
   s,
   name,
   recipient,
-  withdrawal,
+  block,
   today,
 }: {
   s: MandateSubmission;
   name: string;
   recipient: string;
-  withdrawal: { note: string; mandateId: number } | undefined;
+  block: CandidateConsentBlock | undefined;
   today: string;
 }) {
-  if (isWithdrawn(s.consentNote)) {
-    return (
-      <Notice tone="red" icon={ShieldAlert} title="Einwilligung widerrufen">
-        <p>{s.consentNote}</p>
-        <p className="mt-1">Keine weitere Weitergabe, bis die Fachperson erneut einwilligt.</p>
-        <details className={cn(detailsClass, "mt-3 text-ink")}>
-          <summary className={summaryClass}>Erneute Einwilligung erfassen</summary>
-          <div className="p-3">
-            <ConsentForm action={recordConsent.bind(null, s.id)} today={today} submitLabel="Erneute Einwilligung erfassen" />
-          </div>
-        </details>
-      </Notice>
-    );
-  }
-  if (s.consentAt) {
+  const state = consentState(s);
+  if (state === "widerrufen") {
     return (
       <div className="space-y-2">
+        <ObjectionNotice s={s} />
+        <Notice tone="red" icon={ShieldAlert} title={s.consentAt ? "Einwilligung widerrufen" : "Möchte für dieses Mandat nicht vorgeschlagen werden"}>
+          <p>{withdrawalSummary(s)}</p>
+          {s.consentAt ? <p className="mt-1">Erteilt war sie am {consentSummary(s)}; das bleibt als Nachweis gespeichert.</p> : null}
+          <p className="mt-1">Keine weitere Weitergabe, bis die Fachperson erneut einwilligt.</p>
+          <details className={cn(detailsClass, "mt-3 text-ink")}>
+            <summary className={summaryClass}>Erneute Einwilligung erfassen</summary>
+            <div className="p-3">
+              <ConsentForm action={recordConsent.bind(null, s.id)} today={today} submitLabel="Erneute Einwilligung erfassen" />
+            </div>
+          </details>
+        </Notice>
+      </div>
+    );
+  }
+  if (state === "erteilt") {
+    return (
+      <div className="space-y-2">
+        <ObjectionNotice s={s} />
         {/* Icon beside the text, never above it: the text wraps in its own column on phones. */}
         <div className="flex items-start gap-2 text-sm text-emerald-800">
           <ShieldCheck aria-hidden className="mt-0.5 size-4 shrink-0" />
           <div className="flex min-w-0 flex-wrap items-center gap-x-2">
-            <span>
-              Einwilligung für dieses Mandat am {formatDate(s.consentAt)}
-              {s.consentNote ? ` · ${s.consentNote}` : null}
-            </span>
+            <span>Einwilligung für dieses Mandat am {consentSummary(s)}</span>
             {s.submittedAt ? null : (
               <ActionButton
                 action={clearConsent.bind(null, s.id)}
@@ -75,37 +93,41 @@ function ConsentBlock({
       </div>
     );
   }
+  const earlier = block?.latestWithdrawal && block.latestWithdrawal.mandateId !== s.mandateId ? block.latestWithdrawal : null;
   return (
-    <Notice tone="amber" icon={AlertTriangle} title="Noch keine Einwilligung für dieses Mandat">
-      <p>Erst wenn {name} zugestimmt hat, darf das Profil an {recipient} gehen.</p>
-      {withdrawal ? (
-        <p className="mt-1 font-medium text-red-800">
-          Achtung: {withdrawal.note} ({displayNo.mandate(withdrawal.mandateId)}). Erfasse eine Einwilligung nur, wenn die Fachperson ausdrücklich erneut
-          zustimmt.
-        </p>
-      ) : null}
-      <div className="mt-3 rounded-md border border-amber-200 bg-white p-3 text-ink">
-        <ConsentForm action={recordConsent.bind(null, s.id)} today={today} />
-      </div>
-      <details className={cn(detailsClass, "mt-2 text-ink")}>
-        <summary className={summaryClass}>Widerspruch erfassen (möchte nicht vorgeschlagen werden)</summary>
-        <div className="p-3">
-          <WithdrawalForm action={recordWithdrawal.bind(null, s.id)} today={today} />
+    <div className="space-y-2">
+      <ObjectionNotice s={s} />
+      <Notice tone="amber" icon={AlertTriangle} title="Noch keine Einwilligung für dieses Mandat">
+        <p>Erst wenn {name} zugestimmt hat, darf das Profil an {recipient} gehen.</p>
+        {earlier ? (
+          <p className="mt-1 font-medium text-red-800">
+            Achtung: Bei {displayNo.mandate(earlier.mandateId)} am {formatDate(earlier.at)} widerrufen
+            {earlier.note ? ` (${earlier.note})` : ""}. Erfasse eine Einwilligung nur, wenn die Fachperson für dieses Mandat ausdrücklich zustimmt.
+          </p>
+        ) : null}
+        <div className="mt-3 rounded-md border border-amber-200 bg-white p-3 text-ink">
+          <ConsentForm action={recordConsent.bind(null, s.id)} today={today} />
         </div>
-      </details>
-    </Notice>
+        <details className={cn(detailsClass, "mt-2 text-ink")}>
+          <summary className={summaryClass}>Widerspruch erfassen (möchte nicht vorgeschlagen werden)</summary>
+          <div className="p-3">
+            <WithdrawalForm action={recordWithdrawal.bind(null, s.id)} today={today} />
+          </div>
+        </details>
+      </Notice>
+    </div>
   );
 }
 
 function SubmissionItem({
   s,
   mandate,
-  withdrawal,
+  block,
   today,
 }: {
   s: MandateSubmission;
   mandate: { id: number; companyId: number | null; companyName: string | null };
-  withdrawal: { note: string; mandateId: number } | undefined;
+  block: CandidateConsentBlock | undefined;
   today: string;
 }) {
   const name = fullName({ firstName: s.candidateFirstName, lastName: s.candidateLastName });
@@ -115,8 +137,9 @@ function SubmissionItem({
   const dossier = (format: "pdf" | "docx") =>
     `/admin/api/kandidaten/${s.candidateId}/dossier?format=${format}&variante=${s.profileVariant}&mandat=${mandate.id}`;
   const closed = s.status === "absage" || s.status === "zurueckgezogen";
-  // After a withdrawal the hand-over button is not offered at all; the action refuses it as well.
-  const canSubmit = !s.submittedAt && !isWithdrawn(s.consentNote);
+  // After a withdrawal or an objection the hand-over button is not offered at all; the action refuses it as well.
+  const blocked = Boolean(s.withdrawnAt || s.objectionAt);
+  const canSubmit = !s.submittedAt && !blocked;
 
   return (
     <li id={`vorschlag-${s.id}`} className={cn("scroll-mt-24 space-y-3 px-5 py-4", closed && "bg-mist/40")}>
@@ -164,12 +187,13 @@ function SubmissionItem({
         <p className="flex items-start gap-2 rounded-md bg-blue/[0.05] px-3 py-2 text-sm text-ink">
           <Send aria-hidden className="mt-0.5 size-4 shrink-0 text-blue" />
           <span className="min-w-0">
-            Vorgeschlagen am {formatDateTime(s.submittedAt)} an {recipient}, Dossier {labelOf(profileVariants, s.profileVariant).toLowerCase()}.
+            Vorgeschlagen am {formatDateTime(s.submittedAt)} an {recipient}
+            {s.subcontractorName ? ` über ${s.subcontractorName}` : ""}, Dossier {labelOf(profileVariants, s.profileVariant).toLowerCase()}.
           </span>
         </p>
       ) : null}
 
-      <ConsentBlock s={s} name={name} recipient={recipient} withdrawal={withdrawal} today={today} />
+      <ConsentBlock s={s} name={name} recipient={recipient} block={block} today={today} />
 
       <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
         <div>
@@ -252,9 +276,10 @@ function SubmissionItem({
           Entfernen
         </ActionButton>
       </div>
-      {canSubmit && !s.consentAt ? (
+      {canSubmit && !hasValidConsent(s) ? (
         <p className="text-xs text-slate">Dossier herunterladen geht schon jetzt, z. B. zur Abstimmung mit der Fachperson; weitergeben erst nach der Einwilligung.</p>
       ) : null}
+      {blocked ? <p className="text-xs text-slate">Das Dossier ist als Entwurf «Nicht weitergeben» markiert.</p> : null}
     </li>
   );
 }
@@ -267,7 +292,7 @@ export function SubmissionsCard({
 }: {
   submissions: MandateSubmission[];
   mandate: { id: number; companyId: number | null; companyName: string | null };
-  withdrawals: Map<number, { note: string; mandateId: number }>;
+  withdrawals: Map<number, CandidateConsentBlock>;
   today: string;
 }) {
   const proposed = submissions.filter((s) => s.submittedAt).length;
@@ -291,7 +316,7 @@ export function SubmissionsCard({
       {submissions.length ? (
         <ul className="divide-y divide-line">
           {submissions.map((s) => (
-            <SubmissionItem key={s.id} s={s} mandate={mandate} withdrawal={withdrawals.get(s.candidateId)} today={today} />
+            <SubmissionItem key={s.id} s={s} mandate={mandate} block={withdrawals.get(s.candidateId)} today={today} />
           ))}
         </ul>
       ) : (

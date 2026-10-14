@@ -3,7 +3,8 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 /**
  * Queries of the Mandate module against a real Postgres (TEST_DATABASE_URL, wiped here):
- * list filters and counts, the subcontractor rule, withdrawals and the consent constraint.
+ * list filters and counts, the subcontractor rule, consent, withdrawals per mandate, the
+ * candidate's objection and the consent constraint.
  * Fictional sample data only.
  */
 
@@ -131,18 +132,181 @@ describe.skipIf(!url)("mandate data", () => {
   it("lists submissions with their firm and finds the latest withdrawal", async () => {
     const db = await getDb();
     await db.insert(schema.submissions).values([
-      { mandateId: 1, candidateId: 1, consentAt: new Date("2026-10-02T12:00:00Z"), consentNote: "E-Mail", submittedAt: new Date("2026-10-03T08:00:00Z"), status: "vorgeschlagen", matchScore: 80 },
-      { mandateId: 1, candidateId: 2, consentNote: "Widerruf am 05.10.2026 (E-Mail)", status: "zurueckgezogen", matchScore: 60 },
-      { mandateId: 4, candidateId: 2, consentNote: "Widerruf am 05.10.2026 (E-Mail)", status: "einwilligung_offen" },
+      {
+        mandateId: 1,
+        candidateId: 1,
+        consentAt: new Date("2026-10-02T12:00:00Z"),
+        consentMethod: "email",
+        submittedAt: new Date("2026-10-03T08:00:00Z"),
+        subcontractorCompanyId: 2,
+        status: "vorgeschlagen",
+        matchScore: 80,
+      },
+      { mandateId: 1, candidateId: 2, withdrawnAt: new Date("2026-10-05T12:00:00Z"), withdrawalNote: "E-Mail", status: "zurueckgezogen", matchScore: 60 },
+      { mandateId: 4, candidateId: 2, status: "einwilligung_offen" },
     ]);
     const list = await submissionsData.listMandateSubmissions(1);
-    expect(list.map((s) => [s.candidateId, s.firmName])).toEqual([
-      [1, "Muster Daten GmbH"],
-      [2, "Beispiel Informatik"],
+    expect(list.map((s) => [s.candidateId, s.firmName, s.subcontractorName])).toEqual([
+      [1, "Muster Daten GmbH", "Muster Daten GmbH"],
+      [2, "Beispiel Informatik", null],
     ]);
     const withdrawals = await submissionsData.candidateWithdrawals([1, 2, 3]);
     expect([...withdrawals.keys()]).toEqual([2]);
-    expect(withdrawals.get(2)?.note).toBe("Widerruf am 05.10.2026 (E-Mail)");
+    expect(withdrawals.get(2)).toEqual({
+      objection: null,
+      latestWithdrawal: { at: new Date("2026-10-05T12:00:00Z"), mandateId: 1, note: "E-Mail" },
+    });
     expect((await submissionsData.listCandidateSubmissions(2)).length).toBe(2);
+  });
+
+  /** Inserts a submission and returns its id (identity values skip after failed inserts). */
+  async function addSubmission(values: Omit<typeof import("@/lib/admin/db/schema").submissions.$inferInsert, "id">): Promise<number> {
+    const db = await getDb();
+    const [row] = await db.insert(schema.submissions).values(values).returning({ id: schema.submissions.id });
+    return row.id;
+  }
+
+  async function submissionRow(id: number) {
+    const db = await getDb();
+    const { eq } = await import("drizzle-orm");
+    const [row] = await db.select().from(schema.submissions).where(eq(schema.submissions.id, id));
+    return row;
+  }
+
+  async function objectionOf(candidateId: number) {
+    const db = await getDb();
+    const { eq } = await import("drizzle-orm");
+    const [row] = await db
+      .select({ at: schema.candidates.objectionAt, note: schema.candidates.objectionNote })
+      .from(schema.candidates)
+      .where(eq(schema.candidates.id, candidateId));
+    return row;
+  }
+
+  const consent = new Date("2026-10-06T12:00:00Z");
+  let leaOpen = 0;
+  let leaOther = 0;
+
+  it("withdraws consent for one mandate only and keeps the consent date", async () => {
+    // Lea (1) is already proposed for M-0001; here she withdraws for M-0004 only.
+    leaOpen = await addSubmission({ mandateId: 4, candidateId: 1, consentAt: consent, consentMethod: "schriftlich", status: "vorgemerkt" });
+    leaOther = await addSubmission({ mandateId: 3, candidateId: 1, status: "vorgemerkt" });
+    const at = new Date("2026-10-07T12:00:00Z");
+    expect(await submissionsData.withdrawSubmission(leaOpen, { at, note: "E-Mail: möchte nicht", allMandates: false })).toEqual({ others: [] });
+    expect(await submissionRow(leaOpen)).toMatchObject({
+      withdrawnAt: at,
+      withdrawalNote: "E-Mail: möchte nicht",
+      status: "zurueckgezogen",
+      consentAt: consent,
+      consentMethod: "schriftlich",
+    });
+    // Recorded once; the other mandates and the candidate stay untouched.
+    expect(await submissionsData.withdrawSubmission(leaOpen, { at, note: null, allMandates: false })).toBeNull();
+    expect(await submissionRow(leaOther)).toMatchObject({ withdrawnAt: null, status: "vorgemerkt" });
+    expect((await submissionsData.listCandidateSubmissions(1)).filter((s) => s.withdrawnAt).map((s) => s.mandateId)).toEqual([4]);
+    expect((await objectionOf(1)).at).toBeNull();
+    expect((await submissionsData.candidateWithdrawals([1])).get(1)).toEqual({ objection: null, latestWithdrawal: { at, mandateId: 4, note: "E-Mail: möchte nicht" } });
+    // No hand-over of the withdrawn submission, even if the page was open before.
+    expect(await submissionsData.markSubmissionStatus(leaOpen, { status: "vorgeschlagen", submittedAt: new Date(), toClient: true })).toBe(false);
+    expect((await submissionRow(leaOpen)).submittedAt).toBeNull();
+  });
+
+  it("renews consent after a withdrawal and stores the firm at the hand-over", async () => {
+    const at = new Date("2026-10-08T12:00:00Z");
+    expect(await submissionsData.giveSubmissionConsent(leaOpen, { at, method: "muendlich", note: "Telefon 08.10.2026" })).toEqual({
+      status: "vorgemerkt",
+      withdrawalLifted: { at: new Date("2026-10-07T12:00:00Z"), note: "E-Mail: möchte nicht" },
+      objectionLifted: null,
+    });
+    expect(await submissionRow(leaOpen)).toMatchObject({
+      consentAt: at,
+      consentMethod: "muendlich",
+      consentNote: "Telefon 08.10.2026",
+      withdrawnAt: null,
+      withdrawalNote: null,
+    });
+    const submittedAt = new Date("2026-10-09T08:00:00Z");
+    expect(await submissionsData.markSubmissionStatus(leaOpen, { status: "vorgeschlagen", submittedAt, subcontractorCompanyId: 2, toClient: true })).toBe(true);
+    expect(await submissionRow(leaOpen)).toMatchObject({ status: "vorgeschlagen", submittedAt, subcontractorCompanyId: 2 });
+  });
+
+  it("blocks every mandate while the candidate objects, until a new consent or lifting", async () => {
+    // Jonas (2): withdrawn for M-0001, waiting for consent on M-0004; proposed for M-0003 and
+    // declined by the client for M-0002.
+    const proposed = await addSubmission({
+      mandateId: 3,
+      candidateId: 2,
+      consentAt: consent,
+      consentMethod: "email",
+      submittedAt: new Date("2026-10-06T14:00:00Z"),
+      status: "interview",
+    });
+    const declined = await addSubmission({ mandateId: 2, candidateId: 2, consentAt: consent, consentMethod: "email", status: "absage" });
+    const at = new Date("2026-10-10T12:00:00Z");
+    const changed = await submissionsData.recordObjection(2, at, "E-Mail: keine Weitergabe mehr");
+    expect(changed?.map((c) => [c.mandateId, c.previousStatus, c.status, Boolean(c.submittedAt)]).sort()).toEqual([
+      [3, "interview", "interview", true],
+      [4, "einwilligung_offen", "zurueckgezogen", false],
+    ]);
+    expect(await objectionOf(2)).toEqual({ at, note: "E-Mail: keine Weitergabe mehr" });
+    expect(await submissionsData.recordObjection(999, at, null)).toBeNull();
+    // The earlier withdrawal keeps its own date; the decided submission is left alone.
+    expect((await submissionsData.listCandidateSubmissions(2)).map((s) => [s.mandateId, s.withdrawnAt?.toISOString() ?? null]).sort()).toEqual([
+      [1, "2026-10-05T12:00:00.000Z"],
+      [2, null],
+      [3, at.toISOString()],
+      [4, at.toISOString()],
+    ]);
+    // No hand-over anywhere, not even of a submission that is not withdrawn itself.
+    expect(await submissionsData.markSubmissionStatus(proposed, { status: "angebot", submittedAt: new Date("2026-10-06T14:00:00Z"), toClient: true })).toBe(
+      false,
+    );
+    expect(await submissionsData.markSubmissionStatus(declined, { status: "vorgeschlagen", submittedAt: new Date(), toClient: true })).toBe(false);
+    // Internal statuses stay possible, e.g. closing the submission.
+    expect(await submissionsData.markSubmissionStatus(proposed, { status: "zurueckgezogen", submittedAt: new Date("2026-10-06T14:00:00Z"), toClient: false })).toBe(
+      true,
+    );
+    expect((await submissionsData.candidateWithdrawals([2])).get(2)?.objection).toEqual({ at, note: "E-Mail: keine Weitergabe mehr" });
+    // The shortlist sees the objection, so the candidate cannot be reserved anywhere.
+    expect((await mandatesData.matchCandidateRow(2))?.objectionAt).toEqual(at);
+
+    // A consent dated before the objection does not lift it.
+    const pending = (await submissionsData.listCandidateSubmissions(2)).find((s) => s.mandateId === 4)!.id;
+    const early = await submissionsData.giveSubmissionConsent(pending, { at: new Date("2026-10-09T12:00:00Z"), method: "email", note: null });
+    expect(early?.objectionLifted).toBeNull();
+    expect((await objectionOf(2)).at).toEqual(at);
+    // An explicit new consent for a mandate on or after the objection lifts it; the other
+    // withdrawn submissions stay withdrawn until consent is given there too.
+    const renewed = await submissionsData.giveSubmissionConsent(pending, { at: new Date("2026-10-10T15:00:00Z"), method: "schriftlich", note: null });
+    expect(renewed).toMatchObject({ status: "vorgemerkt", objectionLifted: { at, note: "E-Mail: keine Weitergabe mehr" } });
+    expect(await objectionOf(2)).toEqual({ at: null, note: null });
+    expect((await submissionRow(proposed)).withdrawnAt).toEqual(at);
+  });
+
+  it("lifts an objection by hand and keeps the withdrawals", async () => {
+    const at = new Date("2026-10-11T12:00:00Z");
+    const changed = await submissionsData.recordObjection(2, at, "Mündlich: Telefon");
+    // Only the submission that was open again (renewed consent on M-0004) is withdrawn now.
+    expect(changed?.map((c) => c.mandateId)).toEqual([4]);
+    expect(await submissionsData.liftObjection(2)).toEqual({ at, note: "Mündlich: Telefon" });
+    expect(await submissionsData.liftObjection(2)).toBeNull();
+    expect(await objectionOf(2)).toEqual({ at: null, note: null });
+    const pending = (await submissionsData.listCandidateSubmissions(2)).find((s) => s.mandateId === 4)!.id;
+    expect((await submissionRow(pending)).withdrawnAt).toEqual(at);
+    expect(await submissionsData.markSubmissionStatus(pending, { status: "vorgeschlagen", submittedAt: new Date(), toClient: true })).toBe(false);
+  });
+
+  it("records an objection from the withdrawal form for all mandates", async () => {
+    const at = new Date("2026-10-12T12:00:00Z");
+    // Lea: proposed for M-0001 and M-0004 (after the renewed consent), open for M-0003.
+    const first = (await submissionsData.listCandidateSubmissions(1)).find((s) => s.mandateId === 1)!.id;
+    const result = await submissionsData.withdrawSubmission(first, { at, note: "Schriftlich", allMandates: true });
+    expect(result?.others.map((o) => [o.mandateId, o.status]).sort()).toEqual([
+      [3, "zurueckgezogen"],
+      [4, "vorgeschlagen"],
+    ]);
+    expect(await submissionRow(first)).toMatchObject({ withdrawnAt: at, status: "zurueckgezogen" });
+    expect(await objectionOf(1)).toEqual({ at, note: "Schriftlich" });
+    expect(await submissionRow(leaOther)).toMatchObject({ withdrawnAt: at, status: "zurueckgezogen" });
   });
 });

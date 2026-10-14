@@ -208,6 +208,21 @@ export const shareResponses = options([
   { value: "kein_interesse", label: "Kein Interesse", tone: "neutral" },
 ]);
 
+/** How a candidate consented to the hand-over for one mandate (submissions.consent_method). */
+export const consentMethods = options([
+  { value: "schriftlich", label: "Schriftlich" },
+  { value: "email", label: "E-Mail" },
+  { value: "muendlich", label: "Mündlich (mit Notiz)", description: "Telefon oder Gespräch; wann und wie in der Notiz festhalten." },
+  { value: "portal", label: "Kandidatenportal" },
+  { value: "vertrag", label: "Unterzeichnete Einwilligung" },
+]);
+
+/**
+ * Methods Ferhat records by hand. Portal consent is written by the portal, a signed consent
+ * by the contracts module; neither is chosen in a form.
+ */
+export const manualConsentMethods = consentMethods.filter((m) => m.value === "schriftlich" || m.value === "email" || m.value === "muendlich");
+
 // --- Verträge ---------------------------------------------------------------
 
 export const contractStatuses = options([

@@ -3,6 +3,7 @@ import { f } from "@/lib/admin/forms";
 import {
   disciplines,
   mandateKinds,
+  manualConsentMethods,
   mandatePriorities,
   mandateSources,
   mandateStatuses,
@@ -14,7 +15,6 @@ import {
   submissionStatuses,
   valuesOf,
 } from "@/lib/admin/options";
-import { consentMethods, type ConsentMethod } from "./rules";
 
 /** Server-side validation of the mandate, submission and portal forms. */
 
@@ -86,13 +86,14 @@ const isoDate = () =>
       .refine((s) => !Number.isNaN(Date.parse(`${s}T00:00:00Z`)), "Bitte ein gültiges Datum eingeben."),
   );
 
-const consentMethodValues = consentMethods.map((m) => m.value) as [ConsentMethod, ...ConsentMethod[]];
+/** Methods recorded by hand; portal and contract consents are written by those modules. */
+const consentMethodValues = valuesOf(manualConsentMethods);
 
 export const consentSchema = z
   .object({
     consentDate: isoDate(),
     consentMethod: f.enum(consentMethodValues, "Bitte wählen, wie die Einwilligung erteilt wurde."),
-    consentNote: f.optText(160),
+    consentNote: f.optText(300),
   })
   // A verbal consent is only documented with a note of when and how it was given.
   .refine((d) => d.consentMethod !== "muendlich" || Boolean(d.consentNote), {
@@ -104,7 +105,8 @@ export const consentSchema = z
 export const withdrawalSchema = z.object({
   withdrawalDate: isoDate(),
   withdrawalMethod: f.enum(consentMethodValues, "Bitte wählen, wie der Widerruf mitgeteilt wurde."),
-  withdrawalReason: f.optText(160),
+  withdrawalReason: f.optText(300),
+  /** Objection to any further hand-over: sets candidates.objection_at as well. */
   allMandates: f.checkbox(),
 });
 

@@ -8,13 +8,15 @@ import { logActivity } from "@/lib/admin/activities";
 import { audit } from "@/lib/admin/audit";
 import { requireAdmin } from "@/lib/admin/auth/session";
 import { getDb } from "@/lib/admin/db/client";
+import { objectionSummary, withdrawalNoteText } from "@/lib/admin/consent";
+import { liftObjection, recordObjection } from "@/lib/admin/data/submissions";
 import { candidates, companies } from "@/lib/admin/db/schema";
 import { displayNo, formatDate, todayIso } from "@/lib/admin/format";
 import { f, fail, ok, parseForm, type ActionState } from "@/lib/admin/forms";
 import { candidateStatuses, labelOf } from "@/lib/admin/options";
 import { normalizeSkills, skillGroups } from "@/lib/admin/skills";
 import { defaultRetentionUntil } from "./rules";
-import { adoptSkillsSchema, parseCandidateForm, type CandidateInput } from "./schema";
+import { adoptSkillsSchema, liftObjectionSchema, objectionSchema, parseCandidateForm, type CandidateInput } from "./schema";
 
 const idSchema = z.number().int().positive();
 
@@ -173,6 +175,67 @@ export async function deleteCandidate(id: number): Promise<ActionState> {
   if (!row) return fail("Diesen Kandidaten gibt es nicht mehr.");
   await audit("delete", { entity: "candidate", entityId: candidateId, summary: `Kandidat ${displayNo.candidate(candidateId)} mit allen Dokumenten` });
   redirect("/admin/kandidaten");
+}
+
+/**
+ * The candidate objects to any further hand-over of the profile (Widerspruch): no reservation,
+ * consent or proposal for any mandate until it is lifted. Every submission that is not decided
+ * yet counts as withdrawn; for profiles already proposed, Ferhat informs the client.
+ */
+export async function recordCandidateObjection(id: number, _prev: ActionState, formData: FormData): Promise<ActionState> {
+  await requireAdmin();
+  const candidateId = idSchema.parse(id);
+  const parsed = parseForm(objectionSchema, formData);
+  if (!parsed.ok) return parsed.state;
+  const db = await getDb();
+  const [current] = await db.select({ objectionAt: candidates.objectionAt }).from(candidates).where(eq(candidates.id, candidateId)).limit(1);
+  if (!current) return fail("Diesen Kandidaten gibt es nicht mehr.");
+  if (current.objectionAt) return fail(`Der Widerspruch vom ${formatDate(current.objectionAt)} ist bereits erfasst.`);
+  const now = new Date();
+  const date = parsed.data.objectionDate;
+  const at = date === todayIso(now) ? now : new Date(`${date}T12:00:00Z`);
+  const note = withdrawalNoteText(parsed.data.objectionMethod, parsed.data.objectionReason);
+  const changed = await recordObjection(candidateId, at, note);
+  if (!changed) return fail("Diesen Kandidaten gibt es nicht mehr.");
+
+  const no = displayNo.candidate(candidateId);
+  const proposed = changed.filter((s) => s.submittedAt).length;
+  await logActivity(
+    { type: "candidate", id: candidateId },
+    `Widerspruch gegen jede weitere Weitergabe erfasst, am ${formatDate(at)} (${note}).` +
+      (changed.length ? ` ${changed.length === 1 ? "1 offener Vorschlag gilt" : `${changed.length} offene Vorschläge gelten`} als widerrufen.` : ""),
+  );
+  for (const s of changed) {
+    await logActivity(
+      { type: "mandate", id: s.mandateId },
+      `Widerspruch von ${no} gegen jede weitere Weitergabe, am ${formatDate(at)} (${note}).` +
+        (s.submittedAt ? " Das Profil wurde bereits vorgeschlagen: Auftraggeber informieren." : ""),
+    );
+  }
+  await audit("consent", { entity: "candidate", entityId: candidateId, summary: `Kandidat ${no}: Widerspruch erfasst (${changed.length === 1 ? "1 Vorschlag" : `${changed.length} Vorschläge`} widerrufen)` });
+  refresh();
+  if (proposed) return ok(`Widerspruch erfasst. ${proposed === 1 ? "1 Profil war" : `${proposed} Profile waren`} bereits vorgeschlagen: bitte den Auftraggeber informieren.`);
+  return ok("Widerspruch erfasst.");
+}
+
+/**
+ * Lifts the objection, e.g. when it was recorded by mistake or the candidate takes it back.
+ * Withdrawn submissions stay withdrawn: each mandate still needs a new consent.
+ */
+export async function liftCandidateObjection(id: number, _prev: ActionState, formData: FormData): Promise<ActionState> {
+  await requireAdmin();
+  const candidateId = idSchema.parse(id);
+  const parsed = parseForm(liftObjectionSchema, formData);
+  if (!parsed.ok) return parsed.state;
+  const lifted = await liftObjection(candidateId);
+  if (!lifted) return fail("Es ist kein Widerspruch erfasst.");
+  await logActivity(
+    { type: "candidate", id: candidateId },
+    `Widerspruch aufgehoben: ${parsed.data.liftNote} (war: ${objectionSummary({ objectionAt: lifted.at, objectionNote: lifted.note })}).`,
+  );
+  await audit("consent", { entity: "candidate", entityId: candidateId, summary: `Kandidat ${displayNo.candidate(candidateId)}: Widerspruch aufgehoben` });
+  refresh();
+  return ok("Widerspruch aufgehoben. Für jedes Mandat braucht es weiterhin eine neue Einwilligung.");
 }
 
 /**

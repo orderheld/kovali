@@ -1,8 +1,10 @@
 import "server-only";
-import { and, asc, desc, eq, getTableColumns, inArray, like, sql } from "drizzle-orm";
+import { and, asc, desc, eq, getTableColumns, inArray, isNotNull, isNull, notInArray, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
-import { getDb } from "../db/client";
+import { decidedSubmissionStatuses, statusAfterConsent, statusAfterWithdrawal } from "../consent";
+import { getDb, type AdminDb } from "../db/client";
 import { candidates, companies, mandates, submissions, vacancyShares } from "../db/schema";
+import { todayIso } from "../format";
 
 /**
  * Submissions (a candidate proposed for a mandate) and vacancy shares (a mandate offered to a
@@ -15,6 +17,12 @@ const candidateName = {
   candidateLastName: candidates.lastName,
   candidateHeadline: candidates.headline,
   candidateStatus: candidates.status,
+};
+
+/** The candidate's objection to any further hand-over, for the rules of the mandate module. */
+const candidateObjection = {
+  objectionAt: candidates.objectionAt,
+  objectionNote: candidates.objectionNote,
 };
 
 // --- Subcontractor firm ------------------------------------------------------------------
@@ -82,6 +90,9 @@ const firmColumns = {
   firmLegalForm: firm.legalForm,
 };
 
+/** The firm a profile went through at the hand-over (submissions.subcontractor_company_id). */
+const handoverFirm = alias(companies, "handover_firm");
+
 /** Firm columns of a row as CandidateFirm, or null. */
 export function firmOf(row: { firmId: number | null; firmName: string | null; firmKind: string | null; firmLegalForm: string | null }): CandidateFirm | null {
   return row.firmId && row.firmName && row.firmKind ? { id: row.firmId, name: row.firmName, kind: row.firmKind, legalForm: row.firmLegalForm } : null;
@@ -91,10 +102,11 @@ export function firmOf(row: { firmId: number | null; firmName: string | null; fi
 export async function listMandateSubmissions(mandateId: number) {
   const db = await getDb();
   return db
-    .select({ ...getTableColumns(submissions), ...candidateName, ...firmColumns })
+    .select({ ...getTableColumns(submissions), ...candidateName, ...candidateObjection, ...firmColumns, subcontractorName: handoverFirm.name })
     .from(submissions)
     .innerJoin(candidates, eq(candidates.id, submissions.candidateId))
     .leftJoin(firm, eq(firm.id, candidates.companyId))
+    .leftJoin(handoverFirm, eq(handoverFirm.id, submissions.subcontractorCompanyId))
     .where(eq(submissions.mandateId, mandateId))
     .orderBy(
       asc(sql`case when ${submissions.status} in ('absage', 'zurueckgezogen') then 1 else 0 end`),
@@ -134,6 +146,7 @@ export async function getSubmissionContext(id: number) {
       recipientCompanyId: mandates.companyId,
       recipientCompanyName: companies.name,
       ...candidateName,
+      ...candidateObjection,
       ...firmColumns,
     })
     .from(submissions)
@@ -146,21 +159,212 @@ export async function getSubmissionContext(id: number) {
   return row ?? null;
 }
 
+export interface CandidateConsentBlock {
+  /** Objection to any further hand-over (candidates.objection_at). */
+  objection: { at: Date; note: string | null } | null;
+  /** The latest withdrawal on any of the candidate's submissions. */
+  latestWithdrawal: { at: Date; mandateId: number; note: string | null } | null;
+}
+
 /**
- * Latest recorded withdrawal per candidate (consent note "Widerruf am …", see the mandate
- * rules), for a warning wherever the candidate could be proposed again.
+ * Objections and withdrawals per candidate, for warnings wherever a candidate could be
+ * shortlisted or proposed. Candidates with neither are not in the map.
  */
-export async function candidateWithdrawals(candidateIds: number[]): Promise<Map<number, { note: string; mandateId: number }>> {
+export async function candidateWithdrawals(candidateIds: number[]): Promise<Map<number, CandidateConsentBlock>> {
   if (!candidateIds.length) return new Map();
   const db = await getDb();
-  const rows = await db
-    .select({ candidateId: submissions.candidateId, mandateId: submissions.mandateId, note: submissions.consentNote })
-    .from(submissions)
-    .where(and(inArray(submissions.candidateId, candidateIds), like(submissions.consentNote, "Widerruf am %")))
-    .orderBy(desc(submissions.updatedAt));
-  const out = new Map<number, { note: string; mandateId: number }>();
-  for (const r of rows) if (r.note && !out.has(r.candidateId)) out.set(r.candidateId, { note: r.note, mandateId: r.mandateId });
+  const [objections, withdrawals] = await Promise.all([
+    db
+      .select({ id: candidates.id, at: candidates.objectionAt, note: candidates.objectionNote })
+      .from(candidates)
+      .where(and(inArray(candidates.id, candidateIds), isNotNull(candidates.objectionAt))),
+    db
+      .select({ candidateId: submissions.candidateId, mandateId: submissions.mandateId, at: submissions.withdrawnAt, note: submissions.withdrawalNote })
+      .from(submissions)
+      .where(and(inArray(submissions.candidateId, candidateIds), isNotNull(submissions.withdrawnAt)))
+      .orderBy(desc(submissions.withdrawnAt), desc(submissions.id)),
+  ]);
+  const out = new Map<number, CandidateConsentBlock>();
+  const entry = (id: number) => out.get(id) ?? out.set(id, { objection: null, latestWithdrawal: null }).get(id)!;
+  for (const o of objections) if (o.at) entry(o.id).objection = { at: o.at, note: o.note };
+  for (const w of withdrawals) {
+    const e = entry(w.candidateId);
+    if (w.at && !e.latestWithdrawal) e.latestWithdrawal = { at: w.at, mandateId: w.mandateId, note: w.note };
+  }
   return out;
+}
+
+/** A submission that a candidate's objection marked as withdrawn. */
+export interface WithdrawnSubmission {
+  id: number;
+  mandateId: number;
+  previousStatus: string;
+  status: string;
+  submittedAt: Date | null;
+}
+
+type Tx = Parameters<Parameters<AdminDb["transaction"]>[0]>[0];
+
+async function objectInTx(tx: Tx, candidateId: number, at: Date, note: string | null, now: Date): Promise<WithdrawnSubmission[] | null> {
+  const [candidate] = await tx
+    .update(candidates)
+    .set({ objectionAt: at, objectionNote: note, updatedAt: now })
+    .where(eq(candidates.id, candidateId))
+    .returning({ id: candidates.id });
+  if (!candidate) return null;
+  const open = await tx
+    .select({ id: submissions.id, mandateId: submissions.mandateId, status: submissions.status, submittedAt: submissions.submittedAt })
+    .from(submissions)
+    .where(and(eq(submissions.candidateId, candidateId), isNull(submissions.withdrawnAt), notInArray(submissions.status, [...decidedSubmissionStatuses])))
+    .for("update");
+  const changed: WithdrawnSubmission[] = [];
+  for (const s of open) {
+    const status = statusAfterWithdrawal(s);
+    await tx.update(submissions).set({ withdrawnAt: at, withdrawalNote: note, status, updatedAt: now }).where(eq(submissions.id, s.id));
+    changed.push({ id: s.id, mandateId: s.mandateId, previousStatus: s.status, status, submittedAt: s.submittedAt });
+  }
+  return changed;
+}
+
+/**
+ * Records the candidate's objection to any further hand-over (Widerspruch): sets
+ * candidates.objection_at and marks every submission that is not decided yet as withdrawn
+ * (submissions already withdrawn keep their date). A profile not yet proposed ends as
+ * "zurückgezogen"; a proposed one keeps its status, Ferhat informs the client. Returns the
+ * submissions it changed, or null when the candidate does not exist.
+ */
+export async function recordObjection(candidateId: number, at: Date, note: string | null): Promise<WithdrawnSubmission[] | null> {
+  const db = await getDb();
+  return db.transaction((tx) => objectInTx(tx, candidateId, at, note, new Date()));
+}
+
+/**
+ * Lifts the candidate's objection. Withdrawals of single submissions stay: each mandate needs
+ * a renewed consent. Returns the objection that was lifted, or null when there was none.
+ */
+export async function liftObjection(candidateId: number): Promise<{ at: Date; note: string | null } | null> {
+  const db = await getDb();
+  return db.transaction(async (tx) => {
+    const [current] = await tx
+      .select({ at: candidates.objectionAt, note: candidates.objectionNote })
+      .from(candidates)
+      .where(eq(candidates.id, candidateId))
+      .for("update")
+      .limit(1);
+    if (!current?.at) return null;
+    await tx.update(candidates).set({ objectionAt: null, objectionNote: null, updatedAt: new Date() }).where(eq(candidates.id, candidateId));
+    return { at: current.at, note: current.note };
+  });
+}
+
+/**
+ * The candidate withdraws consent for one submission (or declines the mandate): withdrawn_at
+ * and the note are set, the consent date stays as record of what earlier hand-overs were based
+ * on, the submission ends as "zurückgezogen". With `allMandates` it is an objection to any
+ * further hand-over (see recordObjection). Returns the other submissions it changed.
+ */
+export async function withdrawSubmission(
+  submissionId: number,
+  { at, note, allMandates }: { at: Date; note: string | null; allMandates: boolean },
+): Promise<{ others: WithdrawnSubmission[] } | null> {
+  const db = await getDb();
+  return db.transaction(async (tx) => {
+    const now = new Date();
+    const [row] = await tx
+      .update(submissions)
+      .set({ withdrawnAt: at, withdrawalNote: note, status: "zurueckgezogen", updatedAt: now })
+      .where(and(eq(submissions.id, submissionId), isNull(submissions.withdrawnAt)))
+      .returning({ candidateId: submissions.candidateId });
+    if (!row) return null;
+    const others = allMandates ? await objectInTx(tx, row.candidateId, at, note, now) : [];
+    return { others: others ?? [] };
+  });
+}
+
+/**
+ * Records consent for one submission (by hand or from a signed consent form). A withdrawal of
+ * this submission is lifted, and so is the candidate's objection when the consent is dated on
+ * or after it: an explicit new consent is the candidate changing their mind. The caller checks
+ * the date first (renewedConsentError). Returns the lifted objection, if any.
+ */
+export async function giveSubmissionConsent(
+  submissionId: number,
+  consent: { at: Date; method: string; note: string | null },
+): Promise<{ status: string; withdrawalLifted: { at: Date; note: string | null } | null; objectionLifted: { at: Date; note: string | null } | null } | null> {
+  const db = await getDb();
+  return db.transaction(async (tx) => {
+    const now = new Date();
+    const [current] = await tx
+      .select({
+        candidateId: submissions.candidateId,
+        status: submissions.status,
+        submittedAt: submissions.submittedAt,
+        withdrawnAt: submissions.withdrawnAt,
+        withdrawalNote: submissions.withdrawalNote,
+        objectionAt: candidates.objectionAt,
+        objectionNote: candidates.objectionNote,
+      })
+      .from(submissions)
+      .innerJoin(candidates, eq(candidates.id, submissions.candidateId))
+      .where(eq(submissions.id, submissionId))
+      .for("update")
+      .limit(1);
+    if (!current) return null;
+    const status = statusAfterConsent(current);
+    await tx
+      .update(submissions)
+      .set({
+        consentAt: consent.at,
+        consentMethod: consent.method,
+        consentNote: consent.note,
+        withdrawnAt: null,
+        withdrawalNote: null,
+        status,
+        updatedAt: now,
+      })
+      .where(eq(submissions.id, submissionId));
+    let objectionLifted: { at: Date; note: string | null } | null = null;
+    if (current.objectionAt && todayIso(consent.at) >= todayIso(current.objectionAt)) {
+      await tx.update(candidates).set({ objectionAt: null, objectionNote: null, updatedAt: now }).where(eq(candidates.id, current.candidateId));
+      objectionLifted = { at: current.objectionAt, note: current.objectionNote };
+    }
+    const withdrawalLifted = current.withdrawnAt ? { at: current.withdrawnAt, note: current.withdrawalNote } : null;
+    return { status, withdrawalLifted, objectionLifted };
+  });
+}
+
+/**
+ * Stores a status change. For a status that puts the profile in front of the client
+ * (`toClient`), the update only happens while the submission is not withdrawn and the
+ * candidate has no objection, so a withdrawal arriving in the meantime (e.g. in the portal)
+ * wins. The first hand-over also stores the candidate's own firm at this moment
+ * (subcontractor_company_id, a snapshot that stays when the candidate's firm changes later).
+ * Returns false when nothing was updated.
+ */
+export async function markSubmissionStatus(
+  submissionId: number,
+  values: { status: string; submittedAt: Date | null; subcontractorCompanyId?: number; toClient: boolean },
+): Promise<boolean> {
+  const db = await getDb();
+  const rows = await db
+    .update(submissions)
+    .set({
+      status: values.status,
+      submittedAt: values.submittedAt,
+      ...(values.subcontractorCompanyId ? { subcontractorCompanyId: values.subcontractorCompanyId } : {}),
+      updatedAt: new Date(),
+    })
+    .where(
+      and(
+        eq(submissions.id, submissionId),
+        values.toClient ? isNull(submissions.withdrawnAt) : undefined,
+        values.toClient
+          ? sql`not exists (select 1 from ${candidates} where ${candidates.id} = ${submissions.candidateId} and ${candidates.objectionAt} is not null)`
+          : undefined,
+      ),
+    )
+    .returning({ id: submissions.id });
+  return rows.length > 0;
 }
 
 /** Portal shares of a mandate with the candidates' answers; unanswered interest first. */

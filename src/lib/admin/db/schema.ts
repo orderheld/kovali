@@ -146,6 +146,14 @@ export const candidates = pgTable(
     privacyInfoAt: timestamp("privacy_info_at", { withTimezone: true }),
     retentionUntil: date("retention_until", { mode: "string" }),
     lastContactAt: timestamp("last_contact_at", { withTimezone: true }),
+    /**
+     * Objection to any further hand-over (Widerspruch, Art. 30 Abs. 2 lit. b DSG). While set,
+     * the candidate cannot be shortlisted, consent cannot be recorded and no profile leaves
+     * KOVALI. A new explicit consent dated on or after it lifts it.
+     */
+    objectionAt: timestamp("objection_at", { withTimezone: true }),
+    /** How and why, without sensitive data. */
+    objectionNote: text("objection_note"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -213,9 +221,19 @@ export const submissions = pgTable(
       .notNull()
       .references(() => candidates.id, { onDelete: "cascade" }),
     status: text("status").notNull().default("vorgemerkt"),
+    /** Consent for this mandate; stays when withdrawn, as record of what a hand-over was based on. */
     consentAt: timestamp("consent_at", { withTimezone: true }),
+    /** consentMethods in options.ts: schriftlich, email, muendlich, portal, vertrag. */
+    consentMethod: text("consent_method"),
+    /** Free text, e.g. when and how a verbal consent was given. */
     consentNote: text("consent_note"),
+    /** Consent withdrawn (or the candidate declined this mandate): no further hand-over. */
+    withdrawnAt: timestamp("withdrawn_at", { withTimezone: true }),
+    /** Who, how and why, without sensitive data. */
+    withdrawalNote: text("withdrawal_note"),
     submittedAt: timestamp("submitted_at", { withTimezone: true }),
+    /** The candidate's own firm at the time of the hand-over (snapshot). */
+    subcontractorCompanyId: ref("subcontractor_company_id").references(() => companies.id, { onDelete: "set null" }),
     profileVariant: text("profile_variant").notNull().default("anonym"),
     rateBuy: numeric("rate_buy", { precision: 10, scale: 2, mode: "number" }),
     rateSell: numeric("rate_sell", { precision: 10, scale: 2, mode: "number" }),
@@ -229,6 +247,7 @@ export const submissions = pgTable(
   (t) => [
     uniqueIndex("submissions_mandate_candidate_key").on(t.mandateId, t.candidateId),
     index("submissions_candidate_idx").on(t.candidateId),
+    index("submissions_subcontractor_idx").on(t.subcontractorCompanyId),
   ],
 );
 

@@ -116,12 +116,12 @@ describe.skipIf(!url)("candidate portal (database)", () => {
     expect(await sql("select 1 from submissions where candidate_id = $1", [ids.beat])).toHaveLength(0);
 
     const result = await m.vac.answerVacancy(ids.anna, ids.open, { response: "interessiert", consent: true, message: "Ab Januar verfügbar." });
-    expect(result).toMatchObject({ ok: true, submissionCreated: true });
-    const [sub] = await sql<{ status: string; consent_at: Date | null; consent_note: string }>(
-      "select status, consent_at, consent_note from submissions where candidate_id = $1 and mandate_id = $2",
+    expect(result).toMatchObject({ ok: true, submissionCreated: true, withdrawalLifted: false, withdrawn: false });
+    const [sub] = await sql<{ status: string; consent_at: Date | null; consent_method: string; consent_note: string; withdrawn_at: Date | null }>(
+      "select status, consent_at, consent_method, consent_note, withdrawn_at from submissions where candidate_id = $1 and mandate_id = $2",
       [ids.anna, ids.open],
     );
-    expect(sub.status).toBe("vorgemerkt");
+    expect(sub).toMatchObject({ status: "vorgemerkt", consent_method: "portal", withdrawn_at: null });
     expect(sub.consent_at).not.toBeNull();
     expect(sub.consent_note).toMatch(/^Im Kandidatenportal bestätigt am /);
     const [share] = await sql<{ response: string; reviewed_at: Date | null; response_message: string }>(
@@ -131,25 +131,71 @@ describe.skipIf(!url)("candidate portal (database)", () => {
     expect(share).toMatchObject({ response: "interessiert", reviewed_at: null, response_message: "Ab Januar verfügbar." });
     expect((await m.admin.portalCounts()).interest).toBe(1);
     expect((await m.admin.openInterests()).map((s) => s.candidateId)).toEqual([ids.anna]);
+    expect((await m.admin.openInterests())[0]).toMatchObject({ consentMethod: "portal", withdrawnAt: null, objectionAt: null });
   });
 
-  it("withdraws unused consent, keeps used consent on record", async () => {
-    const withdrawn = await m.vac.answerVacancy(ids.anna, ids.open, { response: "kein_interesse", message: null });
-    expect(withdrawn).toMatchObject({ ok: true, consentRemoved: true, alreadySubmitted: false });
-    let [sub] = await sql<{ consent_at: Date | null; consent_note: string }>("select consent_at, consent_note from submissions where candidate_id = $1", [ids.anna]);
-    expect(sub.consent_at).toBeNull();
-    expect(sub.consent_note).toMatch(/zurückgezogen/);
+  type ConsentRow = { status: string; consent_at: Date | null; consent_method: string | null; withdrawn_at: Date | null; withdrawal_note: string | null };
+  const consentRow = async (candidateId: number) =>
+    (
+      await sql<ConsentRow>("select status, consent_at, consent_method, withdrawn_at, withdrawal_note from submissions where candidate_id = $1 and mandate_id = $2", [
+        candidateId,
+        ids.open,
+      ])
+    )[0];
 
-    // Interested again, then Ferhat submits the profile, then the candidate withdraws.
-    await m.vac.answerVacancy(ids.anna, ids.open, { response: "interessiert", consent: true, message: null });
+  it("withdraws in the portal and lifts the withdrawal with new interest while the profile is not sent", async () => {
+    const withdrawn = await m.vac.answerVacancy(ids.anna, ids.open, { response: "kein_interesse", message: null });
+    expect(withdrawn).toMatchObject({ ok: true, withdrawn: true, alreadySubmitted: false });
+    let sub = await consentRow(ids.anna);
+    // The consent date stays as record; withdrawn_at blocks the hand-over.
+    expect(sub).toMatchObject({ status: "zurueckgezogen", consent_method: "portal", withdrawal_note: m.vac.PORTAL_WITHDRAWAL_NOTE });
+    expect(sub.consent_at).not.toBeNull();
+    expect(sub.withdrawn_at).not.toBeNull();
+    expect((await m.vac.getVisibleVacancy(ids.anna, ids.open))?.withdrawnAt).not.toBeNull();
+    // Answering "kein Interesse" twice changes nothing.
+    expect(await m.vac.answerVacancy(ids.anna, ids.open, { response: "kein_interesse", message: null })).toMatchObject({ ok: true, withdrawn: false });
+
+    const again = await m.vac.answerVacancy(ids.anna, ids.open, { response: "interessiert", consent: true, message: null });
+    expect(again).toMatchObject({ ok: true, submissionCreated: false, consentRecorded: true, withdrawalLifted: true, withdrawalKept: false });
+    sub = await consentRow(ids.anna);
+    expect(sub).toMatchObject({ status: "vorgemerkt", consent_method: "portal", withdrawn_at: null, withdrawal_note: null });
+  });
+
+  it("keeps used consent on record and blocks any further hand-over after a late withdrawal", async () => {
+    // Ferhat submits the profile, then the candidate withdraws in the portal.
     await sql("update submissions set submitted_at = now(), status = 'vorgeschlagen' where candidate_id = $1", [ids.anna]);
     const late = await m.vac.answerVacancy(ids.anna, ids.open, { response: "kein_interesse", message: null });
-    expect(late).toMatchObject({ ok: true, consentRemoved: false, alreadySubmitted: true });
-    [sub] = await sql("select consent_at, consent_note from submissions where candidate_id = $1", [ids.anna]);
+    expect(late).toMatchObject({ ok: true, withdrawn: true, alreadySubmitted: true });
+    let sub = await consentRow(ids.anna);
+    expect(sub).toMatchObject({ status: "vorgeschlagen", consent_method: "portal", withdrawal_note: "Im Kandidatenportal zurückgezogen" });
     expect(sub.consent_at).not.toBeNull();
-    expect(sub.consent_note).toMatch(/keine weitere Weitergabe/);
+    expect(sub.withdrawn_at).not.toBeNull();
     expect((await m.admin.openWithdrawals()).map((s) => s.candidateId)).toEqual([ids.anna]);
     expect((await m.admin.portalCounts()).interest).toBe(0);
+
+    // The admin side refuses the next step towards the client.
+    const { markSubmissionStatus } = await import("@/lib/admin/data/submissions");
+    const [{ id }] = await sql<{ id: number }>("select id from submissions where candidate_id = $1 and mandate_id = $2", [ids.anna, ids.open]);
+    expect(await markSubmissionStatus(Number(id), { status: "interview", submittedAt: sub.consent_at, toClient: true })).toBe(false);
+    expect((await consentRow(ids.anna)).status).toBe("vorgeschlagen");
+
+    // New interest does not lift a withdrawal once the profile was sent: Ferhat decides.
+    const again = await m.vac.answerVacancy(ids.anna, ids.open, { response: "interessiert", consent: true, message: null });
+    expect(again).toMatchObject({ ok: true, withdrawalKept: true, withdrawalLifted: false, consentRecorded: false });
+    sub = await consentRow(ids.anna);
+    expect(sub.withdrawn_at).not.toBeNull();
+  });
+
+  it("blocks interest while KOVALI has recorded an objection", async () => {
+    await sql("update candidates set objection_at = now(), objection_note = 'E-Mail' where id = $1", [ids.beat]);
+    expect((await m.vac.getVisibleVacancy(ids.beat, ids.open))?.objection).toBe(true);
+    const blocked = await m.vac.answerVacancy(ids.beat, ids.open, { response: "interessiert", consent: true, message: null });
+    expect(blocked).toEqual({ ok: false, reason: "objection" });
+    expect(await sql("select 1 from submissions where candidate_id = $1", [ids.beat])).toHaveLength(0);
+    // "Kein Interesse" is still possible; there is nothing to withdraw.
+    expect(await m.vac.answerVacancy(ids.beat, ids.open, { response: "kein_interesse", message: null })).toMatchObject({ ok: true, withdrawn: false });
+    await sql("update candidates set objection_at = null, objection_note = null where id = $1", [ids.beat]);
+    expect((await m.vac.getVisibleVacancy(ids.beat, ids.open))?.objection).toBe(false);
   });
 
   // --- Change requests --------------------------------------------------------------

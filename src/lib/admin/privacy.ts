@@ -1,6 +1,8 @@
 import "server-only";
 import { and, asc, count, desc, eq, gte, isNotNull, isNull, lt, lte, not, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { logActivity } from "./activities";
+import { consentMethodLabel } from "./consent";
 import { outerColumn } from "./data/query";
 import { audit } from "./audit";
 import { getDb } from "./db/client";
@@ -41,6 +43,9 @@ import {
 } from "./options";
 import { kovaliParty, partyLine, type Party } from "./party";
 import type { Block, DocModel } from "./render/model";
+
+/** The candidate's own firm a profile was handed over through (submissions.subcontractor_company_id). */
+const subcontractors = alias(companies, "subcontractor");
 
 /**
  * Data protection under the Swiss DSG (SR 235.1) for the admin area: retention rules,
@@ -144,6 +149,8 @@ export function anonymisedCandidateValues(c: Pick<Candidate, "id" | "experience"
     notes: null,
     consentAt: null,
     consentNote: null,
+    // The date of an objection stays, so the profile is never passed on again; the note goes.
+    objectionNote: null,
     salaryExpectation: null,
     rating: null,
     regions: null,
@@ -170,7 +177,7 @@ export interface AnonymiseResult {
  * Anonymises a candidate in one transaction: personal fields are cleared (see
  * anonymisedCandidateValues), documents, portal account (sessions cascade), change requests,
  * vacancy shares and history entries are deleted. Submissions stay as statistics without
- * notes or feedback. Contracts are kept because of the retention duty for business records.
+ * notes, feedback, consent and withdrawal notes or the link to the candidate's own firm. Contracts are kept because of the retention duty for business records.
  * Activities shared with a mandate are deleted too, because their text names the candidate.
  */
 export async function anonymiseCandidate(id: number): Promise<AnonymiseResult | null> {
@@ -191,7 +198,7 @@ export async function anonymiseCandidate(id: number): Promise<AnonymiseResult | 
     const acts = await tx.delete(activities).where(eq(activities.candidateId, id)).returning({ id: activities.id });
     const subs = await tx
       .update(submissions)
-      .set({ notes: null, feedback: null, consentNote: null, updatedAt: new Date() })
+      .set({ notes: null, feedback: null, consentNote: null, withdrawalNote: null, subcontractorCompanyId: null, updatedAt: new Date() })
       .where(eq(submissions.candidateId, id))
       .returning({ id: submissions.id });
     return {
@@ -529,8 +536,12 @@ export async function buildDisclosure(id: number, now = new Date()) {
         status: submissions.status,
         profileVariant: submissions.profileVariant,
         consentAt: submissions.consentAt,
+        consentMethod: submissions.consentMethod,
         consentNote: submissions.consentNote,
+        withdrawnAt: submissions.withdrawnAt,
+        withdrawalNote: submissions.withdrawalNote,
         submittedAt: submissions.submittedAt,
+        subcontractor: subcontractors.name,
         feedback: submissions.feedback,
         notes: submissions.notes,
         createdAt: submissions.createdAt,
@@ -538,6 +549,7 @@ export async function buildDisclosure(id: number, now = new Date()) {
       .from(submissions)
       .innerJoin(mandates, eq(mandates.id, submissions.mandateId))
       .leftJoin(companies, eq(companies.id, mandates.companyId))
+      .leftJoin(subcontractors, eq(subcontractors.id, submissions.subcontractorCompanyId))
       .where(eq(submissions.candidateId, id))
       .orderBy(asc(submissions.createdAt)),
     db
@@ -649,6 +661,8 @@ export async function buildDisclosure(id: number, now = new Date()) {
       allgemein: iso(c.consentAt),
       vermerk: c.consentNote,
       datenschutzhinweisErhalten: iso(c.privacyInfoAt),
+      /** Objection to any hand-over of the profile to clients (until lifted). */
+      widerspruch: c.objectionAt ? { am: iso(c.objectionAt), vermerk: c.objectionNote } : null,
     },
     aufbewahrung: {
       bis: c.retentionUntil,
@@ -671,8 +685,12 @@ export async function buildDisclosure(id: number, now = new Date()) {
         status: labelOf(submissionStatuses, s.status),
         profil: labelOf(profileVariants, s.profileVariant),
         einwilligungAm: iso(s.consentAt),
+        einwilligungForm: s.consentMethod ? consentMethodLabel(s.consentMethod) : null,
         einwilligungVermerk: s.consentNote,
+        widerrufenAm: iso(s.withdrawnAt),
+        widerrufVermerk: s.withdrawalNote,
         weitergegebenAm: iso(s.submittedAt),
+        weitergegebenUeber: s.subcontractor,
         rueckmeldung: s.feedback,
         notizen: s.notes,
         erfasstAm: iso(s.createdAt),
@@ -806,6 +824,12 @@ export function disclosureDocModel(x: Disclosure): DocModel {
         { label: "Einwilligung", value: dt(x.einwilligung.allgemein) },
         { label: "Vermerk", value: v(x.einwilligung.vermerk) },
         { label: "Datenschutzhinweis erhalten", value: dt(x.einwilligung.datenschutzhinweisErhalten) },
+        {
+          label: "Widerspruch gegen Weitergabe",
+          value: x.einwilligung.widerspruch
+            ? `Seit ${d(x.einwilligung.widerspruch.am)}${x.einwilligung.widerspruch.vermerk ? ` (${x.einwilligung.widerspruch.vermerk})` : ""}`
+            : "Keiner",
+        },
         { label: "Aufbewahrung bis", value: d(x.aufbewahrung.bis) },
       ],
     },
@@ -817,8 +841,22 @@ export function disclosureDocModel(x: Disclosure): DocModel {
     x.empfaenger.weitergaben.length
       ? {
           type: "table",
-          columns: [{ label: "Mandat", width: 2 }, { label: "Empfänger", width: 1.4 }, { label: "Einwilligung", width: 1 }, { label: "Weitergegeben", width: 1 }, { label: "Status", width: 1 }],
-          rows: x.empfaenger.weitergaben.map((s) => [s.mandat, v(s.empfaengerFirma), d(s.einwilligungAm), d(s.weitergegebenAm), s.status]),
+          columns: [
+            { label: "Mandat", width: 2 },
+            { label: "Empfänger", width: 1.4 },
+            { label: "Einwilligung", width: 1.2 },
+            { label: "Widerrufen", width: 1 },
+            { label: "Weitergegeben", width: 1 },
+            { label: "Status", width: 1 },
+          ],
+          rows: x.empfaenger.weitergaben.map((s) => [
+            s.mandat,
+            v(s.empfaengerFirma),
+            s.einwilligungAm ? `${d(s.einwilligungAm)}${s.einwilligungForm ? ` (${s.einwilligungForm})` : ""}` : "–",
+            d(s.widerrufenAm),
+            d(s.weitergegebenAm),
+            s.status,
+          ]),
         }
       : { type: "paragraph", text: "Ihr Profil wurde bisher an keinen Auftraggeber weitergegeben." },
     { type: "heading", text: "Dokumente", number: "6" },

@@ -314,4 +314,79 @@ create table settings (
 );
 `,
   },
+  {
+    // Consent, withdrawal and objection get their own columns instead of being encoded in
+    // submissions.consent_note. The consent date stays when consent is withdrawn (it documents
+    // what a hand-over was based on); withdrawn_at blocks every further hand-over.
+    id: "0002_consent_columns",
+    sql: /* sql */ `
+alter table submissions
+  add column consent_method           text check (consent_method in ('schriftlich', 'email', 'muendlich', 'portal', 'vertrag')),
+  add column withdrawn_at             timestamptz,
+  add column withdrawal_note          text,
+  -- The candidate's own firm at the moment of the hand-over (snapshot).
+  add column subcontractor_company_id bigint references companies (id) on delete set null,
+  add constraint submissions_consent_method_needs_consent check (consent_method is null or consent_at is not null),
+  add constraint submissions_withdrawal_note_needs_date check (withdrawal_note is null or withdrawn_at is not null);
+create index submissions_subcontractor_idx on submissions (subcontractor_company_id);
+
+-- Objection to any further hand-over of the candidate (Art. 30 Abs. 2 lit. b DSG).
+alter table candidates
+  add column objection_at   timestamptz,
+  add column objection_note text,
+  add constraint candidates_objection_note_needs_date check (objection_note is null or objection_at is not null);
+
+-- Withdrawals written as text by the mandate module: "Widerruf am dd.mm.yyyy (Form): reason".
+-- The date moves to withdrawn_at and the note keeps "Form: reason", as written from now on; a
+-- date that cannot be read stays in the note and the withdrawal counts from now.
+do $$
+declare
+  r record;
+  day date;
+begin
+  for r in select id, consent_note from submissions where consent_note like 'Widerruf am %' loop
+    day := null;
+    if substring(r.consent_note from 13 for 10) ~ '^\\d{2}\\.\\d{2}\\.\\d{4}$' then
+      begin
+        day := to_date(substring(r.consent_note from 13 for 10), 'DD.MM.YYYY');
+      exception when others then
+        day := null;
+      end;
+    end if;
+    update submissions
+       set withdrawn_at = coalesce((day + time '12:00') at time zone 'UTC', now()),
+           withdrawal_note = left(case
+             when day is null then r.consent_note
+             else regexp_replace(r.consent_note, '^Widerruf am \\d{2}\\.\\d{2}\\.\\d{4} \\(([^)]*)\\)', '\\1')
+           end, 1000),
+           consent_note = null
+     where id = r.id;
+  end loop;
+end $$;
+
+-- Withdrawals in the candidate portal, appended to the consent note as text.
+update submissions
+   set withdrawn_at = now(),
+       withdrawal_note = left('Im' || substring(consent_note from position('im Kandidatenportal zurückgezogen am' in consent_note) + 2), 1000),
+       consent_note = case
+         when consent_note like 'Einwilligung im Kandidatenportal zurückgezogen am%' then null
+         else nullif(rtrim(left(consent_note, position('im Kandidatenportal zurückgezogen am' in consent_note) - 1), '; '), '')
+       end
+ where withdrawn_at is null and position('im Kandidatenportal zurückgezogen am' in consent_note) > 0;
+
+-- The form of consent, as far as the old notes tell it.
+update submissions set consent_method = 'portal'
+ where consent_at is not null and consent_note like 'Im Kandidatenportal%';
+update submissions set consent_method = 'vertrag'
+ where consent_at is not null and consent_method is null and consent_note ~ '^Einwilligung V-\\d{4}-\\d{4,}$';
+update submissions
+   set consent_method = case split_part(consent_note, ':', 1)
+         when 'Schriftlich' then 'schriftlich'
+         when 'E-Mail' then 'email'
+         else 'muendlich'
+       end,
+       consent_note = nullif(btrim(substring(consent_note from length(split_part(consent_note, ':', 1)) + 2)), '')
+ where consent_at is not null and consent_method is null and consent_note ~ '^(Schriftlich|E-Mail|Mündlich)(:|$)';
+`,
+  },
 ];

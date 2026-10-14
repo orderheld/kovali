@@ -338,7 +338,7 @@ export function CandidateForm({
           label="Wie erteilt oder widerrufen"
           defaultValue={c?.consentNote}
           placeholder="z. B. E-Mail vom 13.10.2026"
-          hint="Bei Widerruf oder Widerspruch das Feld «Einwilligung erteilt am» leeren und hier vermerken, z. B. «Widerrufen per E-Mail vom 20.10.2026»."
+          hint="Bei Widerruf das Feld «Einwilligung erteilt am» leeren und hier vermerken, z. B. «Widerrufen per E-Mail vom 20.10.2026». Einen Widerspruch gegen jede Weitergabe erfasst du auf der Kandidatenseite unter Datenschutz."
         />
         <TextField
           name="privacyInfoAt"

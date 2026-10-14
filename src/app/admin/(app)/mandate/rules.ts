@@ -1,4 +1,4 @@
-import { formatChf, formatNumber, formatPercent } from "@/lib/admin/format";
+import { formatChf, formatDate, formatNumber, formatPercent, todayIso } from "@/lib/admin/format";
 import { mandateStatuses, openMandateStatuses, type Tone } from "@/lib/admin/options";
 import { HOURS_PER_DAY, margin, toDaily, toHourly, type MonthlyExample } from "@/lib/admin/rates";
 
@@ -115,74 +115,47 @@ export const CONSENT_MISSING =
 export const RECIPIENT_MISSING = "Ordne dem Mandat zuerst eine Firma zu: Sie ist die Empfängerin des Profils.";
 
 export const CONSENT_WITHDRAWN =
-  "Die Fachperson hat ihre Einwilligung widerrufen. Eine Weitergabe ist erst wieder möglich, wenn sie erneut einwilligt und du das erfasst.";
+  "Die Fachperson hat ihre Einwilligung für dieses Mandat widerrufen. Eine Weitergabe ist erst wieder möglich, wenn sie erneut einwilligt und du das erfasst.";
 
-/**
- * How a candidate gave consent for one mandate. Consent given in the candidate portal is
- * recorded by the portal itself ("Im Kandidatenportal bestätigt"), never chosen here.
- */
-export const consentMethods = [
-  { value: "schriftlich", label: "Schriftlich" },
-  { value: "e_mail", label: "E-Mail" },
-  { value: "muendlich", label: "Mündlich", description: "Telefon oder Gespräch, mit Notiz" },
-] as const;
+export const OBJECTION_ACTIVE =
+  "Die Fachperson hat jeder weiteren Weitergabe widersprochen. Erst eine neue, ausdrückliche Einwilligung für ein Mandat hebt den Widerspruch auf.";
 
-export type ConsentMethod = (typeof consentMethods)[number]["value"];
-
-/** The stored consent note, e.g. "E-Mail: Antwort vom 12.10.2026" (the schema has one text column). */
-export function consentNoteText(method: string, note: string | null | undefined): string {
-  const label = consentMethods.find((m) => m.value === method)?.label ?? method;
-  return note?.trim() ? `${label}: ${note.trim()}` : label;
+/** The consent of this submission was withdrawn (or the candidate declined the mandate). */
+export function isWithdrawn(s: { withdrawnAt?: Date | null }): boolean {
+  return Boolean(s.withdrawnAt);
 }
 
 /**
- * A withdrawal (or an objection to further submissions) is kept in the consent note, because
- * the schema has no column for it: "Widerruf am 14.10.2026 (E-Mail): reason". Recording new
- * consent replaces the note and lifts the block.
+ * A renewed consent cannot predate the withdrawal of this submission or the candidate's
+ * objection it lifts; the same day is fine. Returns the error message, or null.
  */
-export const WITHDRAWAL_PREFIX = "Widerruf am ";
-
-export function withdrawalNoteText(dateLabel: string, method: string, reason: string | null | undefined): string {
-  const label = consentMethods.find((m) => m.value === method)?.label ?? method;
-  return `${WITHDRAWAL_PREFIX}${dateLabel} (${label})${reason?.trim() ? `: ${reason.trim()}` : ""}`;
-}
-
-export function isWithdrawn(consentNote: string | null | undefined): boolean {
-  return Boolean(consentNote?.startsWith(WITHDRAWAL_PREFIX));
-}
-
-/** The withdrawal date (YYYY-MM-DD) read back from a note written by withdrawalNoteText. */
-export function withdrawalIsoDate(consentNote: string | null | undefined): string | null {
-  const m = consentNote?.match(/^Widerruf am (\d{2})\.(\d{2})\.(\d{4})/);
-  return m ? `${m[3]}-${m[2]}-${m[1]}` : null;
-}
-
-/**
- * A renewed consent cannot predate the withdrawal it lifts; same-day is fine. Returns the error
- * message, or null when the date is acceptable.
- */
-export function renewedConsentError(consentDate: string, withdrawalNote: string | null | undefined): string | null {
-  const withdrawn = withdrawalIsoDate(withdrawalNote);
-  if (!withdrawn || consentDate >= withdrawn) return null;
-  const [y, m, d] = withdrawn.split("-");
-  return `Die Einwilligung muss am oder nach dem Widerruf vom ${d}.${m}.${y} liegen.`;
+export function renewedConsentError(consentDate: string, blockers: { withdrawnAt?: Date | null; objectionAt?: Date | null }): string | null {
+  const checks = [
+    { at: blockers.withdrawnAt, what: "Widerruf" },
+    { at: blockers.objectionAt, what: "Widerspruch" },
+  ];
+  for (const { at, what } of checks) {
+    if (at && consentDate < todayIso(at)) return `Die Einwilligung muss am oder nach dem ${what} vom ${formatDate(at)} liegen.`;
+  }
+  return null;
 }
 
 /**
  * Checks a submission status change. Moving to a status after the proposal for the first time
  * records the submission date and needs the candidate's consent for this mandate (the database
  * enforces the same rule with submissions_consent_before_submit) and a recipient company.
- * After a withdrawal, no
- * status may bring the profile back to the client until consent is recorded again. Earlier
- * dates stay: once a profile has left KOVALI, that remains a fact even if the status goes back.
+ * After a withdrawal, or while the candidate objects to any hand-over, no status may bring the
+ * profile back to the client until consent is recorded again. Earlier dates stay: once a
+ * profile has left KOVALI, that remains a fact even if the status goes back.
  */
 export function submissionStatusChange(
-  current: { consentAt: Date | null; consentNote?: string | null; submittedAt: Date | null; recipientCompanyId?: number | null },
+  current: { consentAt: Date | null; withdrawnAt?: Date | null; objectionAt?: Date | null; submittedAt: Date | null; recipientCompanyId?: number | null },
   nextStatus: string,
   now: Date,
 ): SubmissionChange {
   const submits = (submittedStatuses as readonly string[]).includes(nextStatus);
-  if (submits && isWithdrawn(current.consentNote)) return { ok: false, error: CONSENT_WITHDRAWN };
+  if (submits && current.objectionAt) return { ok: false, error: OBJECTION_ACTIVE };
+  if (submits && isWithdrawn(current)) return { ok: false, error: CONSENT_WITHDRAWN };
   if (!submits || current.submittedAt) return { ok: true, submittedAt: current.submittedAt };
   if (!current.consentAt) return { ok: false, error: CONSENT_MISSING };
   // Every hand-over needs a known recipient, so the record says who received the profile.

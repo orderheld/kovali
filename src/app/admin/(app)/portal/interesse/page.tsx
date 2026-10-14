@@ -5,7 +5,8 @@ import { ActionButton } from "@/components/admin/form";
 import { Badge, Card, CardHeader, EmptyState, Mono } from "@/components/admin/ui";
 import { requireAdmin } from "@/lib/admin/auth/session";
 import { displayNo, formatDate, formatDateTime } from "@/lib/admin/format";
-import { labelOf, submissionStatuses, toneOf } from "@/lib/admin/options";
+import { consentDetails, withdrawalSummary } from "@/lib/admin/consent";
+import { consentMethods, labelOf, submissionStatuses, toneOf } from "@/lib/admin/options";
 import { openInterests, openWithdrawals, type ShareReview } from "@/lib/portal/admin";
 import { markInterestReviewed } from "../actions";
 import { PortalHeader } from "../header";
@@ -35,11 +36,16 @@ function ShareRow({ s, withdrawal }: { s: ShareReview; withdrawal?: boolean }) {
           {s.submissionId ? (
             <Badge tone={toneOf(submissionStatuses, s.submissionStatus)}>Vorschlag: {labelOf(submissionStatuses, s.submissionStatus)}</Badge>
           ) : null}
-          {s.consentAt ? (
-            <Badge tone="green">Einwilligung {formatDate(s.consentAt)} (Portal)</Badge>
+          {s.withdrawnAt ? (
+            <Badge tone="red">Widerrufen {formatDate(s.withdrawnAt)}</Badge>
+          ) : s.consentAt ? (
+            <Badge tone="green">
+              Einwilligung {formatDate(s.consentAt)} ({labelOf(consentMethods, s.consentMethod)})
+            </Badge>
           ) : (
-            <Badge tone={withdrawal ? "red" : "amber"}>{withdrawal ? "Einwilligung widerrufen" : "Keine Einwilligung"}</Badge>
+            <Badge tone="amber">Keine Einwilligung</Badge>
           )}
+          {s.objectionAt ? <Badge tone="red">Widerspruch seit {formatDate(s.objectionAt)}</Badge> : null}
           {s.companyId ? (
             <Badge tone="neutral">
               <Building2 aria-hidden className="size-3" />
@@ -52,10 +58,11 @@ function ShareRow({ s, withdrawal }: { s: ShareReview; withdrawal?: boolean }) {
             </Badge>
           )}
         </p>
-        {withdrawal && s.submittedAt ? (
+        {s.withdrawnAt && s.submittedAt ? (
           <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900">
             Profil wurde am {formatDate(s.submittedAt)} schon weitergegeben. Die Einwilligung bleibt als Nachweis gespeichert; gib das Profil nicht weiter und
             informiere bei Bedarf den Auftraggeber.
+            {withdrawal ? null : " Die Person meldet erneut Interesse: Erfasse im Mandat eine erneute Einwilligung, wenn sie das ausdrücklich bestätigt."}
           </p>
         ) : null}
         {s.responseMessage ? (
@@ -64,7 +71,8 @@ function ShareRow({ s, withdrawal }: { s: ShareReview; withdrawal?: boolean }) {
             <span className="whitespace-pre-line">{s.responseMessage}</span>
           </p>
         ) : null}
-        {s.consentNote ? <p className="text-xs text-slate">Einwilligung: {s.consentNote}</p> : null}
+        {s.consentAt && !s.withdrawnAt && consentDetails(s) ? <p className="text-xs text-slate">Einwilligung: {consentDetails(s)}</p> : null}
+        {s.withdrawnAt ? <p className="text-xs text-slate">{withdrawalSummary(s)}</p> : null}
       </div>
       <ActionButton action={markInterestReviewed.bind(null, s.id)} icon={<Check aria-hidden className="size-4" />}>
         Erledigt

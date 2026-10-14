@@ -10,6 +10,7 @@ import { kovaliParty } from "../party";
 import { renderDocx } from "../render/docx";
 import { inlineText, type Block, type DocModel } from "../render/model";
 import { renderPdf } from "../render/pdf";
+import { applySignedConsent } from "./consent";
 import { parseStored } from "./define";
 import { buildContractDocument, contractIssues } from "./document";
 import { formatContractNumber, insertContractWithNumber, isUniqueViolation, nextContractNumber, parseContractNumber } from "./numbering";
@@ -237,6 +238,100 @@ describe.skipIf(!dbUrl)("contract numbers in the database", () => {
     expect(rows.map((r) => r.number).sort()).toEqual(["V-2026-0001", "V-2026-0002", "V-2026-0003", "V-2026-0004", "V-2026-0005", "V-2026-0006"]);
     const next = await insertContractWithNumber(db, values, 2027);
     expect(next.number).toBe("V-2027-0001");
+  });
+});
+
+describe.skipIf(!dbUrl)("signed consent forms in the database", () => {
+  const pool = new Pool({ connectionString: dbUrl, max: 4 });
+  const db = drizzle(pool, { schema });
+  const { candidates, mandates, submissions } = schema;
+  const row = async (id: number) => (await pool.query("select * from submissions where id = $1", [id])).rows[0];
+  const objection = async (id: number) => (await pool.query("select objection_at, objection_note from candidates where id = $1", [id])).rows[0];
+
+  beforeAll(async () => {
+    await pool.query("drop schema public cascade; create schema public;");
+    for (const m of migrations) await pool.query(m.sql);
+    await db.insert(candidates).values([
+      { firstName: "Lea", lastName: "Probst" },
+      { firstName: "Jonas", lastName: "Fiktiv" },
+    ]);
+    await db.insert(mandates).values([{ title: "Cloud Architekt" }, { title: "Testmanager" }, { title: "Scrum Master" }]);
+  });
+
+  afterAll(async () => {
+    await pool.end();
+  });
+
+  it("records the signed form as consent with the method «vertrag», never over an existing one", async () => {
+    expect(await applySignedConsent(db, { number: "V-2026-0001", candidateId: 1, mandateId: 1, signedOn: "2026-10-05" })).toEqual({
+      applied: false,
+      reason: "no_submission",
+    });
+    const [{ id }] = await db.insert(submissions).values({ candidateId: 1, mandateId: 1, status: "einwilligung_offen" }).returning({ id: submissions.id });
+    expect(await applySignedConsent(db, { number: "V-2026-0001", candidateId: 1, mandateId: 1, signedOn: "2026-10-05" })).toEqual({
+      applied: true,
+      submissionId: id,
+      withdrawalLifted: null,
+      objectionLifted: null,
+    });
+    expect(await row(id)).toMatchObject({
+      consent_at: new Date("2026-10-05T12:00:00Z"),
+      consent_method: "vertrag",
+      consent_note: "Einwilligung V-2026-0001",
+      status: "vorgemerkt",
+    });
+    expect(await applySignedConsent(db, { number: "V-2026-0002", candidateId: 1, mandateId: 1, signedOn: "2026-10-06" })).toEqual({
+      applied: false,
+      reason: "consent_exists",
+      submissionId: id,
+    });
+    expect((await row(id)).consent_note).toBe("Einwilligung V-2026-0001");
+  });
+
+  it("lifts a withdrawal only when the form was signed on a later day", async () => {
+    const withdrawnAt = new Date("2026-10-10T09:00:00Z");
+    const [{ id }] = await db
+      .insert(submissions)
+      .values({ candidateId: 1, mandateId: 2, status: "zurueckgezogen", consentAt: new Date("2026-10-01T12:00:00Z"), consentMethod: "email", withdrawnAt, withdrawalNote: "E-Mail" })
+      .returning({ id: submissions.id });
+    for (const signedOn of ["2026-10-09", "2026-10-10"]) {
+      expect(await applySignedConsent(db, { number: "V-2026-0003", candidateId: 1, mandateId: 2, signedOn })).toEqual({
+        applied: false,
+        reason: "withdrawn_later",
+        submissionId: id,
+        withdrawnAt,
+      });
+    }
+    expect(await applySignedConsent(db, { number: "V-2026-0003", candidateId: 1, mandateId: 2, signedOn: "2026-10-11" })).toEqual({
+      applied: true,
+      submissionId: id,
+      withdrawalLifted: { at: withdrawnAt, note: "E-Mail" },
+      objectionLifted: null,
+    });
+    expect(await row(id)).toMatchObject({ consent_method: "vertrag", withdrawn_at: null, withdrawal_note: null, status: "vorgemerkt" });
+  });
+
+  it("lifts the candidate's objection only when the form was signed after it", async () => {
+    const objectionAt = new Date("2026-10-12T08:00:00Z");
+    await pool.query("update candidates set objection_at = $1, objection_note = 'Schriftlich' where id = 2", [objectionAt]);
+    const [{ id }] = await db
+      .insert(submissions)
+      .values({ candidateId: 2, mandateId: 3, status: "zurueckgezogen", withdrawnAt: objectionAt, withdrawalNote: "Schriftlich" })
+      .returning({ id: submissions.id });
+    expect(await applySignedConsent(db, { number: "V-2026-0004", candidateId: 2, mandateId: 3, signedOn: "2026-10-12" })).toEqual({
+      applied: false,
+      reason: "objection_later",
+      submissionId: id,
+      objectionAt,
+    });
+    expect((await objection(2)).objection_at).toEqual(objectionAt);
+    expect(await applySignedConsent(db, { number: "V-2026-0004", candidateId: 2, mandateId: 3, signedOn: "2026-10-13" })).toMatchObject({
+      applied: true,
+      withdrawalLifted: { at: objectionAt, note: "Schriftlich" },
+      objectionLifted: { at: objectionAt, note: "Schriftlich" },
+    });
+    expect(await objection(2)).toEqual({ objection_at: null, objection_note: null });
+    expect(await row(id)).toMatchObject({ consent_method: "vertrag", consent_at: new Date("2026-10-13T12:00:00Z"), withdrawn_at: null, status: "vorgemerkt" });
   });
 });
 

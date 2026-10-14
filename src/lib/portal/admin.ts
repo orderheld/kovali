@@ -132,13 +132,17 @@ const shareColumns = {
   firstName: candidates.firstName,
   lastName: candidates.lastName,
   companyId: candidates.companyId,
+  objectionAt: candidates.objectionAt,
   mandateTitle: mandates.title,
   portalTitle: mandates.portalTitle,
   mandateStatus: mandates.status,
   submissionId: submissions.id,
   submissionStatus: submissions.status,
   consentAt: submissions.consentAt,
+  consentMethod: submissions.consentMethod,
   consentNote: submissions.consentNote,
+  withdrawnAt: submissions.withdrawnAt,
+  withdrawalNote: submissions.withdrawalNote,
   submittedAt: submissions.submittedAt,
 };
 

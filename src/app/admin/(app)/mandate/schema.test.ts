@@ -34,7 +34,14 @@ describe("consentSchema", () => {
   });
 
   it("accepts an e-mail consent without a note", () => {
-    expect(parseForm(consentSchema, { consentDate: "2026-10-13", consentMethod: "e_mail" }).ok).toBe(true);
+    expect(parseForm(consentSchema, { consentDate: "2026-10-13", consentMethod: "email" }).ok).toBe(true);
+  });
+
+  it("requires the form of consent and only offers the ones recorded by hand", () => {
+    expect(errorsOf(parseForm(consentSchema, { consentDate: "2026-10-13", consentMethod: "" }))).toHaveProperty("consentMethod");
+    // Portal and contract consents are written by those modules, never typed in.
+    expect(errorsOf(parseForm(consentSchema, { consentDate: "2026-10-13", consentMethod: "portal" }))).toHaveProperty("consentMethod");
+    expect(errorsOf(parseForm(consentSchema, { consentDate: "2026-10-13", consentMethod: "vertrag" }))).toHaveProperty("consentMethod");
   });
 });
 
