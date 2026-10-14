@@ -1,164 +1,96 @@
 "use server";
 
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, or, sql } from "drizzle-orm";
 import { refresh } from "next/cache";
 import { z } from "zod";
-import { logActivity } from "@/lib/admin/activities";
+import { logActivity, ownedByDormantCandidate } from "@/lib/admin/activities";
 import { audit } from "@/lib/admin/audit";
 import { requireAdmin } from "@/lib/admin/auth/session";
-import { consentScopeText } from "@/lib/admin/consent";
-import { applySignedConsent } from "@/lib/admin/contracts/consent";
-import { getContract, linkLookup } from "@/lib/admin/contracts/data";
+import { getContract, loadLinkFacts } from "@/lib/admin/contracts/data";
 import { insertContractWithNumber } from "@/lib/admin/contracts/numbering";
-import { getTemplate } from "@/lib/admin/contracts/templates";
-import type { LinkKey, LinkMode, TemplateDefinition } from "@/lib/admin/contracts/types";
-import { getDb, type AdminDb } from "@/lib/admin/db/client";
-import { contracts } from "@/lib/admin/db/schema";
-import { addMonthsIso, displayNo, formatDate, todayIso } from "@/lib/admin/format";
-import { fail, formObject, ok, parseForm, type ActionState } from "@/lib/admin/forms";
-import { companyKinds, labelOf } from "@/lib/admin/options";
-import type { OwnerRef } from "@/lib/admin/owner";
+import { resolveContractLinks, type ResolvedLinks } from "@/lib/admin/contracts/rules";
+import { getDb } from "@/lib/admin/db/client";
+import { activities, contracts } from "@/lib/admin/db/schema";
+import { checkUpload, storeDocument } from "@/lib/admin/documents";
+import { formatDate, todayIso } from "@/lib/admin/format";
+import { fail, ok, parseForm, type ActionState } from "@/lib/admin/forms";
+import { contractKinds, contractStatuses, labelOf } from "@/lib/admin/options";
+import { ownerLabel, type OwnerRef } from "@/lib/admin/owner";
 import { redirectAfterChange } from "@/lib/admin/redirect";
-import { contractSchema, DATA_PREFIX, statusDateSchema, type ContractInput } from "./schema";
+import { contractSchema, signSchema, type ContractInput } from "./schema";
 
 const idSchema = z.number().int().positive();
 
-const fieldOf: Record<LinkKey, "companyId" | "contactId" | "candidateId" | "mandateId" | "parentId"> = {
-  company: "companyId",
-  contact: "contactId",
-  candidate: "candidateId",
-  mandate: "mandateId",
-  parent: "parentId",
-};
-
-const defaultLabels: Record<LinkKey, string> = {
-  company: "Firma",
-  contact: "Kontakt",
-  candidate: "Fachperson",
-  mandate: "Mandat",
-  parent: "Rahmenvertrag",
-};
-
-type Values = ContractInput & { data: Record<string, unknown> };
-
-/**
- * Validates the form of a template: the common fields, the template fields (d_<name>) and
- * the links. Hidden links are cleared, an Einzelauftrag takes the company of its
- * Rahmenvertrag, and a contact must belong to the chosen company.
- */
-async function checkForm(template: TemplateDefinition, formData: FormData): Promise<{ ok: true; values: Values } | { ok: false; state: ActionState }> {
-  const raw = formObject(formData);
-  const common = parseForm(contractSchema, raw);
-  const dataRaw = Object.fromEntries(
-    Object.entries(raw)
-      .filter(([k]) => k.startsWith(DATA_PREFIX))
-      .map(([k, v]) => [k.slice(DATA_PREFIX.length), v]),
-  );
-  const data = template.schema.safeParse(dataRaw);
-  if (!common.ok || !data.success) {
-    const errors: Record<string, string> = {};
-    if (!common.ok && common.state.status === "error") Object.assign(errors, common.state.errors);
-    if (!data.success) {
-      for (const issue of data.error.issues) {
-        const key = issue.path[0];
-        if (typeof key === "string") errors[`${DATA_PREFIX}${key}`] ??= issue.message;
-      }
-    }
-    return { ok: false, state: fail("Bitte prüfe die markierten Felder.", errors) };
-  }
-
-  const v: Values = { ...common.data, data: data.data };
-  for (const [key, mode] of Object.entries(template.links) as [LinkKey, LinkMode][]) {
-    if (mode === "hidden") v[fieldOf[key]] = null;
-  }
-  if (template.dates.validFrom === null) v.validFrom = null;
-  if (template.dates.validUntil === null) v.validUntil = null;
-
-  const errors: Record<string, string> = {};
-  const label = (key: LinkKey) => template.labels[key] ?? defaultLabels[key];
-  for (const [key, mode] of Object.entries(template.links) as [LinkKey, LinkMode][]) {
-    if (mode === "required" && v[fieldOf[key]] === null && !(key === "company" && template.id === "einzelauftrag")) {
-      errors[fieldOf[key]] = `${label(key)}: bitte auswählen.`;
-    }
-  }
-
-  const { loadCompany, loadContact, loadCandidate, loadMandate, loadParent } = linkLookup;
-  const parent = await loadParent(v.parentId);
-  if (v.parentId !== null) {
-    if (!parent || parent.template !== "rahmenvertrag") errors.parentId = "Diesen Rahmenvertrag gibt es nicht mehr.";
-    else if (parent.status === "storniert") errors.parentId = "Dieser Rahmenvertrag ist storniert.";
-    else if (!parent.companyId) errors.parentId = "Beim Rahmenvertrag ist keine Auftraggeberin verknüpft.";
-  }
-  // The Einzelauftrag is made with the client of the Rahmenvertrag.
-  if (template.id === "einzelauftrag") v.companyId = parent?.companyId ?? null;
-
-  const [company, contact, candidate, mandate] = await Promise.all([
-    loadCompany(v.companyId),
-    loadContact(v.contactId),
-    loadCandidate(v.candidateId),
-    loadMandate(v.mandateId),
-  ]);
-  if (v.companyId !== null && !company) errors.companyId = "Diese Firma gibt es nicht mehr.";
-  if (company && template.id !== "einzelauftrag" && template.companyKinds.length && !template.companyKinds.includes(company.kind)) {
-    errors.companyId =
-      template.id === "subunternehmer"
-        ? "Bitte die eigene Firma der Fachperson wählen (Art «Subunternehmer»)."
-        : `Diese Firma ist als «${labelOf(companyKinds, company.kind)}» erfasst und passt nicht zu dieser Vorlage.`;
-  }
-  if (v.contactId !== null) {
-    if (!contact) errors.contactId = "Diesen Kontakt gibt es nicht mehr.";
-    else if (contact.companyId !== v.companyId) errors.contactId = "Diese Person gehört nicht zur gewählten Firma.";
-  }
-  if (v.candidateId !== null && !candidate) errors.candidateId = "Diese Fachperson gibt es nicht mehr.";
-  if (template.id === "subunternehmer" && candidate?.companyId && v.companyId !== null && candidate.companyId !== v.companyId) {
-    errors.companyId ??= "Die Fachperson ist einer anderen Firma zugeordnet. Bitte deren Firma wählen oder die Zuordnung beim Kandidaten ändern.";
-  }
-  if (v.mandateId !== null && !mandate) errors.mandateId = "Dieses Mandat gibt es nicht mehr.";
-  // A consent for a mandate names its client as recipient: the profile goes to that company.
-  if (template.id === "einwilligung" && mandate) {
-    if (!mandate.companyId) {
-      errors.mandateId = "Ordne dem Mandat zuerst eine Firma zu: Sie ist die Empfängerin des Profils.";
-    } else if (v.companyId === null) {
-      v.companyId = mandate.companyId;
-    } else if (v.companyId !== mandate.companyId) {
-      errors.companyId = "Die Empfängerin muss die Auftraggeberin des Mandats sein.";
-    }
-  }
-  for (const group of template.oneOf) {
-    if (group.every((key) => v[fieldOf[key]] === null)) {
-      errors[fieldOf[group[0]]] ??= `Bitte ${group.map(label).join(" oder ")} wählen.`;
-    }
-  }
-  if (v.validFrom && v.validUntil && v.validUntil < v.validFrom) errors.validUntil = "Das Ende liegt vor dem Beginn.";
-  const linked = Object.fromEntries((Object.keys(fieldOf) as LinkKey[]).map((k) => [k, v[fieldOf[k]]]));
-  Object.assign(errors, template.validate?.(v.data, linked) ?? {});
-
-  if (Object.keys(errors).length) return { ok: false, state: fail("Bitte prüfe die markierten Felder.", errors) };
-  return { ok: true, values: v };
-}
-
-function owners(row: { id: number; companyId: number | null; candidateId: number | null; mandateId: number | null }): OwnerRef[] {
+/** The contract and the records it belongs to, so its history shows there too. */
+function owners(contractId: number, links: { companyId: number | null; assignmentId: number | null }): OwnerRef[] {
   return [
-    { type: "contract" as const, id: row.id },
-    ...(row.companyId ? [{ type: "company" as const, id: row.companyId }] : []),
-    ...(row.candidateId ? [{ type: "candidate" as const, id: row.candidateId }] : []),
-    ...(row.mandateId ? [{ type: "mandate" as const, id: row.mandateId }] : []),
+    { type: "contract", id: contractId },
+    ...(links.companyId ? [{ type: "company" as const, id: links.companyId }] : []),
+    ...(links.assignmentId ? [{ type: "assignment" as const, id: links.assignmentId }] : []),
   ];
 }
 
-function contractYear(): number {
-  return Number(todayIso().slice(0, 4));
+function isLegacyKind(kind: string): boolean {
+  return contractKinds.some((k) => k.value === kind && k.legacy);
 }
 
-export async function createContract(templateId: string, _prev: ActionState, formData: FormData): Promise<ActionState> {
+type Checked = { ok: true; data: ContractInput; links: ResolvedLinks } | { ok: false; state: ActionState };
+
+/** Form fields and links; `extraErrors` (e.g. of the file) are reported together with them. */
+async function checkForm(formData: FormData, current: { id: number; kind: string } | null, extraErrors: Record<string, string> = {}): Promise<Checked> {
+  const parsed = parseForm(contractSchema, formData);
+  if (!parsed.ok) {
+    const errors = parsed.state.status === "error" ? parsed.state.errors : undefined;
+    return { ok: false, state: fail("Bitte prüfe die markierten Felder.", { ...errors, ...extraErrors }) };
+  }
+  const data = parsed.data;
+  const errors: Record<string, string> = { ...extraErrors };
+  // Old kinds (Subunternehmer, Beratung, Einwilligung) stay on contracts that have them.
+  if (isLegacyKind(data.kind) && data.kind !== current?.kind) errors.kind = "Diese Art wird nicht mehr angeboten.";
+  const facts = await loadLinkFacts(data);
+  const resolved = resolveContractLinks(data, { ...facts, selfId: current?.id, today: todayIso() });
+  Object.assign(errors, resolved.errors);
+  if (Object.keys(errors).length) return { ok: false, state: fail("Bitte prüfe die markierten Felder.", errors) };
+  return { ok: true, data, links: resolved.values };
+}
+
+function fieldsOf(data: ContractInput, links: ResolvedLinks) {
+  return {
+    title: data.title,
+    template: data.kind,
+    status: data.status,
+    ...links,
+    validFrom: data.validFrom,
+    validUntil: data.validUntil,
+    signedAt: data.signedAt,
+    noticePeriod: data.noticePeriod,
+    notes: data.notes,
+  };
+}
+
+/** Files a contract with the next number of the year; an attached file is stored with it. */
+export async function createContract(_prev: ActionState, formData: FormData): Promise<ActionState> {
   await requireAdmin();
-  const template = getTemplate(z.string().max(40).parse(templateId));
-  if (!template) return fail("Diese Vorlage gibt es nicht.");
-  const checked = await checkForm(template, formData);
+  // The file is optional: an empty file field is fine, an unreadable or too large file is not.
+  const upload = await checkUpload(formData.get("file"));
+  const fileError: Record<string, string> = !upload.ok && !upload.empty ? { file: upload.error } : {};
+  const checked = await checkForm(formData, null, fileError);
   if (!checked.ok) return checked.state;
+  const { data, links } = checked;
+
   const db = await getDb();
-  const row = await insertContractWithNumber(db, { ...checked.values, template: template.id, status: "entwurf" }, contractYear());
-  await logActivity(owners({ ...checked.values, id: row.id }), `Vertrag ${row.number} als Entwurf erstellt: ${checked.values.title}`);
+  const row = await insertContractWithNumber(
+    db,
+    { ...fieldsOf(data, links), sentAt: data.status === "versendet" ? new Date() : null },
+    Number(todayIso().slice(0, 4)),
+  );
+  let file = "";
+  if (upload.ok) {
+    const stored = await storeDocument({ owner: { contractId: row.id }, kind: "vertrag", file: upload });
+    await audit("create", { entity: "document", entityId: stored.id, summary: `Dokument zu ${ownerLabel({ type: "contract", id: row.id })}` });
+    file = `, mit Datei ${upload.filename}`;
+  }
+  await logActivity(owners(row.id, links), `Vertrag ${row.number} abgelegt: ${data.title} (${labelOf(contractKinds, data.kind)}${file})`);
   await audit("create", { entity: "contract", entityId: row.id, summary: `Vertrag ${row.number}` });
   redirectAfterChange(`/admin/vertraege/${row.id}`);
 }
@@ -168,228 +100,111 @@ export async function updateContract(id: number, _prev: ActionState, formData: F
   const contractId = idSchema.parse(id);
   const current = await getContract(contractId);
   if (!current) return fail("Diesen Vertrag gibt es nicht mehr.");
-  if (current.status !== "entwurf") return fail("Nur Entwürfe können bearbeitet werden. Kopiere den Vertrag als neuen Entwurf.");
-  const template = getTemplate(current.template);
-  if (!template) return fail("Die Vorlage dieses Vertrags gibt es nicht mehr.");
-  const checked = await checkForm(template, formData);
+  const checked = await checkForm(formData, { id: contractId, kind: current.template });
   if (!checked.ok) return checked.state;
+  const { data, links } = checked;
+
   const db = await getDb();
   const [row] = await db
     .update(contracts)
-    .set({ ...checked.values, updatedAt: new Date() })
-    .where(and(eq(contracts.id, contractId), eq(contracts.status, "entwurf")))
+    .set({ ...fieldsOf(data, links), ...(data.status === "versendet" && !current.sentAt ? { sentAt: new Date() } : {}), updatedAt: new Date() })
+    .where(eq(contracts.id, contractId))
     .returning({ id: contracts.id });
-  if (!row) return fail("Der Vertrag ist kein Entwurf mehr und wurde nicht geändert.");
-  await logActivity({ type: "contract", id: contractId }, "Entwurf bearbeitet.");
+  if (!row) return fail("Diesen Vertrag gibt es nicht mehr.");
+  if (data.status !== current.status) {
+    await logActivity(
+      owners(contractId, links),
+      `Vertrag ${current.number}: ${labelOf(contractStatuses, current.status)} → ${labelOf(contractStatuses, data.status)}`,
+    );
+  }
   await audit("update", { entity: "contract", entityId: contractId, summary: `Vertrag ${current.number}` });
   redirectAfterChange(`/admin/vertraege/${contractId}`);
 }
 
-/** Status changes without a date: sent, back to draft, cancelled, reopened. */
-const simpleTransitions: Record<string, { from: string[]; text: string }> = {
-  versendet: { from: ["entwurf"], text: "als versendet markiert" },
-  entwurf: { from: ["versendet", "storniert"], text: "wieder als Entwurf geöffnet" },
-  storniert: { from: ["entwurf", "versendet"], text: "storniert" },
+/** Status changes with one click. Signing has its own action with a date. */
+const transitions: Record<string, string[]> = {
+  versendet: ["entwurf"],
+  entwurf: ["versendet", "storniert"],
+  beendet: ["unterzeichnet"],
+  storniert: ["entwurf", "versendet"],
 };
 
-export async function markContract(id: number, status: string): Promise<ActionState> {
+export async function setContractStatus(id: number, status: string): Promise<ActionState> {
   await requireAdmin();
   const contractId = idSchema.parse(id);
-  const target = z.enum(["versendet", "entwurf", "storniert"]).parse(status);
+  const target = z.enum(["versendet", "entwurf", "beendet", "storniert"]).parse(status);
   const current = await getContract(contractId);
   if (!current) return fail("Diesen Vertrag gibt es nicht mehr.");
-  const rule = simpleTransitions[target];
-  if (!rule.from.includes(current.status)) return fail("Dieser Statuswechsel ist nicht möglich.");
-  if (target === "entwurf" && current.signedAt) return fail("Ein unterzeichneter Vertrag kann nicht wieder Entwurf werden.");
+  if (!transitions[target].includes(current.status)) return fail("Dieser Wechsel ist von hier aus nicht möglich. Ändere den Status unter «Bearbeiten».");
   const db = await getDb();
   const now = new Date();
   const [row] = await db
     .update(contracts)
-    // The first dispatch stays on record, also when the contract is reopened as a draft.
     .set({ status: target, ...(target === "versendet" && !current.sentAt ? { sentAt: now } : {}), updatedAt: now })
     .where(and(eq(contracts.id, contractId), eq(contracts.status, current.status)))
     .returning({ id: contracts.id });
-  if (!row) return fail("Der Status wurde inzwischen geändert. Bitte Seite neu laden.");
-  await logActivity({ type: "contract", id: contractId }, `Vertrag ${current.number} ${rule.text}.`);
-  await audit("update", { entity: "contract", entityId: contractId, summary: `Vertrag ${current.number}: Status ${target}` });
+  if (!row) return fail("Der Status wurde inzwischen geändert. Bitte lade die Seite neu.");
+  await logActivity(owners(contractId, current), `Vertrag ${current.number}: ${labelOf(contractStatuses, current.status)} → ${labelOf(contractStatuses, target)}`);
+  await audit("update", { entity: "contract", entityId: contractId, summary: `Vertrag ${current.number}: Status ${labelOf(contractStatuses, target)}` });
   refresh();
-  return ok(`Vertrag ${rule.text}.`);
+  return ok(`Status: ${labelOf(contractStatuses, target)}.`);
 }
 
 export async function signContract(id: number, _prev: ActionState, formData: FormData): Promise<ActionState> {
   await requireAdmin();
   const contractId = idSchema.parse(id);
-  const parsed = parseForm(statusDateSchema, formData);
+  const parsed = parseForm(signSchema, formData);
   if (!parsed.ok) return parsed.state;
-  const date = parsed.data.date as string;
-  if (date > todayIso()) return fail("Bitte prüfe das Datum.", { date: "Das Datum liegt in der Zukunft." });
+  const signedAt = parsed.data.signedAt as string;
+  if (signedAt > todayIso()) return fail("Bitte prüfe das Datum.", { signedAt: "Das Datum liegt in der Zukunft." });
   const current = await getContract(contractId);
   if (!current) return fail("Diesen Vertrag gibt es nicht mehr.");
-  if (current.status !== "entwurf" && current.status !== "versendet") return fail("Dieser Vertrag ist bereits unterzeichnet, beendet oder storniert.");
-  const template = getTemplate(current.template);
-
-  // A consent applies for the retention period from the day it was given.
-  let validUntil = current.validUntil;
-  if (template?.id === "einwilligung") {
-    const months = Number((current.data as Record<string, unknown>).retentionMonths) || Number(template.defaults.retentionMonths) || 24;
-    validUntil = addMonthsIso(date, months);
-  }
-
+  if (current.status !== "entwurf" && current.status !== "versendet") return fail("Dieser Vertrag ist schon unterzeichnet, beendet oder hinfällig.");
   const db = await getDb();
   const [row] = await db
     .update(contracts)
-    .set({ status: "unterzeichnet", signedAt: date, validUntil, updatedAt: new Date() })
+    .set({ status: "unterzeichnet", signedAt, updatedAt: new Date() })
     .where(and(eq(contracts.id, contractId), eq(contracts.status, current.status)))
     .returning({ id: contracts.id });
-  if (!row) return fail("Der Status wurde inzwischen geändert. Bitte Seite neu laden.");
-  await logActivity(owners(current), `Vertrag ${current.number} unterzeichnet am ${formatDate(date)}: ${current.title}`);
-  await audit("update", { entity: "contract", entityId: contractId, summary: `Vertrag ${current.number}: unterzeichnet` });
-
-  // A signed consent for a mandate is the consent of the matching submission (if none is recorded yet).
-  let note: string | null = null;
-  if (template?.id === "einwilligung" && current.candidateId && current.mandateId) {
-    note = await takeOverSignedConsent(db, contractId, {
-      number: current.number,
-      candidateId: current.candidateId,
-      mandateId: current.mandateId,
-      signedOn: date,
-      companyId: current.companyId,
-      variant: String((current.data as Record<string, unknown>).variant ?? template.defaults.variant),
-    });
-  }
+  if (!row) return fail("Der Status wurde inzwischen geändert. Bitte lade die Seite neu.");
+  await logActivity(owners(contractId, current), `Vertrag ${current.number} unterzeichnet am ${formatDate(signedAt)}.`);
+  await audit("update", { entity: "contract", entityId: contractId, summary: `Vertrag ${current.number}: Status ${labelOf(contractStatuses, "unterzeichnet")}` });
   refresh();
-  return ok(note ? `Als unterzeichnet erfasst. ${note}` : "Als unterzeichnet erfasst.");
+  return ok("Als unterzeichnet erfasst.");
 }
 
 /**
- * Applies a signed consent form to the submission of its mandate and logs what happened. A
- * withdrawal or objection is only lifted by a form signed after it; otherwise it stays and
- * the history says why. A form that does not cover the submission (other recipient, or
- * anonymised only for a dossier with the name) is not taken over. Returns a note for Ferhat
- * when the consent was not taken over.
+ * Deletes a contract with its documents and its own notes (on delete cascade). History entries
+ * that also belong to its company or assignment (or to a candidate of the former module) stay
+ * there; contracts filed under it lose the link to their Rahmenvertrag.
  */
-async function takeOverSignedConsent(
-  db: AdminDb,
-  contractId: number,
-  contract: { number: string; candidateId: number; mandateId: number; signedOn: string; companyId: number | null; variant: string },
-): Promise<string | null> {
-  const outcome = await applySignedConsent(db, contract);
-  const owners: OwnerRef[] = [
-    { type: "candidate", id: contract.candidateId },
-    { type: "mandate", id: contract.mandateId },
-    { type: "contract", id: contractId },
-  ];
-  const source = `Einwilligung aus Vertrag ${contract.number} (unterzeichnet am ${formatDate(contract.signedOn)})`;
-  if (outcome.applied) {
-    const lifted = [
-      outcome.withdrawalLifted ? `Widerruf vom ${formatDate(outcome.withdrawalLifted.at)} aufgehoben` : null,
-      outcome.objectionLifted ? `Widerspruch vom ${formatDate(outcome.objectionLifted.at)} aufgehoben` : null,
-    ].filter(Boolean);
-    await logActivity(
-      owners,
-      `${source} für den Vorschlag ${displayNo.submission(outcome.submissionId)} übernommen, gilt ${consentScopeText(outcome.scope)}` +
-        `${outcome.widened ? " (ersetzt die Einwilligung nur für das anonymisierte Dossier)" : ""}${lifted.length ? `; ${lifted.join(", ")}` : ""}.`,
-    );
-    await audit("consent", {
-      entity: "submission",
-      entityId: outcome.submissionId,
-      summary:
-        `Einwilligung aus Vertrag ${contract.number} (${outcome.scope})${outcome.widened ? ", erweitert" : ""}` +
-        `${outcome.withdrawalLifted ? ", Widerruf aufgehoben" : ""}${outcome.objectionLifted ? ", Widerspruch aufgehoben" : ""}`,
-    });
-    return null;
-  }
-  if (outcome.reason === "scope_mismatch") {
-    const gaps = [
-      outcome.recipient ? "sie nennt nicht die Auftraggeberin des Mandats als Empfängerin" : null,
-      outcome.variant ? "sie gilt nur für das anonymisierte Dossier, der Vorschlag ist mit Namen" : null,
-    ].filter(Boolean);
-    const reason = `Die Einwilligung deckt den Vorschlag ${displayNo.submission(outcome.submissionId)} nicht ab: ${gaps.join("; ")}.`;
-    await logActivity(owners, `${source} nicht übernommen. ${reason} Erfasse eine passende Einwilligung im Mandat, wenn die Fachperson sie gibt.`);
-    await audit("consent", { entity: "submission", entityId: outcome.submissionId, summary: `Einwilligung aus Vertrag ${contract.number} nicht übernommen (scope_mismatch)` });
-    return `${reason} Sie wurde nicht beim Vorschlag übernommen.`;
-  }
-  if (outcome.reason === "withdrawn_later" || outcome.reason === "objection_later") {
-    const blocker = outcome.reason === "withdrawn_later" ? `Der Widerruf vom ${formatDate(outcome.withdrawnAt)}` : `Der Widerspruch vom ${formatDate(outcome.objectionAt)}`;
-    await logActivity(
-      owners,
-      `${source} nicht übernommen: ${blocker} liegt nicht vor der Unterschrift. Eine erneute Einwilligung im Mandat erfassen, wenn die Fachperson sie bestätigt.`,
-    );
-    await audit("consent", { entity: "submission", entityId: outcome.submissionId, summary: `Einwilligung aus Vertrag ${contract.number} nicht übernommen (${outcome.reason})` });
-    return `Die Einwilligung wurde nicht beim Vorschlag übernommen: ${blocker} liegt nicht vor der Unterschrift.`;
-  }
-  return null;
-}
-
-export async function endContract(id: number, _prev: ActionState, formData: FormData): Promise<ActionState> {
-  await requireAdmin();
-  const contractId = idSchema.parse(id);
-  const parsed = parseForm(statusDateSchema, formData);
-  if (!parsed.ok) return parsed.state;
-  const date = parsed.data.date as string;
-  const current = await getContract(contractId);
-  if (!current) return fail("Diesen Vertrag gibt es nicht mehr.");
-  if (current.status !== "unterzeichnet") return fail("Nur unterzeichnete Verträge können beendet werden.");
-  if (current.signedAt && date < current.signedAt) return fail("Bitte prüfe das Datum.", { date: "Das Ende liegt vor der Unterzeichnung." });
-  const db = await getDb();
-  const [row] = await db
-    .update(contracts)
-    .set({ status: "beendet", validUntil: date, updatedAt: new Date() })
-    .where(and(eq(contracts.id, contractId), eq(contracts.status, "unterzeichnet")))
-    .returning({ id: contracts.id });
-  if (!row) return fail("Der Status wurde inzwischen geändert. Bitte Seite neu laden.");
-  await logActivity(owners(current), `Vertrag ${current.number} beendet per ${formatDate(date)}.`);
-  await audit("update", { entity: "contract", entityId: contractId, summary: `Vertrag ${current.number}: beendet` });
-  refresh();
-  return ok("Als beendet erfasst.");
-}
-
-/** New draft with a new number and the same content; the original stays as it is. */
-export async function copyContract(id: number): Promise<ActionState> {
-  await requireAdmin();
-  const contractId = idSchema.parse(id);
-  const current = await getContract(contractId);
-  if (!current) return fail("Diesen Vertrag gibt es nicht mehr.");
-  const db = await getDb();
-  const row = await insertContractWithNumber(
-    db,
-    {
-      template: current.template,
-      title: current.title,
-      status: "entwurf",
-      companyId: current.companyId,
-      contactId: current.contactId,
-      candidateId: current.candidateId,
-      mandateId: current.mandateId,
-      parentId: current.parentId,
-      data: current.data,
-      validFrom: current.validFrom,
-      validUntil: current.template === "einwilligung" ? null : current.validUntil,
-      notes: current.notes,
-    },
-    contractYear(),
-  );
-  await logActivity({ type: "contract", id: row.id }, `Entwurf als Kopie von ${current.number} erstellt.`);
-  await logActivity({ type: "contract", id: contractId }, `Als neuer Entwurf ${row.number} kopiert.`);
-  await audit("create", { entity: "contract", entityId: row.id, summary: `Vertrag ${row.number} (Kopie von ${current.number})` });
-  redirectAfterChange(`/admin/vertraege/${row.id}/bearbeiten`);
-}
-
 export async function deleteContract(id: number): Promise<ActionState> {
   await requireAdmin();
   const contractId = idSchema.parse(id);
   const db = await getDb();
-  // Only drafts that never left KOVALI: a sent or signed contract stays on record with its
-  // number, also when it was reopened as a draft (cancel it instead).
-  const [row] = await db
-    .delete(contracts)
-    .where(and(eq(contracts.id, contractId), eq(contracts.status, "entwurf"), isNull(contracts.sentAt)))
-    .returning({ number: contracts.number });
-  if (!row) {
-    const current = await getContract(contractId);
-    if (current?.sentAt) return fail("Ein bereits versendeter Vertrag kann nicht gelöscht werden. Storniere ihn stattdessen.");
-    return fail("Nur Entwürfe können gelöscht werden.");
-  }
-  await audit("delete", { entity: "contract", entityId: contractId, summary: `Vertrag ${row.number}` });
+  const deleted = await db.transaction(async (tx) => {
+    const [row] = await tx
+      .select({ number: contracts.number, companyId: contracts.companyId, assignmentId: contracts.assignmentId })
+      .from(contracts)
+      .where(eq(contracts.id, contractId))
+      .for("update")
+      .limit(1);
+    if (!row) return null;
+    await tx
+      .update(activities)
+      .set({ contractId: null })
+      .where(
+        and(
+          eq(activities.contractId, contractId),
+          or(sql`num_nonnulls(${activities.companyId}, ${activities.mandateId}, ${activities.assignmentId}) > 0`, ownedByDormantCandidate()),
+        ),
+      );
+    await tx.delete(contracts).where(eq(contracts.id, contractId));
+    return row;
+  });
+  if (!deleted) return fail("Diesen Vertrag gibt es nicht mehr.");
+  const others = owners(contractId, deleted).filter((o) => o.type !== "contract");
+  await logActivity(others, `Vertrag ${deleted.number} gelöscht.`);
+  await audit("delete", { entity: "contract", entityId: contractId, summary: `Vertrag ${deleted.number}` });
   redirectAfterChange("/admin/vertraege");
 }

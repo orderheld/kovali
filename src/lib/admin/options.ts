@@ -1,7 +1,10 @@
+import type { OwnerType } from "./owner";
+
 /**
- * Labels and allowed values of every fixed-choice field in the admin area and the candidate
- * portal. The database has matching check constraints (db/migrations.ts). Shared by forms,
- * server validation, tables and documents.
+ * Labels and allowed values of every fixed-choice field in the admin area. The database has
+ * matching check constraints (db/migrations.ts). Shared by forms, server validation and tables.
+ * Entries marked `legacy` are values old rows may still hold: they keep their label but are not
+ * offered in forms (use `offered()` for choices and validation).
  */
 
 export type Tone = "neutral" | "blue" | "green" | "amber" | "red" | "violet";
@@ -11,6 +14,8 @@ export interface Option<V extends string = string> {
   label: string;
   tone?: Tone;
   description?: string;
+  /** Still valid in the database for old rows, but no longer offered. */
+  legacy?: boolean;
 }
 
 function options<const V extends string>(list: readonly Option<V>[]) {
@@ -30,14 +35,19 @@ export function valuesOf<V extends string>(list: readonly Option<V>[]): [V, ...V
   return list.map((o) => o.value) as [V, ...V[]];
 }
 
+/** The entries offered in forms: without legacy values. */
+export function offered<V extends string>(list: readonly Option<V>[]): Option<V>[] {
+  return list.filter((o) => !o.legacy);
+}
+
 // --- Firmen -----------------------------------------------------------------
 
 export const companyKinds = options([
-  { value: "auftraggeber", label: "Auftraggeber", tone: "blue", description: "Gibt KOVALI Mandate, z. B. ein IT-Dienstleister oder Direktkunde." },
-  { value: "endkunde", label: "Endkunde", tone: "violet", description: "Kunde hinter einem Auftraggeber." },
-  { value: "subunternehmer", label: "Subunternehmer", tone: "green", description: "Eigene Firma einer Fachperson, die KOVALI beauftragt." },
+  { value: "auftraggeber", label: "Vermittler / Auftraggeber", tone: "blue", description: "Schreibt Vakanzen aus oder setzt dich ein, z. B. GHR Group oder Coopers Group." },
+  { value: "endkunde", label: "Endkunde", tone: "violet", description: "Kunde, bei dem du arbeitest." },
   { value: "partner", label: "Partner", tone: "amber" },
   { value: "sonstige", label: "Sonstige", tone: "neutral" },
+  { value: "subunternehmer", label: "Subunternehmer", tone: "neutral", legacy: true },
 ]);
 
 export const companyStatuses = options([
@@ -50,46 +60,7 @@ export const salutations = options([
   { value: "herr", label: "Herr" },
 ]);
 
-// --- Kandidaten -------------------------------------------------------------
-
-export const disciplines = options([
-  { value: "business-analysis", label: "Business Analysis" },
-  { value: "requirements-engineering", label: "Requirements Engineering" },
-  { value: "projektleitung", label: "Projektleitung" },
-  { value: "product-owner", label: "Product Owner" },
-  { value: "scrum-agile", label: "Scrum Master / Agile Coach" },
-  { value: "test-management", label: "Test Management" },
-  { value: "test-engineering", label: "Test Engineering / Automation" },
-  { value: "application-management", label: "Application Management" },
-  { value: "sap", label: "SAP-Beratung" },
-  { value: "entwicklung", label: "Softwareentwicklung" },
-  { value: "architektur", label: "Architektur" },
-  { value: "data", label: "Data / BI" },
-  { value: "cloud-devops", label: "Cloud / DevOps" },
-  { value: "security", label: "IT-Security" },
-  { value: "andere", label: "Andere" },
-]);
-
-export const seniorities = options([
-  { value: "junior", label: "Junior" },
-  { value: "professional", label: "Professional" },
-  { value: "senior", label: "Senior" },
-  { value: "expert", label: "Expert / Lead" },
-]);
-
-export const engagements = options([
-  { value: "selbstaendig", label: "Selbständig / eigene Firma", description: "Einsatz als Subunternehmen von KOVALI." },
-  { value: "anstellung", label: "Sucht Anstellung" },
-  { value: "offen", label: "Offen" },
-]);
-
-export const candidateStatuses = options([
-  { value: "neu", label: "Neu", tone: "blue" },
-  { value: "aktiv", label: "Aktiv", tone: "green" },
-  { value: "im_einsatz", label: "Im Einsatz", tone: "violet" },
-  { value: "nicht_verfuegbar", label: "Nicht verfügbar", tone: "amber" },
-  { value: "archiviert", label: "Archiviert", tone: "neutral" },
-]);
+// --- Gemeinsam ---------------------------------------------------------------
 
 export const remoteOptions = options([
   { value: "vor_ort", label: "Vor Ort" },
@@ -103,66 +74,47 @@ export const rateUnits = options([
   { value: "tag", label: "pro Tag" },
 ]);
 
-export const candidateSources = options([
-  { value: "website", label: "Website" },
-  { value: "linkedin", label: "LinkedIn" },
-  { value: "empfehlung", label: "Empfehlung" },
-  { value: "netzwerk", label: "Eigenes Netzwerk" },
-  { value: "portal", label: "Jobportal" },
-  { value: "direkt", label: "Direkt beworben" },
-  { value: "sonstige", label: "Sonstige" },
+// --- Aufträge ----------------------------------------------------------------
+
+export const assignmentStatuses = options([
+  { value: "geplant", label: "Geplant", tone: "blue" },
+  { value: "laufend", label: "Laufend", tone: "green" },
+  { value: "beendet", label: "Beendet", tone: "neutral" },
 ]);
 
-export const workPermits = options([
-  { value: "ch", label: "Schweizer Bürger/in" },
-  { value: "c", label: "Niederlassung C" },
-  { value: "b", label: "Aufenthalt B" },
-  { value: "g", label: "Grenzgänger G" },
-  { value: "l", label: "Kurzaufenthalt L" },
-  { value: "eu-meldung", label: "EU/EFTA, Meldeverfahren" },
-  { value: "keine", label: "Keine Bewilligung" },
+/** How Ferhat is paid for an assignment (assignments.billing). */
+export const billingModels = options([
+  { value: "rechnung", label: "Rechnung über Einzelfirma", description: "Du stellst Rechnung und zahlst Sozialversicherungen und Vorsorge selbst." },
+  { value: "lohn", label: "Lohn über Payroll", description: "Die Firma stellt dich an und zahlt dir einen Lohn mit Abzügen." },
 ]);
 
-export const languageLevels = options([
-  { value: "muttersprache", label: "Muttersprache" },
-  { value: "c2", label: "C2 – verhandlungssicher" },
-  { value: "c1", label: "C1 – fliessend" },
-  { value: "b2", label: "B2 – gut" },
-  { value: "b1", label: "B1 – erweiterte Grundkenntnisse" },
-  { value: "a2", label: "A2 – Grundkenntnisse" },
+/** Payroll only: what the agreed rate means (assignments.rate_basis). */
+export const rateBases = options([
+  { value: "brutto", label: "Bruttolohn inkl. Ferien, Feiertage, 13. Monatslohn", description: "Der Satz ist dein Stundenlohn brutto, alle Zuschläge schon drin." },
+  { value: "kostensatz", label: "Kostensatz der Firma", description: "Der Satz ist, was die Firma pro Stunde insgesamt für dich ausgibt." },
 ]);
 
-export const documentKinds = options([
-  { value: "cv", label: "Lebenslauf" },
-  { value: "zeugnis", label: "Arbeitszeugnis" },
-  { value: "diplom", label: "Diplom" },
-  { value: "zertifikat", label: "Zertifikat" },
-  { value: "vertrag", label: "Vertrag (unterzeichnet)" },
-  { value: "anforderung", label: "Anforderungsprofil" },
-  { value: "einwilligung", label: "Einwilligung" },
-  { value: "sonstiges", label: "Sonstiges" },
-]);
-
-// --- Mandate und Vorschläge -------------------------------------------------
+// --- Vakanzen (Tabelle mandates) ----------------------------------------------
 
 export const mandateKinds = options([
-  { value: "anfrage", label: "Anfrage", description: "Eine Firma fragt KOVALI direkt an." },
-  { value: "ausschreibung", label: "Ausschreibung", description: "KOVALI bewirbt sich auf ein Mandat eines Providers oder Portals." },
-  { value: "direkt", label: "Direktmandat", description: "Beratung durch KOVALI selbst." },
+  { value: "ausschreibung", label: "Ausschreibung", description: "Ein Vermittler hat die Vakanz ausgeschrieben, du bewirbst dich." },
+  { value: "anfrage", label: "Anfrage", description: "Ein Vermittler oder Kunde fragt dich direkt an." },
+  { value: "direkt", label: "Direkt beim Kunden", description: "Ohne Vermittler." },
 ]);
 
+/** Application pipeline of a vacancy. The values come from the former mandate module. */
 export const mandateStatuses = options([
-  { value: "neu", label: "Neu", tone: "blue" },
-  { value: "in_bearbeitung", label: "In Bearbeitung", tone: "amber" },
-  { value: "angeboten", label: "Angeboten", tone: "violet" },
+  { value: "neu", label: "Entdeckt", tone: "blue" },
+  { value: "in_bearbeitung", label: "In Vorbereitung", tone: "amber" },
+  { value: "angeboten", label: "Beworben", tone: "violet" },
   { value: "interview", label: "Interview", tone: "violet" },
-  { value: "gewonnen", label: "Gewonnen", tone: "green" },
-  { value: "verloren", label: "Verloren", tone: "red" },
+  { value: "gewonnen", label: "Zusage", tone: "green" },
+  { value: "verloren", label: "Absage", tone: "red" },
   { value: "zurueckgezogen", label: "Zurückgezogen", tone: "neutral" },
   { value: "pausiert", label: "Pausiert", tone: "neutral" },
 ]);
 
-/** Mandates still being worked on. */
+/** Vacancies still in progress. */
 export const openMandateStatuses = ["neu", "in_bearbeitung", "angeboten", "interview"] as const;
 
 export const mandatePriorities = options([
@@ -172,68 +124,71 @@ export const mandatePriorities = options([
 ]);
 
 export const mandateSources = options([
-  { value: "website", label: "Website" },
+  { value: "portal", label: "Portal des Vermittlers" },
   { value: "e_mail", label: "E-Mail" },
-  { value: "portal", label: "Partnerportal" },
   { value: "telefon", label: "Telefon" },
   { value: "netzwerk", label: "Netzwerk" },
+  { value: "website", label: "Website" },
   { value: "sonstige", label: "Sonstige" },
 ]);
 
-export const portalVisibilities = options([
-  { value: "keine", label: "Nicht im Portal" },
-  { value: "ausgewaehlt", label: "Nur ausgewählte Kandidaten" },
-  { value: "alle", label: "Alle aktiven Kandidaten" },
-]);
-
-export const submissionStatuses = options([
-  { value: "vorgemerkt", label: "Vorgemerkt", tone: "neutral" },
-  { value: "einwilligung_offen", label: "Einwilligung offen", tone: "amber" },
-  { value: "vorgeschlagen", label: "Vorgeschlagen", tone: "blue" },
-  { value: "interview", label: "Interview", tone: "violet" },
-  { value: "angebot", label: "Angebot", tone: "violet" },
-  { value: "zusage", label: "Zusage", tone: "green" },
-  { value: "absage", label: "Absage", tone: "red" },
-  { value: "zurueckgezogen", label: "Zurückgezogen", tone: "neutral" },
-]);
-
-export const profileVariants = options([
-  { value: "anonym", label: "Anonymisiert" },
-  { value: "namentlich", label: "Mit Namen" },
-]);
-
-export const shareResponses = options([
-  { value: "offen", label: "Noch keine Antwort", tone: "neutral" },
-  { value: "interessiert", label: "Interessiert", tone: "green" },
-  { value: "kein_interesse", label: "Kein Interesse", tone: "neutral" },
-]);
-
-/** How a candidate consented to the hand-over for one mandate (submissions.consent_method). */
-export const consentMethods = options([
-  { value: "schriftlich", label: "Schriftlich" },
-  { value: "email", label: "E-Mail" },
-  { value: "muendlich", label: "Mündlich (mit Notiz)", description: "Telefon oder Gespräch; wann und wie in der Notiz festhalten." },
-  { value: "portal", label: "Kandidatenportal" },
-  { value: "vertrag", label: "Unterzeichnete Einwilligung" },
-]);
-
-/**
- * Methods Ferhat records by hand. Portal consent is written by the portal, a signed consent
- * by the contracts module; neither is chosen in a form.
- */
-export const manualConsentMethods = consentMethods.filter((m) => m.value === "schriftlich" || m.value === "email" || m.value === "muendlich");
-
 // --- Verträge ---------------------------------------------------------------
 
-export const contractStatuses = options([
-  { value: "entwurf", label: "Entwurf", tone: "neutral" },
-  { value: "versendet", label: "Versendet", tone: "amber" },
-  { value: "unterzeichnet", label: "Unterzeichnet", tone: "green" },
-  { value: "beendet", label: "Beendet", tone: "neutral" },
-  { value: "storniert", label: "Storniert", tone: "red" },
+/** Kind of a filed contract (contracts.template). */
+export const contractKinds = options([
+  { value: "rahmenvertrag", label: "Rahmenvertrag" },
+  { value: "einzelauftrag", label: "Einzelauftrag" },
+  { value: "arbeitsvertrag", label: "Arbeitsvertrag" },
+  { value: "nda", label: "Geheimhaltungsvereinbarung (NDA)" },
+  { value: "auftragsbestaetigung", label: "Auftragsbestätigung" },
+  { value: "sonstiges", label: "Sonstiger Vertrag" },
+  { value: "subunternehmer", label: "Subunternehmervertrag", legacy: true },
+  { value: "beratung", label: "Beratungsvertrag", legacy: true },
+  { value: "einwilligung", label: "Einwilligung", legacy: true },
 ]);
 
-// --- Aktivitäten und Portal ---------------------------------------------------
+export const contractStatuses = options([
+  { value: "entwurf", label: "In Prüfung", tone: "neutral" },
+  { value: "versendet", label: "Zur Unterschrift", tone: "amber" },
+  { value: "unterzeichnet", label: "Unterzeichnet", tone: "green" },
+  { value: "beendet", label: "Beendet", tone: "neutral" },
+  { value: "storniert", label: "Hinfällig", tone: "red" },
+]);
+
+// --- Dokumente und Notizen --------------------------------------------------
+
+export const documentKinds = options([
+  { value: "ausschreibung", label: "Ausschreibung" },
+  { value: "bewerbung", label: "Bewerbung" },
+  { value: "cv", label: "Lebenslauf" },
+  { value: "offerte", label: "Offerte" },
+  { value: "vertrag", label: "Vertrag" },
+  { value: "rapport", label: "Rapport" },
+  { value: "rechnung", label: "Rechnung" },
+  { value: "lohnabrechnung", label: "Lohnabrechnung" },
+  { value: "korrespondenz", label: "Korrespondenz" },
+  { value: "sonstiges", label: "Sonstiges" },
+  { value: "zeugnis", label: "Arbeitszeugnis", legacy: true },
+  { value: "diplom", label: "Diplom", legacy: true },
+  { value: "zertifikat", label: "Zertifikat", legacy: true },
+  { value: "anforderung", label: "Anforderungsprofil", legacy: true },
+  { value: "einwilligung", label: "Einwilligung", legacy: true },
+]);
+
+export type DocumentKind = (typeof documentKinds)[number]["value"];
+
+/** Kinds offered when uploading to a record, the most common first. */
+export const documentKindsByOwner: Record<OwnerType, readonly DocumentKind[]> = {
+  mandate: ["ausschreibung", "bewerbung", "cv", "offerte", "korrespondenz", "sonstiges"],
+  assignment: ["vertrag", "rapport", "rechnung", "lohnabrechnung", "korrespondenz", "sonstiges"],
+  contract: ["vertrag", "sonstiges"],
+  company: ["vertrag", "korrespondenz", "sonstiges"],
+};
+
+/** The document kinds of one owner type as options, in the order of documentKindsByOwner. */
+export function documentKindOptions(owner: OwnerType): Option<DocumentKind>[] {
+  return documentKindsByOwner[owner].map((value) => documentKinds.find((k) => k.value === value)!);
+}
 
 export const activityKinds = options([
   { value: "notiz", label: "Notiz" },
@@ -241,27 +196,4 @@ export const activityKinds = options([
   { value: "e_mail", label: "E-Mail" },
   { value: "termin", label: "Termin" },
   { value: "system", label: "System" },
-]);
-
-export const changeSections = options([
-  { value: "profil", label: "Profil und Kurzbeschreibung" },
-  { value: "kompetenzen", label: "Kompetenzen und Zertifikate" },
-  { value: "werdegang", label: "Werdegang und Projekte" },
-  { value: "ausbildung", label: "Ausbildung" },
-  { value: "sprachen", label: "Sprachen" },
-  { value: "verfuegbarkeit", label: "Verfügbarkeit und Konditionen" },
-  { value: "stammdaten", label: "Stammdaten (Änderungswunsch)" },
-]);
-
-export const changeStatuses = options([
-  { value: "offen", label: "Nicht bestätigt", tone: "amber" },
-  { value: "bestaetigt", label: "Bestätigt", tone: "green" },
-  { value: "abgelehnt", label: "Abgelehnt", tone: "red" },
-  { value: "zurueckgezogen", label: "Zurückgezogen", tone: "neutral" },
-]);
-
-export const accountStatuses = options([
-  { value: "eingeladen", label: "Eingeladen", tone: "amber" },
-  { value: "aktiv", label: "Aktiv", tone: "green" },
-  { value: "gesperrt", label: "Gesperrt", tone: "red" },
 ]);

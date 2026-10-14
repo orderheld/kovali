@@ -33,9 +33,9 @@ export function CompanyForm({
           name="kind"
           label="Art"
           required
-          options={companyKinds}
+          options={companyKinds.filter((k) => !k.legacy || k.value === company?.kind)}
           defaultValue={company?.kind ?? defaultKind ?? "auftraggeber"}
-          hint="Auftraggeber geben Mandate; Subunternehmer sind Firmen von Fachpersonen."
+          hint="Vermittler wie GHR Group schreiben Vakanzen aus; beim Endkunden arbeitest du."
         />
         <TextField name="legalName" label="Rechtlicher Name" defaultValue={company?.legalName} hint="Für Verträge, z. B. GHR Group AG." />
         <TextField name="legalForm" label="Rechtsform" defaultValue={company?.legalForm} placeholder="AG, GmbH, Einzelunternehmen …" />

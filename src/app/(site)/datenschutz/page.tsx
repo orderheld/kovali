@@ -9,16 +9,7 @@ export const metadata = pageMetadata({
   path: "/datenschutz",
 });
 
-/**
- * The candidate portal (/portal) and the candidate data in the admin area still ship from main.
- * They are being removed in a separate branch; until that has landed, this statement has to
- * cover them. When /portal and the candidate data are gone, set this to false (or delete the
- * flag and its blocks). The figures below mirror src/lib/admin/retention.ts, which site code
- * no longer imports.
- */
-const CANDIDATE_PORTAL_LIVE = true;
-
-/** Section numbers count up in order, so the optional portal section needs no renumbering. */
+/** Section numbers count up in order, so adding or removing a section needs no renumbering. */
 function sectionCounter() {
   let n = 0;
   return (title: string) => `${++n}. ${title}`;
@@ -33,9 +24,8 @@ export default function DatenschutzPage() {
     <LegalPage title="Datenschutzerklärung" path="/datenschutz" updated="Oktober 2026">
       <p>
         Diese Datenschutzerklärung informiert darüber, welche Personendaten beim Besuch dieser Website, bei einer
-        Kontaktaufnahme und in der Zusammenarbeit mit Kunden und Partnern
-        {CANDIDATE_PORTAL_LIVE ? " sowie mit Fachleuten und im Kandidatenportal" : null} bearbeitet werden. Sie richtet
-        sich nach dem Schweizer Bundesgesetz über den Datenschutz (DSG).
+        Kontaktaufnahme und in der Zusammenarbeit mit Kunden und Partnern bearbeitet werden. Sie richtet sich nach dem
+        Schweizer Bundesgesetz über den Datenschutz (DSG).
       </p>
 
       <h2>{section("Verantwortliche Stelle")}</h2>
@@ -65,8 +55,7 @@ export default function DatenschutzPage() {
         Website geladen, es besteht keine Verbindung zu Schriftanbietern wie Google Fonts.
       </p>
       <p>
-        Nur wer sich im internen Verwaltungsbereich {CANDIDATE_PORTAL_LIVE ? "oder im Kandidatenportal " : null}von{" "}
-        {site.brand} anmeldet, erhält ein technisch notwendiges Sitzungscookie. Es enthält eine zufällige Kennung, dient
+        Nur wer sich im internen Verwaltungsbereich von {site.brand} anmeldet, erhält ein technisch notwendiges Sitzungscookie. Es enthält eine zufällige Kennung, dient
         ausschliesslich der Anmeldung und wird beim Abmelden gelöscht.
       </p>
 
@@ -104,38 +93,6 @@ export default function DatenschutzPage() {
         Anbieter Neon in Frankfurt am Main (Deutschland). Dokumente werden dort verschlüsselt gespeichert. Zugriff hat
         nur {site.brand}.
       </p>
-
-      {CANDIDATE_PORTAL_LIVE ? (
-        <>
-          <h2>{section("Fachleute und Kandidatenportal")}</h2>
-          <p>
-            Prüft {site.brand} eine Zusammenarbeit mit einer Fachperson für ein Mandat, werden ihre Angaben in einer
-            internen Kandidatendatenbank beim Anbieter Neon in Frankfurt am Main (Deutschland) erfasst: Kontaktdaten,
-            Lebenslauf, Werdegang, Ausbildung, Kompetenzen, Sprachen, Verfügbarkeit und Konditionen, Notizen zu Gesprächen
-            sowie Einwilligungen. Lebensläufe und andere Dokumente werden verschlüsselt gespeichert.
-          </p>
-          <ul>
-            <li>
-              Ein Profil geht nur mit Einwilligung der Fachperson für ein konkretes Mandat an einen Auftraggeber, ohne
-              Namen und Kontaktdaten oder, nach ausdrücklicher Zustimmung, mit Namen. Der Empfänger bearbeitet das Profil
-              danach in eigener Verantwortung.
-            </li>
-            <li>
-              Auf Einladung erhalten Fachleute ein Konto im Kandidatenportal. Dort pflegen sie ihr Profil, laden Dokumente
-              hoch und antworten auf Vakanzen. Für die Anmeldung werden die E-Mail-Adresse, ein nicht umkehrbarer Hashwert
-              des Passworts, der Zeitpunkt der letzten Anmeldung und die aktiven Sitzungen gespeichert. Eine Sitzung endet
-              spätestens nach sieben Tagen oder nach acht Stunden ohne Aktivität.
-            </li>
-            <li>Einladungen und Links zum Setzen eines neuen Passworts werden über Resend per E-Mail versandt.</li>
-            <li>
-              Ohne Einwilligung wird ein Profil höchstens sechs Monate aufbewahrt, mit Einwilligung höchstens 24 Monate,
-              länger nur mit einer erneuten Einwilligung. Danach werden Profil und Portalkonto gelöscht oder anonymisiert,
-              auf Wunsch jederzeit früher. Entsteht eine Zusammenarbeit, gelten die gesetzlichen Aufbewahrungspflichten.
-            </li>
-            <li>Das Kandidatenportal wird nicht von Suchmaschinen erfasst.</li>
-          </ul>
-        </>
-      ) : null}
 
       <h2>{section("Bekanntgabe ins Ausland")}</h2>
       <p>

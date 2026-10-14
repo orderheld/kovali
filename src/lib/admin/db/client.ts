@@ -14,7 +14,8 @@ import * as schema from "./schema";
 
 export type AdminDb = NodePgDatabase<typeof schema>;
 
-const MIGRATION_LOCK = 724_211_001;
+/** Advisory lock key of the migrations; also taken by changes to the table structure at runtime. */
+export const MIGRATION_LOCK = 724_211_001;
 
 declare global {
   // Survives hot reloads in development.

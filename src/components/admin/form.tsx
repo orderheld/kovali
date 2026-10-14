@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { buttonClass } from "./ui";
 
 /**
- * Forms of the admin area and the candidate portal. ActionForm wires a Server Action through
+ * Forms of the admin area. ActionForm wires a Server Action through
  * useActionState; fields read their error from context by name. Submitting does not reset the
  * form, so entries stay when the server reports a validation error.
  */
@@ -139,17 +139,6 @@ function ActionFormInner({
         )}
       </form>
     </FormContext>
-  );
-}
-
-/** Submit button for forms that place it themselves (hideSubmit). */
-export function SubmitButton({ children, variant = "primary", size = "md", className }: { children: React.ReactNode; variant?: "primary" | "secondary" | "danger"; size?: "md" | "sm"; className?: string }) {
-  const { pending } = useFormState();
-  return (
-    <button type="submit" disabled={pending} className={buttonClass(variant, size, className)}>
-      {pending ? <Loader2 aria-hidden className="size-4 animate-spin" /> : null}
-      {children}
-    </button>
   );
 }
 
@@ -381,60 +370,6 @@ export function CheckboxField({
         </p>
       ) : null}
     </div>
-  );
-}
-
-/** Several values from a fixed list as toggle chips; submitted as a JSON array. */
-export function MultiChoiceField({
-  name,
-  label,
-  hint,
-  className,
-  options,
-  defaultValue = [],
-}: Omit<BaseFieldProps, "required" | "disabled"> & {
-  options: readonly { value: string; label: string }[];
-  defaultValue?: string[];
-}) {
-  const [selected, setSelected] = useState<string[]>(defaultValue);
-  const error = useFieldError(name);
-  const id = `${useId()}-${name}`;
-  const ref = useRef<HTMLFieldSetElement>(null);
-  useFormReset(ref, () => setSelected(defaultValue));
-  return (
-    <fieldset ref={ref} className={className} aria-describedby={describedBy(id, hint, error)}>
-      <legend className="mb-1.5 text-sm font-medium text-ink">{label}</legend>
-      <input type="hidden" name={name} value={JSON.stringify(selected)} />
-      <div className="flex flex-wrap gap-2">
-        {options.map((o) => {
-          const on = selected.includes(o.value);
-          return (
-            <button
-              key={o.value}
-              type="button"
-              aria-pressed={on}
-              onClick={() => setSelected((s) => (on ? s.filter((v) => v !== o.value) : [...s, o.value]))}
-              className={cn(
-                "rounded-full border px-3 py-1 text-[0.8125rem] transition-colors",
-                on ? "border-blue bg-blue text-white" : "border-line bg-white text-ink hover:border-slate/40",
-              )}
-            >
-              {o.label}
-            </button>
-          );
-        })}
-      </div>
-      {hint ? (
-        <p id={`${id}-hint`} className="mt-1.5 text-[0.8125rem] text-slate">
-          {hint}
-        </p>
-      ) : null}
-      {error ? (
-        <p id={`${id}-error`} className="mt-1.5 text-[0.8125rem] font-medium text-red-700">
-          {error}
-        </p>
-      ) : null}
-    </fieldset>
   );
 }
 

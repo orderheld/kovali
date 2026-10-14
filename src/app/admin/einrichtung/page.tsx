@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
-import { CheckCircle2, CircleAlert, CircleDashed, KeyRound } from "lucide-react";
+import { CheckCircle2, CircleAlert, KeyRound, Smartphone } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { LinkButton, Notice } from "@/components/admin/ui";
 import { getAdminSession } from "@/lib/admin/auth/session";
@@ -38,13 +38,7 @@ export default async function SetupPage() {
     <ul className="mt-6 divide-y divide-line rounded-lg border border-line bg-white">
       {status.map((item) => (
         <li key={item.name} className="flex items-center gap-3 px-4 py-3 text-sm">
-          {item.ok ? (
-            <CheckCircle2 aria-hidden className="size-5 text-emerald-600" />
-          ) : item.required ? (
-            <CircleAlert aria-hidden className="size-5 text-amber-600" />
-          ) : (
-            <CircleDashed aria-hidden className="size-5 text-slate" />
-          )}
+          {item.ok ? <CheckCircle2 aria-hidden className="size-5 text-emerald-600" /> : <CircleAlert aria-hidden className="size-5 text-amber-600" />}
           <span className="flex-1 text-ink">{item.label}</span>
           <code className="font-mono text-xs text-slate">{item.name}</code>
           <span className="sr-only">{item.ok ? "gesetzt" : "fehlt"}</span>
@@ -54,8 +48,7 @@ export default async function SetupPage() {
   );
 
   if (configured) {
-    // Logged in and set up: only what can still be added or changed. ADMIN_SECRET never changes.
-    const twoFactor = set("ADMIN_TOTP_SECRET");
+    // Logged in and set up: only what can be changed. ADMIN_SECRET never changes.
     return (
       <main className="mx-auto w-full max-w-3xl px-4 py-12">
         <Logo className="w-36" title="KOVALI" />
@@ -64,27 +57,6 @@ export default async function SetupPage() {
           Der Admin-Bereich ist eingerichtet. Die Zugangsdaten stehen als Umgebungsvariablen bei Vercel, nicht im (öffentlichen) Repository.
         </p>
         {statusList}
-
-        {twoFactor ? null : (
-          <>
-            <Notice tone="blue" title="Zwei-Faktor-Code einrichten" className="mt-6">
-              <ol className="mt-1 list-decimal space-y-1 pl-5">
-                <li>Unten den Code-Schlüssel erzeugen, mit der Authenticator-App scannen und einen Code prüfen.</li>
-                <li>
-                  In Vercel unter <strong>Settings → Environment Variables</strong> <code>ADMIN_TOTP_SECRET</code> für <em>Production</em> eintragen und als
-                  <em> Sensitive</em> markieren.
-                </li>
-                <li>
-                  Unter <strong>Deployments</strong> das letzte Deployment neu starten (Redeploy). Danach braucht die Anmeldung zusätzlich den Code aus der
-                  App.
-                </li>
-              </ol>
-            </Notice>
-            <div className="mt-4">
-              <SetupGenerator password={false} secret={false} totp />
-            </div>
-          </>
-        )}
 
         <section className="mt-6 rounded-lg border border-line bg-white p-5 text-sm text-slate">
           <h2 className="flex items-center gap-2 text-[0.9375rem] font-semibold text-ink">
@@ -107,11 +79,32 @@ export default async function SetupPage() {
               <SetupGenerator password secret={false} totp={false} />
             </div>
           </details>
-          <p className="mt-3">
-            Der geheime Schlüssel <code className="text-ink">ADMIN_SECRET</code> bleibt, wie er ist: Mit einem neuen liessen sich die gespeicherten Dokumente
-            nicht mehr öffnen.
-          </p>
         </section>
+
+        <section className="mt-6 rounded-lg border border-line bg-white p-5 text-sm text-slate">
+          <h2 className="flex items-center gap-2 text-[0.9375rem] font-semibold text-ink">
+            <Smartphone aria-hidden className="size-4 text-blue" />
+            Neues Handy für Google Authenticator
+          </h2>
+          <p className="mt-2">
+            Neuen Code-Schlüssel erzeugen und mit Google Authenticator auf dem neuen Handy scannen. Dann in Vercel{" "}
+            <code className="text-ink">ADMIN_TOTP_SECRET</code> damit ersetzen und das letzte Deployment neu starten. Ab dann gilt nur noch der Code des
+            neuen Eintrags; den alten Eintrag in der App kannst du löschen.
+          </p>
+          <details className="mt-3 rounded-md border border-line [&[open]>summary]:border-b [&[open]>summary]:border-line">
+            <summary className="cursor-pointer list-none rounded-md px-3 py-2 text-[0.8125rem] font-medium text-blue select-none hover:bg-mist [&::-webkit-details-marker]:hidden">
+              Neuen Code-Schlüssel erzeugen
+            </summary>
+            <div className="p-3">
+              <SetupGenerator password={false} secret={false} totp />
+            </div>
+          </details>
+        </section>
+
+        <p className="mt-6 text-sm text-slate">
+          Der geheime Schlüssel <code className="text-ink">ADMIN_SECRET</code> bleibt, wie er ist: Mit einem neuen liessen sich die gespeicherten Dokumente nicht
+          mehr öffnen.
+        </p>
 
         <LinkButton href="/admin" variant="primary" className="mt-8">
           Zurück zum Admin
@@ -126,7 +119,9 @@ export default async function SetupPage() {
       <Logo className="w-36" title="KOVALI" />
       <h1 className="mt-8 text-2xl font-semibold tracking-tight text-ink">Admin-Bereich einrichten</h1>
       <p className="mt-2 text-[0.9375rem] text-slate">
-        Die Zugangsdaten stehen nicht im Code, sondern als Umgebungsvariablen bei Vercel. So kann niemand sie im (öffentlichen) Repository finden.
+        Der Admin-Bereich hat genau einen Zugang: deinen. Du meldest dich mit Passwort und dem Code aus Google Authenticator an; ein Konto anlegen oder
+        sich registrieren kann niemand. Die Zugangsdaten stehen nicht im Code, sondern als Umgebungsvariablen bei Vercel. So kann niemand sie im
+        (öffentlichen) Repository finden.
       </p>
       {statusList}
 
@@ -136,12 +131,15 @@ export default async function SetupPage() {
             Datenbank: in Vercel unter <strong>Storage</strong> eine Neon-Datenbank in der Region Frankfurt erstellen und mit dem Projekt
             verbinden. <code>DATABASE_URL</code> wird dabei automatisch gesetzt.
           </li>
-          <li>Unten die fehlenden Werte erzeugen: Passwort-Hash, Schlüssel und (empfohlen) Zwei-Faktor-Code.</li>
+          <li>Google Authenticator auf dem Handy installieren (App Store oder Google Play).</li>
+          <li>Unten alle fehlenden Werte erzeugen: Passwort-Hash, Schlüssel und Zwei-Faktor-Code. Den QR-Code scannst du mit Google Authenticator.</li>
           <li>
             In Vercel unter <strong>Settings → Environment Variables</strong> jeden Wert für <em>Production</em> eintragen und als
             <em> Sensitive</em> markieren.
           </li>
-          <li>Unter <strong>Deployments</strong> das letzte Deployment neu starten (Redeploy). Danach ist die Anmeldung aktiv.</li>
+          <li>
+            Unter <strong>Deployments</strong> das letzte Deployment neu starten (Redeploy). Sobald alle vier Werte gesetzt sind, ist die Anmeldung aktiv.
+          </li>
         </ol>
       </Notice>
       {secretSet ? (

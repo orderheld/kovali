@@ -32,14 +32,7 @@ const securityHeaders = [
   },
 ];
 
-/** Files read at runtime by the admin area and the candidate portal (PDF fonts, logo for Word). */
-const documentAssets = [
-  "./node_modules/geist/dist/fonts/geist-sans/Geist-{Regular,Italic,Medium,SemiBold}.ttf",
-  "./node_modules/geist/dist/fonts/geist-mono/GeistMono-Regular.ttf",
-  "./src/lib/admin/render/assets/*",
-];
-
-/** Admin area and candidate portal: never cached, never indexed. */
+/** Admin area: never cached, never indexed. */
 const privateHeaders = [
   { key: "Cache-Control", value: "private, no-store, max-age=0" },
   { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" },
@@ -87,13 +80,7 @@ const nextConfig: NextConfig = {
       { source: "/:path*", headers: securityHeaders },
       { source: "/admin/:path*", headers: privateHeaders },
       { source: "/admin", headers: privateHeaders },
-      { source: "/portal/:path*", headers: privateHeaders },
-      { source: "/portal", headers: privateHeaders },
     ];
-  },
-  outputFileTracingIncludes: {
-    "/admin/**": documentAssets,
-    "/portal/**": documentAssets,
   },
   turbopack: {
     rules: {

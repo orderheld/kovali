@@ -1,18 +1,18 @@
 import type { Metadata } from "next";
-import { CheckCircle2, CircleAlert, Database, GitCommitHorizontal } from "lucide-react";
+import { Archive, CheckCircle2, CircleAlert, Database, GitCommitHorizontal, Trash2 } from "lucide-react";
 import { count, sql } from "drizzle-orm";
 import type { PgTable } from "drizzle-orm/pg-core";
-import { Badge, Card, CardBody, CardHeader, DescriptionList, Mono, Table, Td, Th } from "@/components/admin/ui";
+import { ActionButton } from "@/components/admin/form";
+import { Badge, Card, CardBody, CardHeader, DescriptionList, Mono, Notice, Table, Td, Th } from "@/components/admin/ui";
 import { requireAdmin } from "@/lib/admin/auth/session";
+import { dormantCandidateData } from "@/lib/admin/data/dormant";
+import { param } from "@/lib/admin/data/query";
 import { getDb } from "@/lib/admin/db/client";
 import { migrations } from "@/lib/admin/db/migrations";
 import {
   activities,
+  assignments,
   auditLog,
-  candidateAccounts,
-  candidateSessions,
-  candidates,
-  changeRequests,
   companies,
   contacts,
   contracts,
@@ -21,12 +21,12 @@ import {
   mandates,
   sessions,
   settings,
-  submissions,
-  vacancyShares,
+  snippets,
 } from "@/lib/admin/db/schema";
 import { adminConfigStatus } from "@/lib/admin/env";
 import { formatDateTime } from "@/lib/admin/format";
 import { SettingsHeader } from "../tabs";
+import { deleteDormantCandidates } from "./actions";
 
 /** Admin pages read the session and the database per request and may block. */
 export const instant = false;
@@ -34,19 +34,15 @@ export const instant = false;
 export const metadata: Metadata = { title: "System" };
 
 const tables: { label: string; name: string; table: PgTable }[] = [
+  { label: "Aufträge", name: "assignments", table: assignments },
+  { label: "Vakanzen", name: "mandates", table: mandates },
+  { label: "Verträge", name: "contracts", table: contracts },
+  { label: "Textbausteine", name: "snippets", table: snippets },
   { label: "Firmen", name: "companies", table: companies },
   { label: "Kontakte", name: "contacts", table: contacts },
-  { label: "Kandidaten", name: "candidates", table: candidates },
-  { label: "Mandate", name: "mandates", table: mandates },
-  { label: "Vorschläge", name: "submissions", table: submissions },
-  { label: "Verträge", name: "contracts", table: contracts },
   { label: "Dokumente", name: "documents", table: documents },
   { label: "Verlauf", name: "activities", table: activities },
-  { label: "Portal-Konten", name: "candidate_accounts", table: candidateAccounts },
-  { label: "Portal-Sitzungen", name: "candidate_sessions", table: candidateSessions },
-  { label: "Änderungsanträge", name: "change_requests", table: changeRequests },
-  { label: "Vakanz-Freigaben", name: "vacancy_shares", table: vacancyShares },
-  { label: "Audit-Log", name: "audit_log", table: auditLog },
+  { label: "Protokoll", name: "audit_log", table: auditLog },
   { label: "Admin-Sitzungen", name: "sessions", table: sessions },
   { label: "Anmeldeversuche", name: "login_attempts", table: loginAttempts },
   { label: "Einstellungen", name: "settings", table: settings },
@@ -54,12 +50,13 @@ const tables: { label: string; name: string; table: PgTable }[] = [
 
 async function systemInfo() {
   const db = await getDb();
-  const [applied, counts, version, size, stored] = await Promise.all([
+  const [applied, counts, version, size, stored, dormant] = await Promise.all([
     db.execute<{ id: string; applied_at: Date }>(sql`select id, applied_at from admin_migrations order by id`),
     Promise.all(tables.map(async (t) => ({ ...t, rows: (await db.select({ n: count() }).from(t.table))[0]?.n ?? 0 }))),
     db.execute<{ server_version: string }>(sql`show server_version`),
     db.execute<{ size: string }>(sql`select pg_size_pretty(pg_database_size(current_database())) as size`),
     db.select({ key: settings.key, updatedAt: settings.updatedAt }).from(settings).orderBy(settings.key),
+    dormantCandidateData(),
   ]);
   return {
     applied: applied.rows,
@@ -67,15 +64,19 @@ async function systemInfo() {
     postgres: version.rows[0]?.server_version.split(" ")[0] ?? "–",
     size: size.rows[0]?.size ?? "–",
     settings: stored,
+    dormant,
   };
 }
 
 const settingLabels: Record<string, string> = {
-  rechner_defaults: "Eigene Werte des Lohnrechners",
+  rechner_defaults: "Werte des früheren Lohnrechners (nicht mehr verwendet)",
+  einkommen: "Ansätze für Einkommen und Kosten",
+  admin_totp_last_step: "Zuletzt verwendeter Zwei-Faktor-Code (Schutz vor Wiederverwendung)",
 };
 
-export default async function SystemPage() {
+export default async function SystemPage({ searchParams }: PageProps<"/admin/einstellungen/system">) {
   await requireAdmin();
+  const deletedCandidates = param((await searchParams).kandidaten) === "geloescht";
   const info = await systemInfo();
   const appliedIds = new Set(info.applied.map((m) => m.id));
   const pending = migrations.filter((m) => !appliedIds.has(m.id));
@@ -137,6 +138,37 @@ export default async function SystemPage() {
           </ul>
         </Card>
       </div>
+
+      {info.dormant ? (
+        <Notice tone="neutral" icon={Archive} title="Alte Daten des Kandidatenmoduls" className="mt-6">
+          <p>
+            {info.dormant.candidates
+              ? `Die Datenbank enthält noch ${info.dormant.candidates === 1 ? "1 Kandidatenprofil" : `${info.dormant.candidates} Kandidatenprofile`}${
+                  info.dormant.documents ? ` mit ${info.dormant.documents === 1 ? "1 Dokument" : `${info.dormant.documents} Dokumenten`}` : ""
+                } aus der früheren Version.`
+              : "Die leeren Tabellen des früheren Kandidatenmoduls sind noch da."}{" "}
+            Der Admin-Bereich verwendet sie nicht mehr. Sie bleiben, bis du sie hier löschst.
+          </p>
+          <p className="mt-2">
+            Beim Löschen gehen die Profile mit ihren Dokumenten, Vorschlägen und Portal-Zugängen verloren, danach werden die Tabellen entfernt. Verträge, Vakanzen
+            und Firmen bleiben.
+          </p>
+          <div className="mt-3">
+            <ActionButton
+              action={deleteDormantCandidates}
+              confirm="Alle alten Kandidatenprofile mit ihren Dokumenten endgültig löschen und die Tabellen entfernen? Das lässt sich nicht rückgängig machen."
+              variant="danger"
+              icon={<Trash2 aria-hidden className="size-4" />}
+            >
+              Alte Kandidatendaten endgültig löschen
+            </ActionButton>
+          </div>
+        </Notice>
+      ) : deletedCandidates ? (
+        <Notice tone="green" icon={CheckCircle2} className="mt-6">
+          Die alten Kandidatendaten und ihre Tabellen sind gelöscht.
+        </Notice>
+      ) : null}
 
       <div className="mt-6 grid items-start gap-6 lg:grid-cols-2">
         <Card>

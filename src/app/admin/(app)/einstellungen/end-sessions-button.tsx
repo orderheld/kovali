@@ -16,8 +16,9 @@ export function EndSessionsButton({ action, count }: { action: () => Promise<voi
       disabled={pending}
       className={buttonClass("danger", "md")}
       onClick={() => {
-        const others = count > 1 ? ` und ${count - 1} ${count - 1 === 1 ? "weitere Sitzung" : "weitere Sitzungen"}` : "";
-        if (!window.confirm(`Alle Sitzungen beenden?\n\nDu wirst auf diesem Gerät${others} abgemeldet und musst dich neu anmelden.`)) return;
+        const which =
+          count > 1 ? `Diese und ${count - 1} ${count - 1 === 1 ? "weitere Sitzung wird" : "weitere Sitzungen werden"} beendet.` : "Diese Sitzung wird beendet.";
+        if (!window.confirm(`Alle Sitzungen beenden?\n\n${which} Du musst dich danach neu anmelden.`)) return;
         start(async () => {
           await action();
           window.location.replace("/admin/login");

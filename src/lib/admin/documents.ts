@@ -1,14 +1,12 @@
 import "server-only";
 import { eq } from "drizzle-orm";
-import { decryptBlob, decryptText, encryptBlob, encryptText, sha256 } from "./crypto";
+import { decryptBlob, encryptBlob, sha256 } from "./crypto";
 import { getDb } from "./db/client";
-import { candidates, documents } from "./db/schema";
-import { normalizeSkills, detectSkills } from "./skills";
+import { documents } from "./db/schema";
 
 /**
- * Encrypted document storage (CVs, certificates, signed contracts). Files are encrypted with
- * AES-256-GCM before they reach the database; text extracted from CVs is encrypted as well.
- * Only the detected skill keywords are stored in plain text, for matching.
+ * Encrypted document storage (postings, applications, signed contracts, reports, payslips).
+ * Files are encrypted with AES-256-GCM before they reach the database.
  */
 
 /** Largest accepted file. Vercel accepts request bodies up to 4.5 MB. */
@@ -53,97 +51,45 @@ export function safeFilename(name: string, kind: FileKind): string {
   return `${withoutExt}.${ext}`;
 }
 
+/** "PDF-, DOCX-, PNG- und JPG" or "PDF": the file kinds in German, before "-Dateien". */
+export function kindList(kinds: readonly FileKind[]): string {
+  const names = kinds.map((k) => (k === "jpeg" ? "JPG" : k.toUpperCase()));
+  if (names.length <= 1) return names.join("");
+  return `${names
+    .slice(0, -1)
+    .map((n) => `${n}-`)
+    .join(", ")} und ${names.at(-1)}`;
+}
+
 export async function checkUpload(value: FormDataEntryValue | null, allowed: FileKind[] = ["pdf", "docx", "png", "jpeg"]): Promise<UploadCheck> {
   if (!(value instanceof File) || value.size === 0) return { ok: false, error: "Bitte eine Datei auswählen.", empty: true };
   if (value.size > DOCUMENT_MAX_BYTES) return { ok: false, error: `Die Datei ist grösser als ${DOCUMENT_MAX_LABEL}.` };
   const content = Buffer.from(await value.arrayBuffer());
   const kind = sniffKind(content);
   if (!kind || !allowed.includes(kind)) {
-    const names = allowed.map((k) => (k === "jpeg" ? "JPG" : k.toUpperCase())).join(", ");
-    return { ok: false, error: `Erlaubt sind nur ${names}-Dateien.` };
+    return { ok: false, error: `Erlaubt sind nur ${kindList(allowed)}-Dateien.` };
   }
   return { ok: true, content, kind, mimeType: MIME[kind], filename: safeFilename(value.name, kind) };
 }
 
-/** Plain text of a PDF or Word file, for keyword detection. Never throws. */
-export async function extractText(content: Buffer, kind: FileKind): Promise<string | null> {
-  try {
-    if (kind === "pdf") {
-      const { extractText: pdfText, getDocumentProxy } = await import("unpdf");
-      const pdf = await getDocumentProxy(new Uint8Array(content));
-      const { text } = await pdfText(pdf, { mergePages: true });
-      return text.slice(0, 200_000);
-    }
-    if (kind === "docx") {
-      const mammoth = await import("mammoth");
-      const { value } = await mammoth.extractRawText({ buffer: content });
-      return value.slice(0, 200_000);
-    }
-  } catch (error) {
-    console.warn(JSON.stringify({ event: "admin.text_extraction_failed", kind, error: String(error).slice(0, 200) }));
-  }
-  return null;
-}
+/** Exactly one owner per document (database constraint documents_owner). */
+export type DocumentOwner = { companyId: number } | { mandateId: number } | { contractId: number } | { assignmentId: number };
 
-export type DocumentOwner =
-  | { candidateId: number }
-  | { companyId: number }
-  | { mandateId: number }
-  | { contractId: number };
-
-export async function storeDocument(input: {
-  owner: DocumentOwner;
-  kind: string;
-  file: Extract<UploadCheck, { ok: true }>;
-  uploadedBy?: "admin" | "kandidat";
-}): Promise<{ id: number; detectedSkills: string[] }> {
+export async function storeDocument(input: { owner: DocumentOwner; kind: string; file: Extract<UploadCheck, { ok: true }> }): Promise<{ id: number }> {
   const db = await getDb();
-  const text = input.kind === "cv" ? await extractText(input.file.content, input.file.kind) : null;
-  const confirmed = (input.uploadedBy ?? "admin") === "admin";
   const [row] = await db
     .insert(documents)
     .values({
-      ...("candidateId" in input.owner ? { candidateId: input.owner.candidateId } : {}),
-      ...("companyId" in input.owner ? { companyId: input.owner.companyId } : {}),
-      ...("mandateId" in input.owner ? { mandateId: input.owner.mandateId } : {}),
-      ...("contractId" in input.owner ? { contractId: input.owner.contractId } : {}),
+      ...input.owner,
       kind: input.kind,
       filename: input.file.filename,
       mimeType: input.file.mimeType,
       sizeBytes: input.file.content.length,
       sha256: sha256(input.file.content),
-      uploadedBy: input.uploadedBy ?? "admin",
-      confirmedAt: confirmed ? new Date() : null,
       content: encryptBlob(input.file.content),
-      textContent: text ? encryptText(text) : null,
     })
     .returning({ id: documents.id });
-  const detected = text ? detectSkills(text) : [];
-  if (confirmed && detected.length && "candidateId" in input.owner) {
-    await refreshDetectedSkills(input.owner.candidateId);
-  }
-  return { id: row.id, detectedSkills: detected };
-}
-
-/** Recomputes a candidate's CV keywords from all confirmed CVs. */
-export async function refreshDetectedSkills(candidateId: number): Promise<string[]> {
-  const db = await getDb();
-  const rows = await db
-    .select({ text: documents.textContent, kind: documents.kind, confirmedAt: documents.confirmedAt })
-    .from(documents)
-    .where(eq(documents.candidateId, candidateId));
-  const found: string[] = [];
-  for (const r of rows) {
-    if (r.kind !== "cv" || !r.text || !r.confirmedAt) continue;
-    try {
-      found.push(...detectSkills(decryptText(r.text)));
-    } catch {
-      // An unreadable entry must not block the others.
-    }
-  }
-  const detected = normalizeSkills(found);
-  await db.update(candidates).set({ detectedSkills: detected }).where(eq(candidates.id, candidateId));
-  return detected;
+  return { id: row.id };
 }
 
 /** Loads and decrypts a document. The caller checks authorisation and writes the audit entry. */
@@ -161,13 +107,11 @@ export const documentListColumns = {
   filename: documents.filename,
   mimeType: documents.mimeType,
   sizeBytes: documents.sizeBytes,
-  uploadedBy: documents.uploadedBy,
-  confirmedAt: documents.confirmedAt,
   createdAt: documents.createdAt,
-  candidateId: documents.candidateId,
   companyId: documents.companyId,
   mandateId: documents.mandateId,
   contractId: documents.contractId,
+  assignmentId: documents.assignmentId,
 };
 
 /** Response headers for sending a decrypted document to the browser. */

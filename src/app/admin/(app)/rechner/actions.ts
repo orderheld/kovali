@@ -6,32 +6,36 @@ import { audit } from "@/lib/admin/audit";
 import { requireAdmin } from "@/lib/admin/auth/session";
 import { getDb } from "@/lib/admin/db/client";
 import { settings } from "@/lib/admin/db/schema";
+import { earningsFallback } from "@/lib/admin/data/earnings";
+import { EARNINGS_SETTINGS_KEY, earningsFormSchema, settingsFromForm } from "@/lib/admin/earnings-settings";
 import { ok, parseForm, type ActionState } from "@/lib/admin/forms";
-import { CALCULATOR_SETTINGS_KEY } from "./defaults";
-import { calculatorFormSchema, toDefaults } from "./schema";
+import { redirectAfterChange } from "@/lib/admin/redirect";
 
-/** Stores the current rates and scenario as Ferhat's own defaults. */
-export async function saveCalculatorDefaults(_prev: ActionState, formData: FormData): Promise<ActionState> {
+/** Stores Ferhat's assumptions (settings "einkommen"); assignments and the dashboard use them. */
+export async function saveEarningsSettings(_prev: ActionState, formData: FormData): Promise<ActionState> {
   await requireAdmin();
-  const parsed = parseForm(calculatorFormSchema, formData);
+  const parsed = parseForm(earningsFormSchema, formData);
   if (!parsed.ok) return parsed.state;
-  const value = { ...toDefaults(parsed.data), savedAt: new Date().toISOString() };
+  const value = { ...settingsFromForm(parsed.data, earningsFallback()), savedAt: new Date().toISOString() };
   const db = await getDb();
   await db
     .insert(settings)
-    .values({ key: CALCULATOR_SETTINGS_KEY, value })
+    .values({ key: EARNINGS_SETTINGS_KEY, value })
     .onConflictDoUpdate({ target: settings.key, set: { value, updatedAt: new Date() } });
-  await audit("update", { entity: "settings", summary: "Rechner: eigene Standardwerte gespeichert" });
+  await audit("update", { entity: "settings", summary: "Rechner: Annahmen gespeichert" });
   refresh();
-  return ok("Als deine Standardwerte gespeichert.");
+  return ok("Gespeichert. Aufträge und Übersicht rechnen ab jetzt mit diesen Werten.");
 }
 
-/** Removes Ferhat's own defaults; the calculator then starts with the official values. */
-export async function clearCalculatorDefaults(): Promise<ActionState> {
+/**
+ * Removes the saved assumptions; everything uses the researched defaults again. The redirect
+ * carries a new value of ?zurueckgesetzt=, so the page remounts the form with the defaults (a
+ * save keeps the form and its success message).
+ */
+export async function clearEarningsSettings(): Promise<ActionState> {
   await requireAdmin();
   const db = await getDb();
-  await db.delete(settings).where(eq(settings.key, CALCULATOR_SETTINGS_KEY));
-  await audit("update", { entity: "settings", summary: "Rechner: eigene Standardwerte entfernt" });
-  refresh();
-  return ok("Eigene Standardwerte entfernt. Es gelten wieder die amtlichen Werte.");
+  await db.delete(settings).where(eq(settings.key, EARNINGS_SETTINGS_KEY));
+  await audit("update", { entity: "settings", summary: "Rechner: Annahmen zurückgesetzt" });
+  redirectAfterChange(`/admin/rechner?ansicht=annahmen&zurueckgesetzt=${Date.now()}`);
 }

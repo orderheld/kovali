@@ -1,14 +1,15 @@
 import "server-only";
 import { sql } from "drizzle-orm";
-import { getDb } from "../db/client";
+import { getDb, type AdminDb } from "../db/client";
 
 /**
  * Remembers the last accepted TOTP step, so a code that was seen (shoulder, screen sharing,
  * a proxy log) cannot be used a second time. The update is atomic across server instances.
+ * `db` may be a transaction (the login checks the code inside one).
  */
-export async function claimTotpStep(step: number): Promise<boolean> {
-  const db = await getDb();
-  const result = await db.execute(sql`
+export async function claimTotpStep(step: number, db?: Pick<AdminDb, "execute">): Promise<boolean> {
+  const executor = db ?? (await getDb());
+  const result = await executor.execute(sql`
     insert into settings (key, value) values ('admin_totp_last_step', ${JSON.stringify(step)}::jsonb)
     on conflict (key) do update set value = excluded.value, updated_at = now()
     where (settings.value #>> '{}')::bigint < (excluded.value #>> '{}')::bigint

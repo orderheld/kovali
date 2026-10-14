@@ -4,7 +4,7 @@ import type { AuditAction } from "@/lib/admin/audit";
 import { getDb } from "@/lib/admin/db/client";
 import { auditLog } from "@/lib/admin/db/schema";
 
-/** Audit log queries shared by Einstellungen > Audit-Log and Datenschutz > Löschprotokoll. */
+/** Audit log queries for Einstellungen > Protokoll and Sicherheit. */
 
 export const AUDIT_PAGE_SIZE = 50;
 

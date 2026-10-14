@@ -1,8 +1,8 @@
 import { legalFormLabel, site } from "@/config/site";
 
 /**
- * KOVALI as contracting party, from src/config/site.ts. When the GmbH replaces the sole
- * proprietorship, contracts and dossiers pick up the new name, UID and register there.
+ * KOVALI (Ferhat's own firm), from src/config/site.ts. When the GmbH replaces the sole
+ * proprietorship, the admin picks up the new name, UID and register there.
  */
 export interface Party {
   name: string;
@@ -38,10 +38,7 @@ export function kovaliParty(): Party {
   };
 }
 
-/**
- * KOVALI is VAT-registered once it has a VAT number. Until then it cannot reclaim the VAT a
- * subcontractor charges, so margins count that VAT as cost (payroll.ts b2bMargin).
- */
+/** KOVALI is VAT-registered once it has a VAT number in site.ts; invoices then carry 8.1 % VAT on top. */
 export function kovaliVatRegistered(): boolean {
   return Boolean(kovaliParty().vatNumber);
 }

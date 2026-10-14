@@ -2,8 +2,16 @@
  * Ordered SQL migrations of the admin database. They run automatically before the first
  * database access of a server instance (see client.ts), guarded by an advisory lock, and are
  * recorded in admin_migrations. Never edit a migration that has shipped; add a new one.
+ *
+ * 0001 to 0003 still create the tables of the former candidate module; 0004 removes them again
+ * when they hold no candidate (see there).
  */
-export const migrations: { id: string; sql: string }[] = [
+export interface Migration {
+  id: string;
+  sql: string;
+}
+
+export const migrations: Migration[] = [
   {
     id: "0001_admin_base",
     sql: /* sql */ `
@@ -417,4 +425,138 @@ update contracts c
        );
 `,
   },
+  {
+    // The admin becomes Ferhat's personal tool: his assignments (Aufträge), reusable texts
+    // (Textbausteine), vacancies he applies for (table mandates) and a filing cabinet for his
+    // contracts. The candidate module goes. Its tables are dropped only when no candidate was
+    // ever stored; otherwise they stay untouched (dormant, unused by the code).
+    id: "0004_personal_admin",
+    sql: /* sql */ `
+create table assignments (
+  id               bigint generated always as identity primary key,
+  title            text not null,
+  company_id       bigint references companies (id) on delete set null,
+  contact_id       bigint references contacts (id) on delete set null,
+  mandate_id       bigint references mandates (id) on delete set null,
+  end_client       text,
+  status           text not null default 'laufend' check (status in ('geplant', 'laufend', 'beendet')),
+  start_date       date,
+  end_date         date,
+  workload         smallint not null default 100 check (workload between 1 and 100),
+  rate_amount      numeric(10, 2) check (rate_amount >= 0),
+  rate_unit        text not null default 'stunde' check (rate_unit in ('stunde', 'tag')),
+  billing          text not null default 'rechnung' check (billing in ('rechnung', 'lohn')),
+  rate_basis       text not null default 'brutto' check (rate_basis in ('brutto', 'kostensatz')),
+  hours_per_month  numeric(6, 2) check (hours_per_month > 0),
+  expenses_monthly numeric(10, 2) not null default 0 check (expenses_monthly >= 0),
+  location         text,
+  remote           text check (remote in ('vor_ort', 'hybrid', 'remote', 'offen')),
+  notes            text,
+  created_at       timestamptz not null default now(),
+  updated_at       timestamptz not null default now(),
+  constraint assignments_period check (end_date is null or start_date is null or end_date >= start_date)
+);
+create index assignments_status_idx on assignments (status);
+create index assignments_company_idx on assignments (company_id);
+
+create table snippets (
+  id         bigint generated always as identity primary key,
+  title      text not null,
+  category   text,
+  body       text not null,
+  company_id bigint references companies (id) on delete set null,
+  pinned     boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index snippets_company_idx on snippets (company_id);
+
+-- Vacancies: application fields; the portal columns go.
+alter table mandates
+  add column url text,
+  add column applied_at date,
+  add column application_text text,
+  drop column portal_visibility,
+  drop column portal_title,
+  drop column portal_description,
+  drop column portal_rate,
+  drop column portal_rate_unit;
+
+-- Contracts become a filing cabinet. "template" is the kind of contract from now on.
+alter table contracts
+  alter column template set default 'sonstiges',
+  add column assignment_id bigint references assignments (id) on delete set null,
+  add column notice_period text;
+create index contracts_assignment_idx on contracts (assignment_id);
+
+-- Assignments can own documents and notes.
+alter table documents add column assignment_id bigint references assignments (id) on delete cascade;
+alter table activities add column assignment_id bigint references assignments (id) on delete cascade;
+create index documents_assignment_idx on documents (assignment_id);
+create index activities_assignment_idx on activities (assignment_id);
+alter table documents drop constraint documents_kind_check;
+alter table documents add constraint documents_kind_check check (kind in (
+  'cv', 'zeugnis', 'diplom', 'zertifikat', 'vertrag', 'anforderung', 'einwilligung', 'sonstiges',
+  'ausschreibung', 'bewerbung', 'offerte', 'rapport', 'rechnung', 'lohnabrechnung', 'korrespondenz'));
+
+-- Candidate data goes only when no candidate was ever stored. Dropping a column also drops
+-- the owner constraints that name it; they are recreated below.
+do $$
+begin
+  if not exists (select 1 from candidates) then
+    drop table candidate_sessions;
+    drop table candidate_accounts;
+    drop table change_requests;
+    drop table vacancy_shares;
+    drop table submissions;
+    alter table contracts drop column candidate_id;
+    alter table documents drop column candidate_id;
+    alter table activities drop column candidate_id;
+    drop table candidates;
+    delete from login_attempts where scope = 'portal';
+  end if;
+end $$;
+
+-- Exactly one owner per document, at least one per history entry, now including assignments
+-- (and candidates while their dormant data is kept).
+do $$
+declare
+  t text;
+  owners text;
+begin
+  foreach t in array array['documents', 'activities'] loop
+    owners := 'company_id, mandate_id, contract_id, assignment_id';
+    if exists (
+      select 1 from information_schema.columns
+       where table_schema = current_schema() and table_name = t and column_name = 'candidate_id'
+    ) then
+      owners := 'candidate_id, ' || owners;
+    end if;
+    execute format('alter table %I drop constraint if exists %I', t, t || '_owner');
+    execute format(
+      'alter table %I add constraint %I check (num_nonnulls(%s) %s)',
+      t, t || '_owner', owners, case when t = 'documents' then '= 1' else '>= 1' end
+    );
+  end loop;
+end $$;
+`,
+  },
+  {
+    // Failed logins of two kinds: a wrong password, or the right password with a wrong code.
+    // Only the second kind locks the whole login (see auth/rate-limit.ts), because only someone
+    // who knows the password can cause it.
+    id: "0005_login_attempt_kind",
+    sql: /* sql */ `
+alter table login_attempts
+  add column kind text not null default 'password' check (kind in ('password', 'code'));
+create index login_attempts_kind_at_idx on login_attempts (scope, kind, at);
+`,
+  },
 ];
+
+/** The migrations up to and including `id`, in order (for tests of a database at that state). */
+export function migrationsThrough(id: string): Migration[] {
+  const index = migrations.findIndex((m) => m.id === id);
+  if (index === -1) throw new Error(`Unbekannte Migration: ${id}`);
+  return migrations.slice(0, index + 1);
+}

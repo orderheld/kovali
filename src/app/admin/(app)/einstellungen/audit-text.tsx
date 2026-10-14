@@ -1,6 +1,6 @@
 /**
  * Summary of an audit entry with the affected record below it, unless the summary already
- * names it ("Kandidat K-0042 anonymisiert").
+ * names it ("Auftrag A-0003: Status beendet").
  */
 export function AuditText({ summary, object }: { summary: string | null; object: string | null }) {
   const main = summary || object || "–";

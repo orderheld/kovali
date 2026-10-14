@@ -1,147 +1,111 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { AlertTriangle, Ban, Check, Copy, Eye, FileDown, FilePlus, Pencil, Scale, Send, Undo2 } from "lucide-react";
+import { Ban, CalendarClock, FilePlus, FileWarning, Flag, Mail, Pencil, Phone, Send, Undo2 } from "lucide-react";
+import { CopyButton } from "@/components/admin/copy-button";
 import { ActionButton, ActionForm, TextField } from "@/components/admin/form";
 import { Badge, Card, CardBody, CardHeader, DescriptionList, LinkButton, Mono, Notice, PageHeader } from "@/components/admin/ui";
 import { requireAdmin } from "@/lib/admin/auth/session";
-import { getContract, listChildren, loadContractContext, type ContractRow } from "@/lib/admin/contracts/data";
-import { buildContractDocument, contractIssues } from "@/lib/admin/contracts/document";
-import { getTemplate, templateName } from "@/lib/admin/contracts/templates";
+import { countContractDocuments, getContractDetail, listChildContracts, type ContractDetail } from "@/lib/admin/contracts/data";
+import { contractExpiry, expiryLabel, expiryTone } from "@/lib/admin/contracts/expiry";
+import { legacyContractEntries } from "@/lib/admin/contracts/legacy-data";
 import { parseId } from "@/lib/admin/forms";
-import { formatDate, formatDateTime, todayIso } from "@/lib/admin/format";
-import { contractStatuses, labelOf, toneOf } from "@/lib/admin/options";
-import { cn } from "@/lib/utils";
+import { displayNo, formatDate, formatDateTime, fullName, todayIso } from "@/lib/admin/format";
+import { assignmentStatuses, contractKinds, contractStatuses, labelOf, mandateStatuses, toneOf } from "@/lib/admin/options";
 import { ActivityFeed } from "../../_shared/activity-feed";
 import { DocumentsCard } from "../../_shared/documents-card";
-import { copyContract, endContract, markContract, signContract } from "../actions";
-import { DocPreview } from "../doc-preview";
+import { setContractStatus, signContract } from "../actions";
 
 /** Admin pages read the session and the database per request and may block. */
 export const instant = false;
 
 export const metadata: Metadata = { title: "Vertrag" };
 
-const steps = ["entwurf", "versendet", "unterzeichnet", "beendet"] as const;
+const linkClass = "text-blue hover:underline";
 
-function StatusSteps({ status }: { status: string }) {
-  const current = steps.indexOf(status as (typeof steps)[number]);
+function SignForm({ id }: { id: number }) {
+  const today = todayIso();
   return (
-    <ol className="flex flex-wrap items-center gap-x-1.5 gap-y-2 text-[0.8125rem]">
-      {steps.map((s, i) => {
-        const done = current >= 0 && i < current;
-        const active = i === current;
-        return (
-          <li key={s} className="flex items-center gap-1.5">
-            {i > 0 ? <span aria-hidden className={cn("h-px w-4", done || active ? "bg-blue" : "bg-line")} /> : null}
-            <span
-              aria-current={active ? "step" : undefined}
-              className={cn(
-                "inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-medium ring-1 ring-inset",
-                active ? "bg-blue text-white ring-blue" : done ? "bg-blue/10 text-blue-700 ring-blue/20" : "text-slate ring-line",
-              )}
-            >
-              {done ? <Check aria-hidden className="size-3" /> : null}
-              {labelOf(contractStatuses, s)}
-            </span>
-          </li>
-        );
-      })}
-    </ol>
+    <ActionForm action={signContract.bind(null, id)} submitLabel="Als unterzeichnet erfassen" className="space-y-3">
+      <TextField name="signedAt" type="date" label="Unterzeichnet am" required defaultValue={today} max={today} hint="Datum der letzten Unterschrift." />
+    </ActionForm>
   );
 }
 
-function StatusCard({ row, retentionMonths }: { row: ContractRow; retentionMonths: number | null }) {
-  const id = row.id;
-  const consent = row.template === "einwilligung";
-  const signForm = (
-    <ActionForm action={signContract.bind(null, id)} submitLabel={consent ? "Einwilligung erfassen" : "Als unterzeichnet erfassen"} className="space-y-3">
-      <TextField
-        name="date"
-        type="date"
-        label={consent ? "Erteilt am" : "Unterzeichnet am"}
-        required
-        defaultValue={todayIso()}
-        max={todayIso()}
-        hint={consent && retentionMonths ? `Gilt ab diesem Tag für höchstens ${retentionMonths} Monate.` : "Datum der letzten Unterschrift."}
-      />
-    </ActionForm>
-  );
+function StatusCard({ contract, files }: { contract: ContractDetail; files: number }) {
+  const { id, status } = contract;
   const cancel = (
     <ActionButton
-      action={markContract.bind(null, id, "storniert")}
-      confirm={`Vertrag ${row.number} stornieren? Er bleibt mit seiner Nummer erhalten.`}
+      action={setContractStatus.bind(null, id, "storniert")}
+      confirm={`Vertrag ${contract.number} als hinfällig markieren? Er bleibt mit Nummer und Dateien abgelegt.`}
       variant="ghost"
       icon={<Ban aria-hidden className="size-4" />}
     >
-      Stornieren
+      Hinfällig
     </ActionButton>
   );
   return (
     <Card>
-      <CardHeader title="Status" />
+      <CardHeader title="Status" actions={<Badge tone={toneOf(contractStatuses, status)}>{labelOf(contractStatuses, status)}</Badge>} />
       <CardBody className="space-y-4">
-        {row.status === "storniert" ? <Badge tone="red">Storniert</Badge> : <StatusSteps status={row.status} />}
-        {row.status === "entwurf" ? (
+        {status === "entwurf" ? (
           <>
-            <p className="text-sm text-slate">Prüfe den Entwurf, lade das PDF herunter und sende es zur Unterschrift.</p>
+            <p className="text-sm text-slate">Du prüfst den Vertrag noch. Hast du ihn unterschrieben verschickt, markiere ihn als «Zur Unterschrift».</p>
             <div className="flex flex-wrap gap-2">
-              <ActionButton action={markContract.bind(null, id, "versendet")} icon={<Send aria-hidden className="size-4" />}>
-                Als versendet markieren
+              <ActionButton action={setContractStatus.bind(null, id, "versendet")} icon={<Send aria-hidden className="size-4" />}>
+                Zur Unterschrift
               </ActionButton>
               {cancel}
             </div>
-            <div className="border-t border-line pt-4">{signForm}</div>
+            <div className="border-t border-line pt-4">
+              <SignForm id={id} />
+            </div>
           </>
         ) : null}
-        {row.status === "versendet" ? (
+        {status === "versendet" ? (
           <>
-            {signForm}
+            <p className="text-sm text-slate">Der Vertrag wartet auf die letzte Unterschrift. Sobald er zurück ist, hier erfassen und die Datei unten ablegen.</p>
+            <SignForm id={id} />
             <div className="flex flex-wrap gap-2 border-t border-line pt-4">
-              <ActionButton action={markContract.bind(null, id, "entwurf")} variant="ghost" icon={<Undo2 aria-hidden className="size-4" />}>
-                Zurück auf Entwurf
+              <ActionButton action={setContractStatus.bind(null, id, "entwurf")} variant="ghost" icon={<Undo2 aria-hidden className="size-4" />}>
+                Zurück in Prüfung
               </ActionButton>
               {cancel}
             </div>
           </>
         ) : null}
-        {row.status === "unterzeichnet" ? (
+        {status === "unterzeichnet" ? (
           <>
             <p className="text-sm text-slate">
-              {consent ? "Erteilt" : "Unterzeichnet"} am {formatDate(row.signedAt)}
-              {row.validUntil ? `, gültig bis ${formatDate(row.validUntil)}` : ""}.
+              {contract.signedAt ? `Unterzeichnet am ${formatDate(contract.signedAt)}` : "Unterzeichnet"}
+              {contract.validUntil ? `, gültig bis ${formatDate(contract.validUntil)}.` : ", unbefristet."}
             </p>
-            <details className="group border-t border-line pt-3">
-              <summary className="cursor-pointer text-sm font-medium text-blue hover:underline">
-                {consent ? "Widerruf oder Ablauf erfassen" : "Beendigung erfassen"}
-              </summary>
-              <ActionForm action={endContract.bind(null, id)} submitLabel={consent ? "Als widerrufen oder abgelaufen erfassen" : "Als beendet erfassen"} className="mt-3 space-y-3">
-                <TextField
-                  name="date"
-                  type="date"
-                  label={consent ? "Widerrufen oder abgelaufen am" : "Beendet per"}
-                  required
-                  defaultValue={row.validUntil && row.validUntil <= todayIso() ? row.validUntil : todayIso()}
-                  hint={consent ? undefined : "Letzter Tag des Vertrags, z. B. nach einer Kündigung."}
-                />
-              </ActionForm>
-            </details>
+            {!files ? (
+              <Notice tone="amber" icon={FileWarning}>
+                Die unterzeichnete Fassung fehlt noch. Lade sie unter «Dateien» hoch.
+              </Notice>
+            ) : null}
+            <ActionButton
+              action={setContractStatus.bind(null, id, "beendet")}
+              confirm={`Vertrag ${contract.number} als beendet markieren?`}
+              icon={<Flag aria-hidden className="size-4" />}
+            >
+              Als beendet markieren
+            </ActionButton>
           </>
         ) : null}
-        {row.status === "beendet" ? (
+        {status === "beendet" ? (
           <p className="text-sm text-slate">
-            Unterzeichnet am {formatDate(row.signedAt)}, beendet per {formatDate(row.validUntil)}.
+            Der Vertrag ist beendet{contract.validUntil ? ` (gültig bis ${formatDate(contract.validUntil)})` : ""}. Eine Verlängerung legst du als neuen Vertrag ab.
           </p>
         ) : null}
-        {row.status === "storniert" ? (
-          <div className="space-y-3">
-            <p className="text-sm text-slate">Der Vertrag wurde storniert und gilt nicht.</p>
-            {!row.signedAt ? (
-              <ActionButton action={markContract.bind(null, id, "entwurf")} icon={<Undo2 aria-hidden className="size-4" />}>
-                Wieder als Entwurf öffnen
-              </ActionButton>
-            ) : null}
-          </div>
+        {status === "storniert" ? (
+          <>
+            <p className="text-sm text-slate">Der Vertrag ist hinfällig und gilt nicht.</p>
+            <ActionButton action={setContractStatus.bind(null, id, "entwurf")} icon={<Undo2 aria-hidden className="size-4" />}>
+              Wieder in Prüfung
+            </ActionButton>
+          </>
         ) : null}
       </CardBody>
     </Card>
@@ -152,212 +116,238 @@ export default async function ContractPage({ params }: PageProps<"/admin/vertrae
   await requireAdmin();
   const id = parseId((await params).id);
   if (!id) notFound();
-  const row = await getContract(id);
-  if (!row) notFound();
-
-  const template = getTemplate(row.template);
-  const [ctx, children] = await Promise.all([loadContractContext(row), row.template === "rahmenvertrag" ? listChildren(id) : Promise.resolve([])]);
-  const doc = template ? buildContractDocument(row, ctx) : null;
-  const issues = template && (row.status === "entwurf" || row.status === "versendet") ? contractIssues(row, ctx) : [];
+  const contract = await getContractDetail(id);
+  if (!contract) notFound();
+  const [children, files] = await Promise.all([listChildContracts(id), countContractDocuments(id)]);
+  const today = todayIso();
+  const expiry = contractExpiry(contract, today);
+  const isFramework = contract.template === "rahmenvertrag";
   const owner = { type: "contract" as const, id };
-  const label = (key: "company" | "contact" | "candidate" | "mandate", fallback: string) => template?.labels[key] ?? fallback;
-  const retention = row.template === "einwilligung" ? Number((row.data as Record<string, unknown>).retentionMonths) || null : null;
-  const pdfHref = `/admin/api/vertraege/${id}?format=pdf`;
-  const docxHref = `/admin/api/vertraege/${id}?format=docx`;
+  // Contracts generated from the former templates kept their entries in `data`; the text itself
+  // was rendered on request and is not stored. Shown read-only until the signed file is filed.
+  const legacyData = legacyContractEntries(contract.data);
 
   const details: { label: string; value: React.ReactNode; wide?: boolean }[] = [
-    { label: "Vorlage", value: templateName(row.template) },
-    { label: "Nummer", value: <Mono className="text-sm text-ink">{row.number}</Mono> },
+    { label: "Art", value: labelOf(contractKinds, contract.template) },
+    {
+      label: "Nummer",
+      value: (
+        <span className="inline-flex items-center gap-2">
+          <Mono className="text-sm text-ink">{contract.number}</Mono>
+          <CopyButton value={contract.number} label="Vertragsnummer kopieren" iconOnly variant="ghost" className="h-6 w-6" />
+        </span>
+      ),
+    },
+    {
+      label: "Firma",
+      value: contract.company ? (
+        <>
+          <Link href={`/admin/firmen/${contract.company.id}`} className={linkClass}>
+            {contract.company.name}
+          </Link>
+          {contract.company.legalName && contract.company.legalName !== contract.company.name ? (
+            <span className="block text-xs text-slate">{contract.company.legalName}</span>
+          ) : null}
+        </>
+      ) : (
+        "–"
+      ),
+    },
+    {
+      label: "Kontakt",
+      value: contract.contact ? (
+        <>
+          {fullName(contract.contact)}
+          {contract.contact.role ? <span className="text-slate">, {contract.contact.role}</span> : null}
+          <span className="mt-0.5 flex flex-wrap gap-x-3 text-[0.8125rem]">
+            {contract.contact.email ? (
+              <a href={`mailto:${contract.contact.email}`} className={`inline-flex items-center gap-1 ${linkClass}`}>
+                <Mail aria-hidden className="size-3.5" />
+                {contract.contact.email}
+              </a>
+            ) : null}
+            {contract.contact.phone ? (
+              <a href={`tel:${contract.contact.phone.replace(/\s/g, "")}`} className={`inline-flex items-center gap-1 ${linkClass}`}>
+                <Phone aria-hidden className="size-3.5" />
+                {contract.contact.phone}
+              </a>
+            ) : null}
+          </span>
+        </>
+      ) : (
+        "–"
+      ),
+    },
+    {
+      label: "Auftrag",
+      value: contract.assignment ? (
+        <>
+          <Link href={`/admin/auftraege/${contract.assignment.id}`} className={linkClass}>
+            {displayNo.assignment(contract.assignment.id)} {contract.assignment.title}
+          </Link>
+          <span className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-slate">
+            <Badge tone={toneOf(assignmentStatuses, contract.assignment.status)}>{labelOf(assignmentStatuses, contract.assignment.status)}</Badge>
+            {contract.assignment.endClient ? `Endkunde ${contract.assignment.endClient}` : null}
+          </span>
+        </>
+      ) : (
+        "–"
+      ),
+    },
   ];
-  if (ctx.parent) {
+  if (!isFramework || contract.parent) {
     details.push({
       label: "Rahmenvertrag",
-      value: (
-        <Link href={`/admin/vertraege/${ctx.parent.id}`} className="text-blue hover:underline">
-          {ctx.parent.number}
+      value: contract.parent ? (
+        <Link href={`/admin/vertraege/${contract.parent.id}`} className={linkClass}>
+          {contract.parent.number} {contract.parent.title}
         </Link>
+      ) : (
+        "–"
       ),
     });
   }
-  if (ctx.company) {
+  if (contract.mandate) {
     details.push({
-      label: label("company", "Firma"),
+      label: "Vakanz",
       value: (
-        <Link href={`/admin/firmen/${ctx.company.id}`} className="text-blue hover:underline">
-          {ctx.company.legalName || ctx.company.name}
-        </Link>
+        <>
+          <Link href={`/admin/vakanzen/${contract.mandate.id}`} className={linkClass}>
+            {displayNo.mandate(contract.mandate.id)} {contract.mandate.title}
+          </Link>{" "}
+          <Badge tone={toneOf(mandateStatuses, contract.mandate.status)}>{labelOf(mandateStatuses, contract.mandate.status)}</Badge>
+        </>
       ),
     });
   }
-  if (ctx.contact) details.push({ label: label("contact", "Kontakt"), value: [ctx.contact.name, ctx.contact.role].filter(Boolean).join(", ") });
-  if (ctx.candidate) {
-    details.push({
-      label: label("candidate", "Fachperson"),
+  details.push(
+    { label: "Gültig ab", value: formatDate(contract.validFrom) },
+    {
+      label: "Gültig bis",
       value: (
-        <Link href={`/admin/kandidaten/${ctx.candidate.id}`} className="text-blue hover:underline">
-          {ctx.candidate.firstName} {ctx.candidate.lastName}
-        </Link>
+        <>
+          {contract.validUntil ? formatDate(contract.validUntil) : "unbefristet"}
+          {expiry ? (
+            <Badge tone={expiryTone(expiry)} className="ml-2">
+              {expiryLabel(expiry)}
+            </Badge>
+          ) : null}
+        </>
       ),
-    });
-  }
-  if (ctx.mandate) {
-    details.push({
-      label: label("mandate", "Mandat"),
-      value: (
-        <Link href={`/admin/mandate/${ctx.mandate.id}`} className="text-blue hover:underline">
-          {ctx.mandate.ref} {ctx.mandate.title}
-        </Link>
-      ),
-    });
-  }
-  if (template?.dates.validFrom || row.validFrom) details.push({ label: template?.dates.validFrom?.replace(/ \(optional\)$/, "") ?? "Gültig ab", value: formatDate(row.validFrom) });
-  if (template?.dates.validUntil || row.validUntil) {
-    details.push({ label: template?.dates.validUntil?.replace(/ \(optional\)$/, "") ?? "Gültig bis", value: row.validUntil ? formatDate(row.validUntil) : "offen" });
-  }
-  details.push({ label: row.template === "einwilligung" ? "Erteilt am" : "Unterzeichnet am", value: formatDate(row.signedAt) });
-  details.push({ label: "Zuletzt geändert", value: formatDateTime(row.updatedAt) });
-  if (row.notes) details.push({ label: "Interne Notizen", value: <span className="whitespace-pre-line">{row.notes}</span>, wide: true });
+    },
+    { label: "Unterzeichnet am", value: formatDate(contract.signedAt) },
+    { label: "Kündigungsfrist", value: contract.noticePeriod ?? "–" },
+    { label: "Notizen", value: contract.notes ? <span className="whitespace-pre-line">{contract.notes}</span> : "–", wide: true },
+  );
 
   return (
     <>
       <PageHeader
-        title={row.title}
-        crumbs={[{ label: "Verträge", href: "/admin/vertraege" }, { label: row.number }]}
+        title={contract.title}
+        crumbs={[{ label: "Verträge", href: "/admin/vertraege" }, { label: contract.number }]}
         meta={
           <>
-            <Badge tone={toneOf(contractStatuses, row.status)}>{labelOf(contractStatuses, row.status)}</Badge>
-            <Badge>{templateName(row.template)}</Badge>
-            <Mono>{row.number}</Mono>
+            <Badge tone={toneOf(contractStatuses, contract.status)}>{labelOf(contractStatuses, contract.status)}</Badge>
+            <Badge>{labelOf(contractKinds, contract.template)}</Badge>
+            <Mono>{contract.number}</Mono>
+            {expiry ? <Badge tone={expiryTone(expiry)}>{expiryLabel(expiry)}</Badge> : null}
           </>
         }
         actions={
-          <>
-            {doc ? (
-              <>
-                <LinkButton href={pdfHref} icon={FileDown} variant={row.status === "entwurf" ? "secondary" : "primary"}>
-                  PDF
-                </LinkButton>
-                <LinkButton href={docxHref} icon={FileDown}>
-                  Word
-                </LinkButton>
-              </>
-            ) : null}
-            {row.status === "entwurf" ? (
-              <LinkButton href={`/admin/vertraege/${id}/bearbeiten`} variant="primary" icon={Pencil}>
-                Bearbeiten
-              </LinkButton>
-            ) : (
-              <ActionButton
-                action={copyContract.bind(null, id)}
-                size="md"
-                confirm={`Vertrag ${row.number} als neuen Entwurf mit neuer Nummer kopieren?`}
-                icon={<Copy aria-hidden className="size-4" />}
-              >
-                Als neuen Entwurf kopieren
-              </ActionButton>
-            )}
-          </>
+          <LinkButton href={`/admin/vertraege/${id}/bearbeiten`} variant="primary" icon={Pencil}>
+            Bearbeiten
+          </LinkButton>
         }
       />
 
+      {expiry?.state === "ending" ? (
+        <Notice tone={expiryTone(expiry)} icon={CalendarClock} className="mb-6">
+          Der Vertrag {expiryLabel(expiry)} ({formatDate(contract.validUntil)}).
+          {contract.noticePeriod ? ` Kündigungsfrist: ${contract.noticePeriod}.` : " Prüfe, ob er verlängert wird."}
+        </Notice>
+      ) : expiry?.state === "expired" ? (
+        <Notice tone="neutral" icon={CalendarClock} className="mb-6">
+          Die Laufzeit ist am {formatDate(contract.validUntil)} abgelaufen. Wenn der Vertrag nicht verlängert wurde, markiere ihn als beendet.
+        </Notice>
+      ) : null}
+      {legacyData.length && !files ? (
+        <Notice tone="amber" icon={FileWarning} title="Mit der früheren Vorlage erstellt" className="mb-6">
+          <p>Die Datei ist nicht abgelegt. Lade die unterschriebene Fassung unter «Dateien» hoch.</p>
+          <details className="mt-2">
+            <summary className="cursor-pointer font-medium select-none">Angaben aus der Vorlage ({legacyData.length})</summary>
+            <dl className="mt-2 grid gap-x-4 gap-y-1 sm:grid-cols-[minmax(0,12rem)_minmax(0,1fr)]">
+              {legacyData.map((entry) => (
+                <div key={entry.key} className="contents">
+                  <dt className="text-amber-900/80">{entry.label}</dt>
+                  <dd className="break-words whitespace-pre-line">{entry.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </details>
+        </Notice>
+      ) : null}
+
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_26rem]">
         <div className="min-w-0 space-y-6">
-          <Notice tone="neutral" icon={Scale}>
-            Vorlage, keine Rechtsberatung. Vor dem ersten Einsatz einmal von einer Anwältin oder einem Anwalt prüfen lassen.
-          </Notice>
-          {issues.length ? (
-            <Notice tone="amber" icon={AlertTriangle} title="Vor dem Versand ergänzen">
-              <ul className="mt-1 list-disc space-y-0.5 pl-4">
-                {issues.map((issue) => (
-                  <li key={issue}>{issue}</li>
-                ))}
-              </ul>
-              {row.status === "entwurf" ? (
-                <p className="mt-2">
-                  Fehlende Angaben bei Firmen und Personen ergänzen oder den{" "}
-                  <Link href={`/admin/vertraege/${id}/bearbeiten`} className="font-medium underline">
-                    Entwurf bearbeiten
-                  </Link>
-                  . Im Dokument stehen sie als «[bitte ergänzen]».
-                </p>
-              ) : null}
-            </Notice>
-          ) : null}
           <Card>
-            <CardHeader
-              title="Vorschau"
-              description="So steht der Vertrag im PDF und im Word-Dokument."
-              actions={
-                doc ? (
-                  <LinkButton href={`${pdfHref}&ansicht=1`} size="sm" icon={Eye} target="_blank">
-                    PDF ansehen
-                  </LinkButton>
-                ) : null
-              }
-            />
-            <div className="bg-mist/60 p-3 sm:p-6">
-              {doc ? (
-                <div className="mx-auto max-w-[48rem] rounded-sm bg-white px-5 py-7 shadow-[0_1px_3px_rgb(11_23_51/0.12)] ring-1 ring-line sm:px-12 sm:py-12">
-                  <DocPreview doc={doc} />
-                </div>
-              ) : (
-                <p className="text-sm text-slate">Die Vorlage «{row.template}» gibt es nicht mehr; der Vertrag kann nicht dargestellt werden.</p>
-              )}
-            </div>
-          </Card>
-        </div>
-
-        <div className="min-w-0 space-y-6">
-          <StatusCard row={row} retentionMonths={retention} />
-          <Card>
-            <CardHeader title="Eckdaten" />
+            <CardHeader title="Eckdaten" description={`Zuletzt geändert ${formatDateTime(contract.updatedAt)}`} />
             <CardBody>
-              <DescriptionList columns={1} items={details} />
+              <DescriptionList items={details} />
             </CardBody>
           </Card>
-          {row.template === "rahmenvertrag" ? (
+          <DocumentsCard
+            owner={owner}
+            title="Dateien"
+            defaultKind="vertrag"
+            description="Unterzeichnete Fassung, Entwürfe und Beilagen. Verschlüsselt gespeichert, jeder Abruf wird protokolliert."
+          />
+          {isFramework || children.length ? (
             <Card>
               <CardHeader
-                title="Einzelaufträge"
+                title="Einzelaufträge unter diesem Vertrag"
                 actions={
-                  row.status !== "storniert" && row.status !== "beendet" ? (
-                    <LinkButton href={`/admin/vertraege/neu?vorlage=einzelauftrag&rahmen=${id}`} size="sm" icon={FilePlus}>
-                      Einzelauftrag erstellen
+                  isFramework && contract.status !== "storniert" ? (
+                    <LinkButton href={`/admin/vertraege/neu?rahmen=${id}`} size="sm" icon={FilePlus}>
+                      Einzelauftrag ablegen
                     </LinkButton>
                   ) : null
                 }
               />
               {children.length ? (
                 <ul className="divide-y divide-line">
-                  {children.map((c) => (
-                    <li key={c.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-5 py-3 text-sm">
-                      <Link href={`/admin/vertraege/${c.id}`} className="min-w-0 flex-1 font-medium text-ink hover:text-blue hover:underline">
-                        {c.title}
-                      </Link>
-                      <Badge tone={toneOf(contractStatuses, c.status)}>{labelOf(contractStatuses, c.status)}</Badge>
-                      <span className="flex w-full flex-wrap gap-x-3 text-xs text-slate">
-                        <Mono>{c.number}</Mono>
-                        {c.validFrom ? (
-                          <span>
-                            {formatDate(c.validFrom)} – {c.validUntil ? formatDate(c.validUntil) : "offen"}
-                          </span>
-                        ) : null}
-                      </span>
-                    </li>
-                  ))}
+                  {children.map((c) => {
+                    const childExpiry = contractExpiry(c, today);
+                    return (
+                      <li key={c.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-5 py-3 text-sm">
+                        <Link href={`/admin/vertraege/${c.id}`} className="min-w-0 flex-1 font-medium text-ink hover:text-blue hover:underline">
+                          {c.title}
+                        </Link>
+                        {childExpiry ? <Badge tone={expiryTone(childExpiry)}>{expiryLabel(childExpiry)}</Badge> : null}
+                        <Badge tone={toneOf(contractStatuses, c.status)}>{labelOf(contractStatuses, c.status)}</Badge>
+                        <span className="flex w-full flex-wrap gap-x-3 text-xs text-slate">
+                          <Mono>{c.number}</Mono>
+                          <span>{labelOf(contractKinds, c.kind)}</span>
+                          {c.validFrom || c.validUntil ? (
+                            <span>
+                              {formatDate(c.validFrom)} – {c.validUntil ? formatDate(c.validUntil) : "offen"}
+                            </span>
+                          ) : null}
+                        </span>
+                      </li>
+                    );
+                  })}
                 </ul>
               ) : (
                 <CardBody>
-                  <p className="text-sm text-slate">Noch keine Einzelaufträge unter diesem Rahmenvertrag.</p>
+                  <p className="text-sm text-slate">Noch keine Einzelaufträge unter diesem Rahmenvertrag abgelegt.</p>
                 </CardBody>
               )}
             </Card>
           ) : null}
-          <DocumentsCard
-            owner={owner}
-            title="Unterzeichnete Fassung und Beilagen"
-            defaultKind={row.template === "einwilligung" ? "einwilligung" : "vertrag"}
-          />
+        </div>
+
+        <div className="min-w-0 space-y-6">
+          <StatusCard contract={contract} files={files} />
           <ActivityFeed owner={owner} />
         </div>
       </div>

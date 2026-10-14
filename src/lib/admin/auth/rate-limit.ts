@@ -1,81 +1,118 @@
 import "server-only";
-import { and, count, eq, gt, lt, notLike } from "drizzle-orm";
-import { hashLoginName } from "../crypto";
-import { getDb } from "../db/client";
+import { and, count, eq, gt, lt, sql } from "drizzle-orm";
+import { getDb, type AdminDb } from "../db/client";
 import { loginAttempts } from "../db/schema";
 
 /**
- * Login throttling for the admin login and the candidate portal, counted separately so that
- * failed portal logins never lock Ferhat out of the admin: at most 5 failed attempts per IP
- * in 15 minutes, and at most 50 (admin) or 200 (portal) failed attempts in total per hour.
+ * Login throttling for the admin login.
  *
- * Portal logins are also counted per account (keyed hash of the e-mail address), so guesses
- * against one account are capped whatever the IP: at most 10 failures in 15 minutes. These
- * rows share the table with the IP rows; their ip_hash starts with "acct:" and they are left
- * out of the per-IP and the global count.
+ * - Per IP: at most 5 failed attempts in 15 minutes, of either kind.
+ * - Whole login: after 10 attempts with the right password and a wrong code within an hour,
+ *   every login is refused until those attempts are an hour old. Only someone who knows the
+ *   password can cause this, so a stranger cannot lock Ferhat out by guessing passwords.
  *
- * A successful admin login clears that IP's admin failures (there is only one admin account).
- * A successful portal login clears nothing: other candidates' accounts stay protected, and
- * failures expire through the time windows and the 30-day cleanup.
+ * Check and record are atomic: an attempt is reserved (recorded as a failure) under an advisory
+ * lock before the password is checked, so concurrent requests see each other. The slow password
+ * check runs outside the lock. A successful login turns its reservation into a success and
+ * clears that IP's failures. Refused attempts are not recorded, so they never extend a block.
+ * Rows of the former candidate portal (scope "portal") are ignored.
  */
-export type LoginScope = "admin" | "portal";
+const SCOPE = "admin";
 
-/** Exported for the record of processing activities (privacy.ts), which states them. */
 export const PER_IP_LIMIT = 5;
-export const PER_ACCOUNT_LIMIT = 10;
 export const LOGIN_WINDOW_MINUTES = 15;
+/** Attempts with the right password and a wrong code, per hour, before the whole login locks. */
+export const GLOBAL_CODE_LIMIT = 10;
+export const CODE_LOCK_MINUTES = 60;
 const PER_IP_WINDOW_MS = LOGIN_WINDOW_MINUTES * 60 * 1000;
-const PER_ACCOUNT_WINDOW_MS = PER_IP_WINDOW_MS;
-const GLOBAL_LIMIT: Record<LoginScope, number> = { admin: 50, portal: 200 };
-const GLOBAL_WINDOW_MS = 60 * 60 * 1000;
+const CODE_WINDOW_MS = CODE_LOCK_MINUTES * 60 * 1000;
+/** Serialises the counting and recording of login attempts across server instances. */
+const LOGIN_LOCK = 724_211_002;
 
-const ACCOUNT_PREFIX = "acct:";
+type Tx = Parameters<Parameters<AdminDb["transaction"]>[0]>[0];
 
-/** Throttle key of a login name (e-mail); never the address itself. */
-export function accountThrottleKey(email: string): string {
-  return `${ACCOUNT_PREFIX}${hashLoginName(email)}`;
+async function lock(tx: Tx): Promise<void> {
+  // Transaction-level, so it also works through Neon's pooled connection (PgBouncer).
+  await tx.execute(sql`select pg_advisory_xact_lock(${LOGIN_LOCK})`);
 }
 
-async function failuresSince(scope: LoginScope, key: string | null, since: Date): Promise<number> {
-  const db = await getDb();
-  const [row] = await db
+async function ipFailures(tx: Tx, ipHash: string): Promise<number> {
+  const [row] = await tx
     .select({ n: count() })
     .from(loginAttempts)
     .where(
       and(
-        eq(loginAttempts.scope, scope),
-        key ? eq(loginAttempts.ipHash, key) : notLike(loginAttempts.ipHash, `${ACCOUNT_PREFIX}%`),
+        eq(loginAttempts.scope, SCOPE),
+        eq(loginAttempts.ipHash, ipHash),
         eq(loginAttempts.success, false),
-        gt(loginAttempts.at, since),
+        gt(loginAttempts.at, new Date(Date.now() - PER_IP_WINDOW_MS)),
       ),
     );
   return row?.n ?? 0;
 }
 
-/**
- * True when the IP, the account (when an account key is given) or the scope as a whole has
- * reached its limit of failed attempts.
- */
-export async function loginBlocked(scope: LoginScope, ipHash: string, accountKey?: string): Promise<boolean> {
-  const now = Date.now();
-  if ((await failuresSince(scope, ipHash, new Date(now - PER_IP_WINDOW_MS))) >= PER_IP_LIMIT) return true;
-  if (accountKey && (await failuresSince(scope, accountKey, new Date(now - PER_ACCOUNT_WINDOW_MS))) >= PER_ACCOUNT_LIMIT) return true;
-  return (await failuresSince(scope, null, new Date(now - GLOBAL_WINDOW_MS))) >= GLOBAL_LIMIT[scope];
+async function codeFailures(tx: Tx): Promise<number> {
+  const [row] = await tx
+    .select({ n: count() })
+    .from(loginAttempts)
+    .where(
+      and(
+        eq(loginAttempts.scope, SCOPE),
+        eq(loginAttempts.kind, "code"),
+        eq(loginAttempts.success, false),
+        gt(loginAttempts.at, new Date(Date.now() - CODE_WINDOW_MS)),
+      ),
+    );
+  return row?.n ?? 0;
 }
 
-/** Records an attempt for the IP and, for a failure with an account key, for the account too. */
-export async function recordLoginAttempt(scope: LoginScope, ipHash: string, success: boolean, accountKey?: string): Promise<void> {
+export type LoginReservation = { status: "ok"; id: number } | { status: "ip_blocked" } | { status: "code_locked" };
+
+/**
+ * Before the password is checked: refuses when this IP has reached its limit or the login is
+ * locked by wrong codes, otherwise records the attempt as a failed one and returns its id.
+ */
+export async function reserveLoginAttempt(ipHash: string): Promise<LoginReservation> {
   const db = await getDb();
-  await db.insert(loginAttempts).values([
-    { scope, ipHash, success },
-    ...(accountKey && !success ? [{ scope, ipHash: accountKey, success }] : []),
-  ]);
-  if (success && scope === "admin") {
-    // A successful admin login clears this IP's admin failures.
-    await db
+  return db.transaction(async (tx) => {
+    await lock(tx);
+    if ((await codeFailures(tx)) >= GLOBAL_CODE_LIMIT) return { status: "code_locked" };
+    if ((await ipFailures(tx, ipHash)) >= PER_IP_LIMIT) return { status: "ip_blocked" };
+    const [row] = await tx.insert(loginAttempts).values({ scope: SCOPE, ipHash, success: false, kind: "password" }).returning({ id: loginAttempts.id });
+    return { status: "ok", id: row.id };
+  });
+}
+
+/**
+ * After the password was correct: checks the code under the same lock, so concurrent guesses
+ * cannot pass the code limit. `check` verifies the code (and claims its step) with the given
+ * transaction. A wrong code turns the reserved attempt into a code failure; a right one into a
+ * success, and that IP's failures are cleared.
+ */
+export async function checkLoginCode(attemptId: number, ipHash: string, check: (tx: Tx) => Promise<boolean>): Promise<"ok" | "wrong" | "locked"> {
+  const db = await getDb();
+  const result = await db.transaction(async (tx) => {
+    await lock(tx);
+    if ((await codeFailures(tx)) >= GLOBAL_CODE_LIMIT) {
+      // Another attempt locked the login meanwhile; this one stays a plain failure.
+      return "locked" as const;
+    }
+    if (!(await check(tx))) {
+      await tx.update(loginAttempts).set({ kind: "code" }).where(eq(loginAttempts.id, attemptId));
+      return "wrong" as const;
+    }
+    await tx.update(loginAttempts).set({ success: true }).where(eq(loginAttempts.id, attemptId));
+    await tx
       .delete(loginAttempts)
-      .where(and(eq(loginAttempts.scope, scope), eq(loginAttempts.ipHash, ipHash), eq(loginAttempts.success, false)));
-  }
-  // Entries older than 30 days are not needed.
+      .where(and(eq(loginAttempts.scope, SCOPE), eq(loginAttempts.ipHash, ipHash), eq(loginAttempts.success, false)));
+    return "ok" as const;
+  });
+  await removeOldAttempts();
+  return result;
+}
+
+/** Entries older than 30 days are not needed. */
+export async function removeOldAttempts(): Promise<void> {
+  const db = await getDb();
   await db.delete(loginAttempts).where(lt(loginAttempts.at, new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)));
 }

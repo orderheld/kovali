@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 /**
- * Form handling shared by all admin and portal Server Actions: one state shape for
+ * Form handling shared by all admin Server Actions: one state shape for
  * useActionState and small Zod helpers that turn FormData strings into typed values.
  */
 

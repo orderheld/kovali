@@ -1,15 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Copy, Lock } from "lucide-react";
 import { ActionButton } from "@/components/admin/form";
-import { Card, CardBody, CardHeader, LinkButton, Notice, PageHeader } from "@/components/admin/ui";
+import { Card, CardBody, CardHeader, PageHeader } from "@/components/admin/ui";
 import { requireAdmin } from "@/lib/admin/auth/session";
-import { contractFormOptions, getContract } from "@/lib/admin/contracts/data";
-import { getTemplate, templateInfo } from "@/lib/admin/contracts/templates";
-import { formatDate } from "@/lib/admin/format";
+import { contractFormOptions, countContractDocuments, getContract, listChildContracts } from "@/lib/admin/contracts/data";
 import { parseId } from "@/lib/admin/forms";
-import { contractStatuses, labelOf } from "@/lib/admin/options";
-import { copyContract, deleteContract, updateContract } from "../../actions";
+import { deleteContract, updateContract } from "../../actions";
 import { ContractForm } from "../../contract-form";
 
 /** Admin pages read the session and the database per request and may block. */
@@ -21,77 +17,60 @@ export default async function EditContractPage({ params }: PageProps<"/admin/ver
   await requireAdmin();
   const id = parseId((await params).id);
   if (!id) notFound();
-  const row = await getContract(id);
-  if (!row) notFound();
-  const template = getTemplate(row.template);
-  const crumbs = [{ label: "Verträge", href: "/admin/vertraege" }, { label: row.number, href: `/admin/vertraege/${id}` }, { label: "Bearbeiten" }];
+  const contract = await getContract(id);
+  if (!contract) notFound();
+  const [options, files, children] = await Promise.all([contractFormOptions(id), countContractDocuments(id), listChildContracts(id)]);
 
-  // Sent and signed contracts stay as they are; changes go into a new draft.
-  if (row.status !== "entwurf" || !template) {
-    return (
-      <>
-        <PageHeader title={`${row.title} bearbeiten`} crumbs={crumbs} />
-        <div className="max-w-2xl space-y-4">
-          <Notice tone="amber" icon={Lock} title={`Der Vertrag ist ${labelOf(contractStatuses, row.status).toLowerCase()}`}>
-            {template
-              ? "Nur Entwürfe können bearbeitet werden. Für Änderungen kopierst du ihn als neuen Entwurf mit neuer Nummer; der bisherige Vertrag bleibt unverändert."
-              : "Die Vorlage dieses Vertrags gibt es nicht mehr."}
-          </Notice>
-          <div className="flex flex-wrap gap-2">
-            {template ? (
-              <ActionButton action={copyContract.bind(null, id)} variant="primary" size="md" icon={<Copy aria-hidden className="size-4" />}>
-                Als neuen Entwurf kopieren
-              </ActionButton>
-            ) : null}
-            <LinkButton href={`/admin/vertraege/${id}`} variant="ghost">
-              Zurück zum Vertrag
-            </LinkButton>
-          </div>
-        </div>
-      </>
-    );
-  }
+  const consequences = [
+    files ? (files === 1 ? "Die abgelegte Datei wird mitgelöscht." : `Die ${files} abgelegten Dateien werden mitgelöscht.`) : null,
+    "Notizen nur zu diesem Vertrag werden mitgelöscht; Einträge, die auch bei der Firma oder beim Auftrag stehen, bleiben dort.",
+    children.length ? `${children.length === 1 ? "Ein Vertrag ist" : `${children.length} Verträge sind`} diesem Rahmenvertrag zugeordnet und verlieren die Zuordnung.` : null,
+  ].filter((s) => s !== null);
+  const confirm = [
+    `Vertrag ${contract.number} endgültig löschen?`,
+    files ? (files === 1 ? "Die abgelegte Datei wird mitgelöscht." : `Die ${files} abgelegten Dateien werden mitgelöscht.`) : null,
+  ]
+    .filter(Boolean)
+    .join("\n\n");
 
-  const options = await contractFormOptions();
   return (
     <>
-      <PageHeader title={`${row.title} bearbeiten`} description={`${template.name} · ${row.number}`} crumbs={crumbs} />
+      <PageHeader
+        title={`${contract.title} bearbeiten`}
+        crumbs={[{ label: "Verträge", href: "/admin/vertraege" }, { label: contract.number, href: `/admin/vertraege/${id}` }, { label: "Bearbeiten" }]}
+      />
       <div className="max-w-4xl space-y-6">
         <ContractForm
-          key={id}
           action={updateContract.bind(null, id)}
-          template={templateInfo(template)}
           options={options}
           initial={{
-            title: row.title,
-            companyId: row.companyId,
-            contactId: row.contactId,
-            candidateId: row.candidateId,
-            mandateId: row.mandateId,
-            parentId: row.parentId,
-            validFrom: row.validFrom,
-            validUntil: row.validUntil,
-            notes: row.notes,
+            title: contract.title,
+            kind: contract.template,
+            status: contract.status,
+            companyId: contract.companyId,
+            contactId: contract.contactId,
+            assignmentId: contract.assignmentId,
+            parentId: contract.parentId,
+            validFrom: contract.validFrom,
+            validUntil: contract.validUntil,
+            signedAt: contract.signedAt,
+            noticePeriod: contract.noticePeriod,
+            notes: contract.notes,
           }}
-          initialData={{ ...template.defaults, ...row.data }}
+          number={{ value: contract.number, pending: false }}
+          currentKind={contract.template}
           cancelHref={`/admin/vertraege/${id}`}
           submitLabel="Änderungen speichern"
         />
-        {row.sentAt ? (
-          // Its number is known outside KOVALI: it stays on record and is cancelled instead.
-          <Notice tone="neutral" icon={Lock}>
-            Am {formatDate(row.sentAt)} versendet: Der Vertrag bleibt mit seiner Nummer erhalten. Gilt er nicht mehr, storniere ihn auf der Vertragsseite.
-          </Notice>
-        ) : (
-          <Card className="border-red-200">
-            <CardHeader title="Entwurf löschen" description="Nur Entwürfe, die nie versendet wurden, können gelöscht werden. Hochgeladene Dokumente und Notizen des Entwurfs werden mitgelöscht." />
-            <CardBody>
-              <ActionButton action={deleteContract.bind(null, id)} confirm={`Entwurf ${row.number} endgültig löschen?`} variant="danger" size="md">
-                Entwurf endgültig löschen
-              </ActionButton>
-            </CardBody>
-          </Card>
-        )}
+        <Card className="border-red-200">
+          <CardHeader title="Vertrag löschen" description={consequences.join(" ")} />
+          <CardBody>
+            <p className="mb-3 text-sm text-slate">Nur für Fehleinträge. Ein Vertrag, der nicht mehr gilt, bleibt besser als «Beendet» oder «Hinfällig» abgelegt.</p>
+            <ActionButton action={deleteContract.bind(null, id)} confirm={confirm} variant="danger" size="md">
+              {files ? "Vertrag und Dateien löschen" : "Vertrag löschen"}
+            </ActionButton>
+          </CardBody>
+        </Card>
       </div>
     </>
   );

@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { KeyRound, Laptop, ShieldAlert, ShieldCheck, Smartphone } from "lucide-react";
-import { Badge, Card, CardBody, CardHeader, DescriptionList, LinkButton, Notice } from "@/components/admin/ui";
+import { KeyRound, Laptop, ShieldCheck, Smartphone } from "lucide-react";
+import { Badge, Card, CardBody, CardHeader, DescriptionList, LinkButton } from "@/components/admin/ui";
 import { activeAdminSessions, requireAdmin } from "@/lib/admin/auth/session";
-import { adminEnv } from "@/lib/admin/env";
+import { CODE_LOCK_MINUTES, GLOBAL_CODE_LIMIT, LOGIN_WINDOW_MINUTES, PER_IP_LIMIT } from "@/lib/admin/auth/rate-limit";
 import { formatDateTime } from "@/lib/admin/format";
 import { endAllSessions } from "./actions";
 import { auditCountLastDays, lastAudit } from "./audit-data";
@@ -14,29 +13,19 @@ import { describeUserAgent } from "./user-agent";
 /** Admin pages read the session and the database per request and may block. */
 export const instant = false;
 
-export const metadata: Metadata = { title: "Einstellungen" };
+export const metadata: Metadata = { title: "Sicherheit" };
 
 const FAILED_LOGIN_DAYS = 30;
 
 export default async function SecurityPage() {
   const session = await requireAdmin();
   const [sessions, failed, lastLogin] = await Promise.all([activeAdminSessions(), auditCountLastDays("login_failed", FAILED_LOGIN_DAYS), lastAudit("login")]);
-  const totp = Boolean(adminEnv.totpSecret);
   // Newest activity first; the query sorts the other way round.
   const list = [...sessions].sort((a, b) => b.lastSeenAt.getTime() - a.lastSeenAt.getTime());
 
   return (
     <>
       <SettingsHeader active="sicherheit" />
-
-      {totp ? null : (
-        <Notice tone="amber" icon={ShieldAlert} title="Zwei-Faktor-Code ist nicht eingerichtet" className="mb-6">
-          Mit dem Passwort allein kommt jeder in den Admin-Bereich, der es kennt. Richte den Code einer Authenticator-App ein (ADMIN_TOTP_SECRET bei Vercel).{" "}
-          <Link href="/admin/einrichtung" className="font-medium underline underline-offset-2">
-            Zur Einrichtung
-          </Link>
-        </Notice>
-      )}
 
       <div className="grid items-start gap-6 lg:grid-cols-2">
         <Card>
@@ -46,20 +35,22 @@ export default async function SecurityPage() {
               columns={1}
               items={[
                 {
-                  label: "Zwei-Faktor-Code (TOTP)",
-                  value: totp ? (
-                    <Badge tone="green">
-                      <ShieldCheck aria-hidden className="size-3.5" />
-                      aktiv
-                    </Badge>
-                  ) : (
-                    <Badge tone="amber">nicht eingerichtet</Badge>
+                  label: "Zwei-Faktor-Code (Google Authenticator)",
+                  value: (
+                    <span className="flex flex-wrap items-center gap-2">
+                      <Badge tone="green">
+                        <ShieldCheck aria-hidden className="size-3.5" />
+                        aktiv
+                      </Badge>
+                      <span className="text-[0.8125rem] text-slate">Bei jeder Anmeldung Pflicht, jeder Code gilt nur einmal.</span>
+                    </span>
                   ),
                 },
                 {
                   label: "Passwort",
                   value: "Als Hash in ADMIN_PASSWORD_HASH gespeichert, nie im Klartext. Zum Ändern auf der Einrichtungsseite einen neuen Hash erzeugen, bei Vercel ersetzen und danach alle Sitzungen beenden.",
                 },
+                { label: "Zugänge", value: "Nur deiner. Es gibt keine weiteren Konten und keine Registrierung." },
                 { label: "Letzte Anmeldung", value: lastLogin ? formatDateTime(lastLogin.at) : "–" },
                 {
                   label: `Fehlgeschlagene Anmeldungen (${FAILED_LOGIN_DAYS} Tage)`,
@@ -83,9 +74,15 @@ export default async function SecurityPage() {
           <CardBody>
             <ul className="space-y-2 text-sm text-ink">
               <li>Eine Sitzung endet nach 12 Stunden oder nach 4 Stunden ohne Aktivität.</li>
-              <li>Nach 5 Fehlversuchen von derselben Adresse ist die Anmeldung 15 Minuten gesperrt.</li>
+              <li>
+                Nach {PER_IP_LIMIT} Fehlversuchen von derselben Adresse ist die Anmeldung von dort {LOGIN_WINDOW_MINUTES} Minuten gesperrt.
+              </li>
+              <li>
+                Ist der Code mit dem richtigen Passwort {GLOBAL_CODE_LIMIT}-mal in einer Stunde falsch, ist jede Anmeldung bis zu {CODE_LOCK_MINUTES} Minuten gesperrt. Falsche
+                Passwörter von anderen Adressen sperren dich nicht aus.
+              </li>
               <li>Das Cookie ist HttpOnly, Secure und SameSite; die Datenbank kennt nur seinen Hash.</li>
-              <li>Jede Anmeldung, Änderung und jeder Export steht im Audit-Log, ohne Namen.</li>
+              <li>Jede Anmeldung, Änderung und jeder Dokumentabruf steht im Protokoll, ohne Namen.</li>
             </ul>
           </CardBody>
         </Card>
