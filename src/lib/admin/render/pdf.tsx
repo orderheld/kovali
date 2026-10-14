@@ -4,7 +4,7 @@ import path from "node:path";
 import { Document, Font, Page, Path, StyleSheet, Svg, Text, View, renderToBuffer } from "@react-pdf/renderer";
 import { logoDirections } from "@/components/brand/logo-data";
 import { site } from "@/config/site";
-import type { Block, DocModel, Inline, Rich } from "./model";
+import { inlineText, type Block, type DocModel, type Inline, type Rich } from "./model";
 
 /**
  * Renders a DocModel as an A4 PDF in the KOVALI layout: logo and document type in the header,
@@ -78,8 +78,9 @@ function styles() {
     headerRef: { fontFamily: mono, fontSize: 7.5, color: COLORS.slate, marginTop: 2 },
     confidential: { fontSize: 6.5, color: COLORS.blue, letterSpacing: 1, marginTop: 2 },
     footer: {
+      // "top" instead of "bottom": with the page's lineHeight, a bottom-anchored fixed footer is not drawn.
       position: "absolute",
-      bottom: 28,
+      top: 794,
       left: 62,
       right: 62,
       flexDirection: "row",
@@ -181,7 +182,8 @@ function BlockView({ block, s }: { block: Block; s: ReturnType<typeof styles> })
       const extra = [block.muted ? s.muted : {}, block.small ? s.small : {}];
       if (block.number) {
         return (
-          <View style={s.clause} wrap>
+          // Short clauses stay in one piece so a number never ends up alone at the bottom of a page.
+          <View style={s.clause} wrap={inlineText(block.text).length > 900}>
             <Text style={s.clauseNo}>{block.number}</Text>
             <Text style={[s.clauseText, ...extra]}>
               <RichText value={block.text} />
@@ -329,6 +331,33 @@ function BlockView({ block, s }: { block: Block; s: ReturnType<typeof styles> })
   }
 }
 
+/**
+ * Groups the blocks for rendering: a signature block takes the last short paragraph or heading
+ * before it (and the spacers in between) along, so it never stands alone on the last page.
+ */
+function keepWithSignatures(blocks: Block[]): Block[][] {
+  const groups: Block[][] = [];
+  for (const block of blocks) {
+    if (block.type === "signatures") {
+      const taken: Block[] = [];
+      while (groups.length && groups.at(-1)!.length === 1) {
+        const prev = groups.at(-1)![0];
+        const short =
+          prev.type === "spacer" ||
+          prev.type === "heading" ||
+          (prev.type === "paragraph" && inlineText(prev.text).length <= 600);
+        if (!short) break;
+        taken.unshift(groups.pop()![0]);
+        if (prev.type !== "spacer") break;
+      }
+      groups.push([...taken, block]);
+    } else {
+      groups.push([block]);
+    }
+  }
+  return groups;
+}
+
 export async function renderPdf(doc: DocModel): Promise<Buffer> {
   registerFonts();
   const s = styles();
@@ -343,9 +372,17 @@ export async function renderPdf(doc: DocModel): Promise<Buffer> {
             {doc.confidential ? <Text style={s.confidential}>VERTRAULICH</Text> : null}
           </View>
         </View>
-        {doc.blocks.map((block, i) => (
-          <BlockView key={i} block={block} s={s} />
-        ))}
+        {keepWithSignatures(doc.blocks).map((group, i) =>
+          group.length === 1 ? (
+            <BlockView key={i} block={group[0]} s={s} />
+          ) : (
+            <View key={i} wrap={false}>
+              {group.map((block, j) => (
+                <BlockView key={j} block={block} s={s} />
+              ))}
+            </View>
+          ),
+        )}
         <View style={s.footer} fixed>
           <Text>{doc.footer}</Text>
           <Text render={({ pageNumber, totalPages }) => `Seite ${pageNumber} von ${totalPages}`} />
