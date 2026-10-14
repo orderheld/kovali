@@ -347,8 +347,8 @@ function CompactKey({
           ))}
         </ul>
       </div>
-      <p lang="en" className="mt-6 flex items-center gap-3 font-mono text-xs tracking-[0.02em] text-sky">
-        <span aria-hidden className="h-px w-10 shrink-0 bg-linear-to-r from-blue to-electric" />
+      <p lang="en" className="mt-6 flex items-center gap-3 text-sm font-medium text-sky">
+        <span aria-hidden className="h-px w-6 shrink-0 bg-linear-to-r from-blue to-electric sm:w-10" />
         {site.claim}
       </p>
     </div>
