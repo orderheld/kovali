@@ -23,6 +23,7 @@ import { getCandidate, listCandidateSubmissions, matchingMandatesFor } from "@/l
 import { companyOptions, getCompany } from "@/lib/admin/data/companies";
 import type { EducationEntry, ExperienceEntry, LanguageSkill } from "@/lib/admin/db/schema";
 import { availabilityText, dossierHref, formatRate, formatWorkload, languageLine, sortExperience } from "@/lib/admin/dossier";
+import { PortalAccountCard } from "@/app/admin/(app)/portal/account-card";
 import { parseId } from "@/lib/admin/forms";
 import { displayNo, formatChf, formatDate, formatMonthRange, todayIso } from "@/lib/admin/format";
 import {
@@ -521,7 +522,7 @@ export default async function CandidatePage({ params }: PageProps<"/admin/kandid
             </CardBody>
           </Card>
 
-          {/* PORTAL_ACCOUNT_CARD */}
+          <PortalAccountCard candidateId={id} />
 
           <ActivityFeed owner={owner} />
           <DocumentsCard
