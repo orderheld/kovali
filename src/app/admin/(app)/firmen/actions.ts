@@ -10,15 +10,24 @@ import { getDb } from "@/lib/admin/db/client";
 import { activities, companies, contacts } from "@/lib/admin/db/schema";
 import { displayNo } from "@/lib/admin/format";
 import { fail, ok, parseForm, type ActionState } from "@/lib/admin/forms";
+import { companyKinds } from "@/lib/admin/options";
 import { redirectAfterChange } from "@/lib/admin/redirect";
 import { companySchema, contactSchema } from "./schema";
 
 const idSchema = z.number().int().positive();
 
+/** Old kinds (Subunternehmer) stay on companies that have them, but are not chosen anew. */
+function kindError(kind: string, currentKind?: string): ActionState | null {
+  const legacy = companyKinds.some((k) => k.value === kind && k.legacy);
+  return legacy && kind !== currentKind ? fail("Bitte prüfe die markierten Felder.", { kind: "Diese Art wird nicht mehr angeboten." }) : null;
+}
+
 export async function createCompany(_prev: ActionState, formData: FormData): Promise<ActionState> {
   await requireAdmin();
   const parsed = parseForm(companySchema, formData);
   if (!parsed.ok) return parsed.state;
+  const wrongKind = kindError(parsed.data.kind);
+  if (wrongKind) return wrongKind;
   const db = await getDb();
   const [row] = await db.insert(companies).values(parsed.data).returning({ id: companies.id });
   await audit("create", { entity: "company", entityId: row.id, summary: `Firma ${displayNo.company(row.id)}` });
@@ -31,6 +40,10 @@ export async function updateCompany(id: number, _prev: ActionState, formData: Fo
   const parsed = parseForm(companySchema, formData);
   if (!parsed.ok) return parsed.state;
   const db = await getDb();
+  const [current] = await db.select({ kind: companies.kind }).from(companies).where(eq(companies.id, companyId)).limit(1);
+  if (!current) return fail("Diese Firma gibt es nicht mehr.");
+  const wrongKind = kindError(parsed.data.kind, current.kind);
+  if (wrongKind) return wrongKind;
   const [row] = await db
     .update(companies)
     .set({ ...parsed.data, updatedAt: new Date() })
