@@ -116,14 +116,14 @@ export default function DatenschutzPage() {
       <h2>{section("Datensicherheit")}</h2>
       <ul>
         <li>Die Übertragung zwischen Ihrem Browser und dieser Website ist mit TLS verschlüsselt.</li>
-        <li>Dokumente werden vor dem Speichern verschlüsselt (AES-256). Passwörter werden nur als Hashwert gespeichert.</li>
+        <li>Dokumente werden vor dem Speichern verschlüsselt (AES-256). Das Passwort wird nur als Hashwert gespeichert.</li>
         <li>
-          Auf die interne Datenbank hat nur {site.brand} Zugriff. Der Zugang ist durch ein Passwort geschützt, die Zahl der
-          Fehlversuche ist begrenzt.
+          Auf die interne Datenbank hat nur {site.brand} Zugriff. Die Anmeldung erfordert ein Passwort und einen Code aus
+          einer Authenticator-App, die Zahl der Fehlversuche ist begrenzt.
         </li>
         <li>
-          Anmeldungen, Änderungen, Abrufe von Dokumenten und Exporte werden in einem Zugriffsprotokoll festgehalten, das
-          selbst keine Namen enthält.
+          Anmeldungen, Änderungen und Abrufe von Dokumenten werden in einem Zugriffsprotokoll festgehalten, das selbst
+          keine Namen enthält.
         </li>
         <li>Der interne Verwaltungsbereich wird nicht von Suchmaschinen erfasst.</li>
       </ul>
