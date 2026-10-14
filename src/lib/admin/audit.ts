@@ -19,7 +19,8 @@ export type AuditAction =
   | "portal_login"
   | "portal_login_failed"
   | "portal_change"
-  | "review";
+  | "review"
+  | "anonymise";
 
 /**
  * Writes an entry to the audit log (accountability under the DSG: who accessed or changed
