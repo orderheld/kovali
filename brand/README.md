@@ -29,7 +29,7 @@ Die aktive Richtung liegt zusätzlich in `public/brand/` und als `src/app/icon.s
 
 1. In `src/config/site.ts` `logoDirection` auf `"signature"`, `"tech"` oder `"minimal"` setzen.
 2. `python3 -m pip install fonttools` (einmalig), dann `npm run brand`.
-3. Header, Footer, Favicon und `public/brand/` übernehmen die neue Richtung. `src/app/apple-icon.png`, `src/app/favicon.ico` und `src/app/opengraph-image.png` sind gerenderte Bilder und müssen bei einem Wechsel neu erzeugt werden.
+3. Header, Footer, Favicon und `public/brand/` übernehmen die neue Richtung. `src/app/apple-icon.png`, `src/app/favicon.ico`, `src/app/opengraph-image.png` und `public/brand/email/kovali-signatur-k.png` (Logo-Kachel der E-Mail-Signatur, 192 × 192 px für 64 px Anzeige) sind gerenderte Bilder und müssen bei einem Wechsel neu erzeugt werden. Die Kachel-Datei nicht umbenennen: versendete Signaturen laden sie von `www.kovali.ch`.
 
 ## Farben
 
