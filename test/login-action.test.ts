@@ -104,7 +104,7 @@ describe.skipIf(!url)("admin login (database)", () => {
     expect(results.every((r) => r?.status === "error")).toBe(true);
     expect(await count("kind = 'code' and not success")).toBe(limits.GLOBAL_CODE_LIMIT);
     const locked = await attempt("ip-ferhat", PASSWORD, codes.valid[1]);
-    expect(locked).toMatchObject({ status: "error", message: expect.stringContaining("für bis zu eine Stunde gesperrt") });
+    expect(locked).toMatchObject({ status: "error", message: expect.stringContaining("bis zu einer Stunde gesperrt") });
   });
 
   it("accepts each code only once", async () => {

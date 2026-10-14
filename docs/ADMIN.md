@@ -42,7 +42,7 @@ Lokal: `.env.local` mit denselben Variablen (eine lokale Postgres-Datenbank gen�
 
 Läuft schon die frühere Version (mit Kandidaten und Portal), gilt beim Wechsel auf diese:
 
-1. **Backup**: In Neon vorher einen Branch oder ein Backup anlegen. Die Migrationen laufen beim ersten Datenbankzugriff von selbst. `0004_personal_admin` löscht die Portal-Spalten der Vakanzen (`portal_title`, `portal_description`, `portal_rate`, `portal_rate_unit`) endgültig. `0005_login_attempt_kind` merkt sich bei Fehlversuchen, ob Passwort oder Code falsch war.
+1. **Backup**: In Neon vorher einen Branch oder ein Backup anlegen. Die Migrationen laufen beim ersten Datenbankzugriff von selbst. `0004_personal_admin` löscht die Portal-Spalten der Vakanzen (`portal_visibility`, `portal_title`, `portal_description`, `portal_rate`, `portal_rate_unit`) endgültig. `0005_login_attempt_kind` merkt sich bei Fehlversuchen, ob Passwort oder Code falsch war.
 2. **Zwei-Faktor-Schlüssel**: `ADMIN_TOTP_SECRET` war bisher empfohlen und ist jetzt Pflicht. Vor dem Deployment setzen, sonst leitet `/admin` auf `/admin/einrichtung` um, bis er gesetzt und neu deployt ist.
 3. **Verträge aus den Vorlagen**: Die frühere Version hat Verträge aus Vorlagen erzeugt. Diese Version legt nur noch Dateien ab. Vor dem Wechsel jedes PDF unter `/admin/api/vertraege/<id>` herunterladen und danach beim Vertrag unter «Dateien» hochladen. Ohne Datei zeigt der Vertrag den Hinweis «Mit der früheren Vorlage erstellt» und die gespeicherten Angaben.
 4. **Rechner**: Werte unter dem alten Schlüssel `rechner_defaults` werden nicht übernommen. Die Annahmen unter Rechner → Annahmen einmal prüfen und speichern (Schlüssel `einkommen`).

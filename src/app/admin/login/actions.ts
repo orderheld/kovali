@@ -14,7 +14,7 @@ import { requestIpHash } from "@/lib/admin/request";
 const WRONG = "Passwort oder Code ist nicht korrekt.";
 const IP_BLOCKED = "Zu viele Fehlversuche von dieser Adresse. Bitte warte 15 Minuten.";
 const CODE_LOCKED =
-  "Die Anmeldung ist für bis zu eine Stunde gesperrt: Mit dem richtigen Passwort wurde zu oft ein falscher Code eingegeben. Warst das nicht du, ändere das Passwort.";
+  "Die Anmeldung ist bis zu einer Stunde gesperrt: Mit dem richtigen Passwort wurde zu oft ein falscher Code eingegeben. Warst du das nicht, ändere das Passwort.";
 
 /**
  * The only way in: Ferhat's password and the current code from Google Authenticator, both

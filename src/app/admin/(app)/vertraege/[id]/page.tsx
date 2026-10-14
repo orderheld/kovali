@@ -8,6 +8,7 @@ import { Badge, Card, CardBody, CardHeader, DescriptionList, LinkButton, Mono, N
 import { requireAdmin } from "@/lib/admin/auth/session";
 import { countContractDocuments, getContractDetail, listChildContracts, type ContractDetail } from "@/lib/admin/contracts/data";
 import { contractExpiry, expiryLabel, expiryTone } from "@/lib/admin/contracts/expiry";
+import { legacyContractEntries } from "@/lib/admin/contracts/legacy-data";
 import { parseId } from "@/lib/admin/forms";
 import { displayNo, formatDate, formatDateTime, fullName, todayIso } from "@/lib/admin/format";
 import { assignmentStatuses, contractKinds, contractStatuses, labelOf, mandateStatuses, toneOf } from "@/lib/admin/options";
@@ -124,7 +125,7 @@ export default async function ContractPage({ params }: PageProps<"/admin/vertrae
   const owner = { type: "contract" as const, id };
   // Contracts generated from the former templates kept their entries in `data`; the text itself
   // was rendered on request and is not stored. Shown read-only until the signed file is filed.
-  const legacyData = Object.entries(contract.data ?? {}).map(([key, value]) => [key, typeof value === "string" ? value : JSON.stringify(value)] as const);
+  const legacyData = legacyContractEntries(contract.data);
 
   const details: { label: string; value: React.ReactNode; wide?: boolean }[] = [
     { label: "Art", value: labelOf(contractKinds, contract.template) },
@@ -275,10 +276,10 @@ export default async function ContractPage({ params }: PageProps<"/admin/vertrae
           <details className="mt-2">
             <summary className="cursor-pointer font-medium select-none">Angaben aus der Vorlage ({legacyData.length})</summary>
             <dl className="mt-2 grid gap-x-4 gap-y-1 sm:grid-cols-[minmax(0,12rem)_minmax(0,1fr)]">
-              {legacyData.map(([key, value]) => (
-                <div key={key} className="contents">
-                  <dt className="text-amber-900/80">{key}</dt>
-                  <dd className="break-words whitespace-pre-line">{value}</dd>
+              {legacyData.map((entry) => (
+                <div key={entry.key} className="contents">
+                  <dt className="text-amber-900/80">{entry.label}</dt>
+                  <dd className="break-words whitespace-pre-line">{entry.value}</dd>
                 </div>
               ))}
             </dl>
