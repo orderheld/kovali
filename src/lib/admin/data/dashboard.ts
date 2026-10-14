@@ -1,18 +1,20 @@
 import "server-only";
-import { and, asc, count, desc, eq, gte, inArray, isNotNull, lte } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, inArray, isNotNull, isNull, lte, notInArray } from "drizzle-orm";
 import { getDb } from "../db/client";
 import { activities, assignments, companies, contracts, mandates, snippets } from "../db/schema";
 import { addDaysIso, displayNo, todayIso } from "../format";
 import { openMandateStatuses } from "../options";
 
-/** Figures and lists for the dashboard (/admin). */
+/** Figures and lists for the dashboard (/admin), queried directly from the tables. */
 
-/** Next steps due within this many days count as "heute wichtig". */
-export const NEXT_STEP_DAYS = 2;
-/** Deadlines within this many days are shown. */
+/** Next steps due within this many days are shown (overdue ones always). */
+export const NEXT_STEP_DAYS = 7;
+/** Application deadlines within this many days are shown. */
 export const DEADLINE_DAYS = 7;
+/** Contracts whose validity ends within this many days are shown. */
+export const CONTRACT_END_DAYS = 60;
 
-/** Vacancy next steps due by today + 2 days (overdue ones first) and deadlines in the next 7 days. */
+/** Vacancy next steps due by today + 7 days (overdue ones first) and deadlines in the next 7 days. */
 export async function dashboardAgenda(today = todayIso()) {
   const db = await getDb();
   const columns = {
@@ -96,4 +98,90 @@ export async function setupProgress() {
     db.select({ n: count() }).from(companies),
   ]);
   return { assignments: a?.n ?? 0, vacancies: m?.n ?? 0, contracts: v?.n ?? 0, snippets: t?.n ?? 0, companies: c?.n ?? 0 };
+}
+
+/** Number of vacancies per status (mandates.status), for the pipeline. */
+export async function vacancyPipeline(): Promise<Record<string, number>> {
+  const db = await getDb();
+  const rows = await db.select({ status: mandates.status, n: count() }).from(mandates).groupBy(mandates.status);
+  return Object.fromEntries(rows.map((r) => [r.status, r.n]));
+}
+
+/** Contracts that are not finished or void and whose validity ends between today and today + 60 days. */
+export async function endingContracts(today = todayIso()) {
+  const db = await getDb();
+  return db
+    .select({
+      id: contracts.id,
+      number: contracts.number,
+      title: contracts.title,
+      status: contracts.status,
+      validUntil: contracts.validUntil,
+      noticePeriod: contracts.noticePeriod,
+      company: companies.name,
+    })
+    .from(contracts)
+    .leftJoin(companies, eq(companies.id, contracts.companyId))
+    .where(
+      and(
+        notInArray(contracts.status, ["beendet", "storniert"]),
+        gte(contracts.validUntil, today),
+        lte(contracts.validUntil, addDaysIso(today, CONTRACT_END_DAYS)),
+      ),
+    )
+    .orderBy(asc(contracts.validUntil), asc(contracts.id))
+    .limit(10);
+}
+
+/** Pinned snippets with their company, to copy straight from the dashboard. */
+export async function pinnedSnippets(limit = 6) {
+  const db = await getDb();
+  return db
+    .select({ id: snippets.id, title: snippets.title, category: snippets.category, body: snippets.body, company: companies.name })
+    .from(snippets)
+    .leftJoin(companies, eq(companies.id, snippets.companyId))
+    .where(eq(snippets.pinned, true))
+    .orderBy(desc(snippets.updatedAt), desc(snippets.id))
+    .limit(limit);
+}
+
+export type NextBestStep =
+  | { kind: "geplant"; id: number; title: string; startDate: string | null }
+  | { kind: "zusage"; id: number; title: string; company: string | null }
+  | { kind: "vakanz"; id: number; title: string; nextStep: string | null; nextStepAt: string | null }
+  | { kind: "keine" };
+
+/**
+ * What to do when no assignment is running: start a planned one, turn a vacancy with a
+ * "Zusage" into an assignment, follow up the most urgent open vacancy, or find a new one.
+ */
+export async function nextBestStep(): Promise<NextBestStep> {
+  const db = await getDb();
+  const [planned] = await db
+    .select({ id: assignments.id, title: assignments.title, startDate: assignments.startDate })
+    .from(assignments)
+    .where(eq(assignments.status, "geplant"))
+    .orderBy(asc(assignments.startDate), asc(assignments.id))
+    .limit(1);
+  if (planned) return { kind: "geplant", ...planned };
+
+  // A won vacancy that has no assignment yet.
+  const [won] = await db
+    .select({ id: mandates.id, title: mandates.title, company: companies.name })
+    .from(mandates)
+    .leftJoin(companies, eq(companies.id, mandates.companyId))
+    .leftJoin(assignments, eq(assignments.mandateId, mandates.id))
+    .where(and(eq(mandates.status, "gewonnen"), isNull(assignments.id)))
+    .orderBy(desc(mandates.updatedAt), desc(mandates.id))
+    .limit(1);
+  if (won) return { kind: "zusage", ...won };
+
+  const [open] = await db
+    .select({ id: mandates.id, title: mandates.title, nextStep: mandates.nextStep, nextStepAt: mandates.nextStepAt })
+    .from(mandates)
+    .where(inArray(mandates.status, [...openMandateStatuses]))
+    .orderBy(asc(mandates.nextStepAt), desc(mandates.updatedAt), desc(mandates.id))
+    .limit(1);
+  if (open) return { kind: "vakanz", ...open };
+  return { kind: "keine" };
 }

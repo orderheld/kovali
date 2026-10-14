@@ -1,16 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
-  b2bMargin,
-  buyRateForTargetMargin,
   bvgSavingsPercent,
   coordinatedSalary,
   holidaySupplement,
-  hoursPerMonth,
   OFFICIAL_RATES,
   parseDecimal,
   payrollFromBase,
+  payrollFromGross,
+  publicHolidaySupplement,
   RATE_SOURCES,
-  rateFromWage,
+  supplementFactor,
   wageFromRate,
   type PayrollRates,
 } from "./payroll";
@@ -22,70 +21,23 @@ import {
 
 const line = (r: ReturnType<typeof payrollFromBase>, key: string) => r.lines.find((l) => l.key === key)!;
 
-describe("B2B margin", () => {
-  it("compares a daily selling rate with an hourly buying rate at 80 %", () => {
-    // 1000 / 8.4 = 119.0476 per hour; minus 100 = 19.0476; × 8.4 = 160 per day;
-    // 8.4 h × 21 d × 0.8 = 141.12 h; × 19.0476 = 2688 per month; × 12 = 32’256 per year.
-    const r = b2bMargin({ sell: 1000, sellUnit: "tag", buy: 100, buyUnit: "stunde", workloadPercent: 80 })!;
-    expect(r.sellHourly).toBeCloseTo(119.0476, 4);
-    expect(r.perHour).toBeCloseTo(19.0476, 4);
-    expect(r.perDay).toBeCloseTo(160, 6);
-    expect(r.hoursPerMonth).toBe(141.12);
-    expect(r.perMonth).toBeCloseTo(2688, 6);
-    expect(r.perYear).toBeCloseTo(32256, 6);
-    // 19.0476 / 119.0476 = 16 %; markup 19.0476 / 100 = 19.05 %
-    expect(r.percent).toBeCloseTo(16, 6);
-    expect(r.markupPercent).toBeCloseTo(19.0476, 4);
-  });
-
-  it("reports a negative margin when buying is dearer than selling", () => {
-    const r = b2bMargin({ sell: 100, sellUnit: "stunde", buy: 110, buyUnit: "stunde", workloadPercent: 100 })!;
-    expect(r.perHour).toBe(-10);
-    expect(r.percent).toBeCloseTo(-10, 6);
-    expect(r.perMonth).toBeCloseTo(-1764, 6); // 176.4 h
-  });
-
-  it("rejects missing or zero selling rates", () => {
-    expect(b2bMargin({ sell: 0, sellUnit: "stunde", buy: 80, buyUnit: "stunde", workloadPercent: 100 })).toBeNull();
-    expect(b2bMargin({ sell: NaN, sellUnit: "stunde", buy: 80, buyUnit: "stunde", workloadPercent: 100 })).toBeNull();
-  });
-
-  it("counts the subcontractor's VAT as cost while KOVALI is not registered", () => {
-    // Sell 120, buy 100 + 8.1 % VAT = 108.10 → margin 11.90 per hour (9.9167 %)
-    const r = b2bMargin({ sell: 120, sellUnit: "stunde", buy: 100, buyUnit: "stunde", workloadPercent: 100, vat: { kovaliRegistered: false, subcontractorCharges: true, ratePercent: 8.1 } })!;
-    expect(r.vatCostHourly).toBeCloseTo(8.1, 9);
-    expect(r.perHour).toBeCloseTo(11.9, 9);
-    expect(r.percent).toBeCloseTo(9.916667, 5);
-    expect(r.invoiceHourlyGross).toBe(120);
-    // Registered: VAT is passed through, margin 20; the client's invoice shows 129.72 incl. VAT
-    const reg = b2bMargin({ sell: 120, sellUnit: "stunde", buy: 100, buyUnit: "stunde", workloadPercent: 100, vat: { kovaliRegistered: true, subcontractorCharges: true, ratePercent: 8.1 } })!;
-    expect(reg.perHour).toBe(20);
-    expect(reg.invoiceHourlyGross).toBeCloseTo(129.72, 9);
-    // 176.4 h × 120 × 12 = 254’016 turnover per year
-    expect(reg.revenuePerYear).toBeCloseTo(254_016, 6);
-  });
-
-  it("finds the buying rate for a target margin", () => {
-    // With unrecoverable VAT: 120 × 80 % = 96 ÷ 1.081 = 88.807
-    expect(buyRateForTargetMargin(120, 20, 8.1)).toBeCloseTo(88.806660, 5);
-    expect(buyRateForTargetMargin(120, 20)).toBeCloseTo(96, 9);
-    expect(buyRateForTargetMargin(1008, 12.5)).toBeCloseTo(882, 9);
-    expect(buyRateForTargetMargin(120, 100)).toBeNull();
-    expect(buyRateForTargetMargin(0, 20)).toBeNull();
-  });
-
-  it("uses 8.4 h × 21 days per month", () => {
-    expect(hoursPerMonth(100)).toBe(176.4);
-    expect(hoursPerMonth(60)).toBe(105.84);
-    expect(hoursPerMonth(150)).toBe(176.4);
-  });
-});
-
 describe("supplements and BVG helpers", () => {
   it("derives the holiday supplement from the number of weeks", () => {
     expect(holidaySupplement(4)).toBe(8.33); // 20 / 240
     expect(holidaySupplement(5)).toBe(10.64); // 25 / 235
     expect(holidaySupplement(6)).toBe(13.04); // 30 / 230
+  });
+
+  it("derives the public-holiday supplement from the number of days", () => {
+    expect(publicHolidaySupplement(9)).toBe(3.59); // 9 / 251
+    expect(publicHolidaySupplement(8.5)).toBe(3.38); // 8.5 / 251.5
+    expect(publicHolidaySupplement(0)).toBe(0);
+  });
+
+  it("chains the supplements into one factor", () => {
+    // 1.0359 × 1.1064 × 1.0833 = 1.241591536
+    expect(supplementFactor(OFFICIAL_RATES)).toBeCloseTo(1.241591536, 9);
+    expect(supplementFactor({ ...OFFICIAL_RATES, thirteenthEnabled: false })).toBeCloseTo(1.14611976, 9);
   });
 
   it("picks the savings credit by age bracket", () => {
@@ -173,17 +125,20 @@ describe("employment planning", () => {
     expect(payrollFromBase({ baseHourly: 50, hoursPerMonth: 176.4, age: 40 }, OFFICIAL_RATES).lines.some((l) => l.key === "gav")).toBe(false);
   });
 
-  it("derives the invoice amount needed for a wage", () => {
-    // Employer cost 69.422363 ÷ (1 − 20 %) = 86.777954; the firm keeps 17.355591 per hour
-    const plan = rateFromWage({ baseHourly: 50, retainedPercent: 20, hoursPerMonth: 176.4, age: 40 }, OFFICIAL_RATES)!;
-    expect(plan.rateHourly).toBeCloseTo(86.777954, 5);
-    expect(plan.rateDaily).toBeCloseTo(728.93481, 4);
-    expect(plan.retainedPercent).toBeCloseTo(20, 9);
-    expect(plan.retainedHourly).toBeCloseTo(17.355591, 5);
-    expect(plan.retainedMonthly).toBeCloseTo(17.355591 * 176.4, 2);
+  it("splits an all-in gross wage into base wage and supplements", () => {
+    // The gross wage of the CHF 50 example above: 62.0795768 ÷ 1.241591536 = 50.
+    const r = payrollFromGross({ grossHourly: 62.0795768, hoursPerMonth: 176.4, age: 40 }, OFFICIAL_RATES);
+    expect(r.base).toBeCloseTo(50, 6);
+    expect(r.grossHourly).toBeCloseTo(62.0795768, 9);
+    expect(r.netHourly).toBeCloseTo(55.167623, 5);
+    // CHF 100 all-in: base 100 ÷ 1.241591536 = 80.541786, holiday 10.64 % of (base + public holidays)
+    const hundred = payrollFromGross({ grossHourly: 100, hoursPerMonth: 158.2, age: 40 }, OFFICIAL_RATES);
+    expect(hundred.base).toBeCloseTo(80.541786, 5);
+    expect(hundred.grossHourly).toBeCloseTo(100, 9);
   });
 
-  it("derives the wage from an invoice amount and round-trips", () => {
+  it("derives the wage from a total cost rate", () => {
+    // 86.777954 is what CHF 50 base costs the employer (69.422363) plus a 20 % fee.
     const plan = wageFromRate({ rate: 86.777954, unit: "stunde", retainedPercent: 20, hoursPerMonth: 176.4, age: 40 }, OFFICIAL_RATES)!;
     expect(plan.payroll.base).toBeCloseTo(50, 4);
     expect(plan.retainedPercent).toBeCloseTo(20, 4);

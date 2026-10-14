@@ -1,106 +1,17 @@
-import { HOURS_PER_DAY, toHourly, WORKDAYS_PER_MONTH } from "./rates";
+import { HOURS_PER_DAY, toHourly } from "./rates";
 
 /**
- * Calculator for the admin area ("Rechner"). Pure functions without I/O, so every figure on
- * the page can be checked by hand (see payroll.test.ts).
- *
- * KOVALI works with specialists through their own firm (GmbH/AG as subcontractor), so the
- * primary calculation is the B2B margin. The payroll part answers "what can the specialist's
- * firm pay them as salary out of its invoice to KOVALI", and can later serve for KOVALI's own
- * employees. KOVALI has no licence for Personalverleih (AVG): placing its own employees with
- * clients would need one. All percentages are editable on the page; OFFICIAL_RATES are the
- * defaults with their sources in RATE_SOURCES.
+ * Wage calculation for the payroll model ("Lohn über Payroll"): a provider such as GHR Group or
+ * Coopers Group employs Ferhat and pays him an hourly wage. Pure functions without I/O, so
+ * every figure can be checked by hand (see payroll.test.ts). The earnings engine
+ * (earnings.ts) builds on them; OFFICIAL_RATES are the defaults with their sources in
+ * RATE_SOURCES.
  */
-
-// --- Subunternehmer (B2B) ------------------------------------------------------------------
-
-export interface B2bInput {
-  /** Rate the client (Auftraggeber) pays. */
-  sell: number;
-  sellUnit: "stunde" | "tag";
-  /** Rate KOVALI pays the subcontractor. */
-  buy: number;
-  buyUnit: "stunde" | "tag";
-  /** 10–100 % of a full-time month (8.4 h × 21 days). */
-  workloadPercent: number;
-  /** VAT (MWST): rates are net. Without its own VAT number KOVALI cannot reclaim the
-   * subcontractor's VAT, so that VAT becomes a cost. */
-  vat?: { kovaliRegistered: boolean; subcontractorCharges: boolean; ratePercent: number };
-}
-
-export interface B2bResult {
-  sellHourly: number;
-  buyHourly: number;
-  hoursPerMonth: number;
-  /** Margin in CHF per hour, day (8.4 h), month (at the workload) and year (12 months). */
-  perHour: number;
-  perDay: number;
-  perMonth: number;
-  perYear: number;
-  /** Margin as share of the selling rate, 0–100. */
-  percent: number;
-  /** Markup on the buying rate, 0–∞. */
-  markupPercent: number | null;
-  revenuePerMonth: number;
-  costPerMonth: number;
-  revenuePerYear: number;
-  /** Buying cost per hour including VAT KOVALI cannot reclaim. */
-  costHourly: number;
-  /** Unrecoverable VAT per hour (0 when KOVALI is registered or the subcontractor charges none). */
-  vatCostHourly: number;
-  /** What KOVALI invoices the client per hour incl. VAT (equal to the net rate if not registered). */
-  invoiceHourlyGross: number;
-}
 
 /** MWST standard rate since 1.1.2024. */
 export const VAT_RATE_PERCENT = 8.1;
 /** Turnover from which a business must register for MWST (Art. 10 Abs. 2 lit. a MWSTG). */
 export const VAT_THRESHOLD = 100_000;
-
-/** Billable hours per month at a workload, as in rates.ts (8.4 h × 21 days). */
-export function hoursPerMonth(workloadPercent: number): number {
-  const workload = clamp(workloadPercent, 0, 100);
-  return round(HOURS_PER_DAY * WORKDAYS_PER_MONTH * (workload / 100), 2);
-}
-
-export function b2bMargin(input: B2bInput): B2bResult | null {
-  const sellHourly = toHourly(input.sell, input.sellUnit);
-  const buyHourly = toHourly(input.buy, input.buyUnit);
-  if (sellHourly === null || buyHourly === null || !(sellHourly > 0) || buyHourly < 0) return null;
-  const hours = hoursPerMonth(input.workloadPercent);
-  const vatRate = (input.vat?.ratePercent ?? VAT_RATE_PERCENT) / 100;
-  const vatCostHourly = input.vat && input.vat.subcontractorCharges && !input.vat.kovaliRegistered ? buyHourly * vatRate : 0;
-  const costHourly = buyHourly + vatCostHourly;
-  const perHour = sellHourly - costHourly;
-  return {
-    sellHourly,
-    buyHourly,
-    hoursPerMonth: hours,
-    perHour,
-    perDay: perHour * HOURS_PER_DAY,
-    perMonth: perHour * hours,
-    perYear: perHour * hours * 12,
-    percent: (perHour / sellHourly) * 100,
-    markupPercent: costHourly > 0 ? (perHour / costHourly) * 100 : null,
-    revenuePerMonth: sellHourly * hours,
-    costPerMonth: costHourly * hours,
-    revenuePerYear: sellHourly * hours * 12,
-    costHourly,
-    vatCostHourly,
-    invoiceHourlyGross: input.vat?.kovaliRegistered ? sellHourly * (1 + vatRate) : sellHourly,
-  };
-}
-
-/**
- * Highest buying rate (net, in the selling rate's unit) that still leaves the target margin.
- * `unrecoverableVatPercent` is the subcontractor's VAT when KOVALI cannot reclaim it.
- */
-export function buyRateForTargetMargin(sell: number, targetPercent: number, unrecoverableVatPercent = 0): number | null {
-  if (!(sell > 0) || !Number.isFinite(targetPercent) || targetPercent >= 100) return null;
-  return (sell * (1 - targetPercent / 100)) / (1 + unrecoverableVatPercent / 100);
-}
-
-// --- Lohn (Firma der Fachperson, später eigene Angestellte) ----------------------------------
 
 export interface PayrollRates {
   /** Paid holiday weeks per year; sets the holiday supplement (see holidaySupplement()). */
@@ -301,24 +212,25 @@ export const VAT_SOURCE: RateSource = {
   url: "https://www.estv.admin.ch/de/mwst-steuersaetze",
 };
 
-/** Scenario defaults of the wage calculator (not rates; saved together with them). */
-export interface WageDefaults {
-  /** Share of the invoice the specialist's firm keeps (reserves, accounting, insurance, profit). */
-  retainedPercent: number;
-  hoursPerMonth: number;
-  age: number;
-}
-
-export const WAGE_DEFAULTS: WageDefaults = {
-  retainedPercent: 5,
-  hoursPerMonth: hoursPerMonth(100),
-  age: 40,
-};
-
 /** Ferienentschädigung for n weeks: holiday days ÷ (260 working days − holiday days). */
 export function holidaySupplement(weeks: number): number {
   const days = clamp(weeks, 0, 10) * 5;
   return round((days / (260 - days)) * 100, 2);
+}
+
+/** Feiertagsentschädigung for n paid public holidays: days ÷ (260 − days), e.g. 9 days = 3.59 %. */
+export function publicHolidaySupplement(days: number): number {
+  const d = clamp(days, 0, 30);
+  return round((d / (260 - d)) * 100, 2);
+}
+
+/**
+ * Factor from the base wage (Grundlohn) to the gross hourly wage with all supplements:
+ * (1 + Feiertage) × (1 + Ferien) × (1 + 13. Monatslohn). 1.2416 with 9 days, 5 weeks and the 13th.
+ */
+export function supplementFactor(rates: PayrollRates): number {
+  const p = (v: number) => v / 100;
+  return (1 + p(rates.publicHolidayPercent)) * (1 + p(rates.holidayPercent)) * (rates.thirteenthEnabled ? 1 + p(rates.thirteenthPercent) : 1);
 }
 
 export interface PayrollScenario {
@@ -475,9 +387,18 @@ export function payrollFromBase(scenario: PayrollScenario, rates: PayrollRates):
   };
 }
 
+/**
+ * Payroll for an "all-in" hourly wage: the gross wage that already contains the public-holiday,
+ * holiday and 13th-month supplements (as providers such as GHR or Coopers state it). The base
+ * wage is the rate divided by supplementFactor(); deductions follow from the gross wage.
+ */
+export function payrollFromGross(input: { grossHourly: number; hoursPerMonth: number; age: number }, rates: PayrollRates): PayrollResult {
+  return payrollFromBase({ baseHourly: Math.max(input.grossHourly, 0) / supplementFactor(rates), hoursPerMonth: input.hoursPerMonth, age: input.age }, rates);
+}
+
 export interface WagePlan {
   payroll: PayrollResult;
-  /** Invoice amount per hour that pays for the wage (e.g. the subcontractor's rate to KOVALI). */
+  /** What the provider receives or spends per hour (its total cost rate). */
   rateHourly: number;
   rateDaily: number;
   /** Part of the rate the firm keeps (reserves, own costs, profit). */
@@ -499,8 +420,8 @@ function planFor(payroll: PayrollResult, rateHourly: number, hoursMonth: number)
 }
 
 /**
- * From an invoice amount to the wage: the firm receives `rate` per hour, keeps
- * `retainedPercent` and spends the rest on salary plus employer contributions. Finds the
+ * From a total cost rate to the wage ("Kostensatz"): the provider receives `rate` per hour,
+ * keeps `retainedPercent` as its fee and spends the rest on salary plus employer contributions. Finds the
  * highest base wage whose employer cost fits that budget. The cost grows with the wage (with a
  * step at the BVG entry threshold), so a bisection finds it reliably.
  */
@@ -520,16 +441,6 @@ export function wageFromRate(
     else hi = mid;
   }
   return planFor(payrollFromBase(scenario(lo), rates), rateHourly, input.hoursPerMonth);
-}
-
-/** From a base wage to the invoice amount needed to pay it and keep `retainedPercent`. */
-export function rateFromWage(
-  input: { baseHourly: number; retainedPercent: number; hoursPerMonth: number; age: number },
-  rates: PayrollRates,
-): WagePlan | null {
-  if (!(input.baseHourly > 0) || !(input.retainedPercent < 100)) return null;
-  const payroll = payrollFromBase({ baseHourly: input.baseHourly, hoursPerMonth: input.hoursPerMonth, age: input.age }, rates);
-  return planFor(payroll, payroll.employerCostHourly / (1 - input.retainedPercent / 100), input.hoursPerMonth);
 }
 
 // --- helpers ------------------------------------------------------------------------------
