@@ -91,7 +91,7 @@ export function CornerMarks({ className }: { className?: string }) {
 
 /**
  * The logo's K as a technical drawing: outlines of stem and arms with construction lines,
- * vertex nodes and the 48-degree angle of the arms. Geometry from logo-data.ts (symbol,
+ * vertex nodes and the angle of the arms. Geometry from logo-data.ts (symbol,
  * 100 × 100), drawn at an offset of 50 in a 200 × 200 view box. Strokes draw in once.
  * The drawn outlines scale with the SVG (no non-scaling-stroke): with that effect Chromium
  * measures the pathLength-based dash in screen pixels and leaves the outline half drawn.
@@ -137,7 +137,8 @@ export function SymbolBlueprint({ className }: { className?: string }) {
         <path d={arm1} pathLength={1} className="kv-draw [--kv-delay:0.35s]" />
         <path d={arm2} pathLength={1} className="kv-draw [--kv-delay:0.5s]" stroke="#1F7BEA" />
       </g>
-      {/* The 48-degree angle of the arms. */}
+      {/* The angle of the arms. The logo's arms rise at about 48 degrees; the label reads 47° at
+          Ferhat Demir's wish (14.10.2026). */}
       <path
         d="M126.49 96.5 A18 18 0 0 0 120.53 83.12"
         stroke="#8FC9FF"
@@ -145,7 +146,7 @@ export function SymbolBlueprint({ className }: { className?: string }) {
         vectorEffect="non-scaling-stroke"
       />
       <text x="131" y="88" fill="#8FC9FF" fontSize="7" className="font-mono" letterSpacing="0.4">
-        48°
+        47°
       </text>
       {nodes.map(([x, y]) => (
         <rect
