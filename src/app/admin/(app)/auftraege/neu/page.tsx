@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Notice, PageHeader } from "@/components/admin/ui";
+import { defaultAssignmentStatus } from "@/lib/admin/assignment-period";
 import { requireAdmin } from "@/lib/admin/auth/session";
 import { assignmentsOfVacancy, vacancyPrefill } from "@/lib/admin/data/assignments";
 import { companyOptions, contactOptions } from "@/lib/admin/data/companies";
@@ -8,7 +9,7 @@ import { loadEarningsSettings } from "@/lib/admin/data/earnings";
 import { mandateOptions } from "@/lib/admin/data/lookups";
 import { param } from "@/lib/admin/data/query";
 import { parseId } from "@/lib/admin/forms";
-import { displayNo } from "@/lib/admin/format";
+import { displayNo, todayIso } from "@/lib/admin/format";
 import { parseDecimal } from "@/lib/admin/payroll";
 import { createAssignment } from "../actions";
 import { AssignmentForm, type AssignmentValues } from "../assignment-form";
@@ -38,7 +39,7 @@ export default async function NewAssignmentPage({ searchParams }: PageProps<"/ad
     vacancyId ? assignmentsOfVacancy(vacancyId) : [],
   ]);
 
-  const values: AssignmentValues = { ...(prefill ?? {}), status: "laufend" };
+  const values: AssignmentValues = { ...(prefill ?? {}) };
   if (!prefill && companyId && companies.some((c) => c.value === companyId)) values.companyId = companyId;
   const rate = parseDecimal(param(sp.satz) ?? "");
   if (!prefill && Number.isFinite(rate) && rate > 0 && rate < 100_000) {
@@ -51,6 +52,8 @@ export default async function NewAssignmentPage({ searchParams }: PageProps<"/ad
   if (model === "lohn" || model === "rechnung") values.billing = model;
   const basis = param(sp.basis);
   if (basis === "kostensatz" || basis === "brutto") values.rateBasis = basis;
+  // A follow-up from a Zusage often starts later: then it is planned, not yet running.
+  values.status = defaultAssignmentStatus(values.startDate, todayIso());
 
   return (
     <>

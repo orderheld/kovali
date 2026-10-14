@@ -8,6 +8,26 @@ export { daysBetweenIso };
 const days = (n: number) => (n === 1 ? "1 Tag" : `${n} Tage`);
 const inDays = (n: number) => (n === 1 ? "morgen" : `in ${n} Tagen`);
 
+/**
+ * Status of a new assignment: "geplant" when it starts after today, else "laufend". The form
+ * shows it as the default; Ferhat can still change it.
+ */
+export function defaultAssignmentStatus(startDate: string | null | undefined, today: string): "geplant" | "laufend" {
+  return startDate && startDate > today ? "geplant" : "laufend";
+}
+
+/**
+ * Running assignments split by their start: `current` have started (or have no start date) and
+ * count on the dashboard, `upcoming` are marked as running but start after today. Assignments
+ * whose end date has passed stay in `current`; they carry their own warning.
+ */
+export function splitByStart<T extends { startDate: string | null }>(rows: readonly T[], today: string): { current: T[]; upcoming: T[] } {
+  const current: T[] = [];
+  const upcoming: T[] = [];
+  for (const row of rows) (row.startDate && row.startDate > today ? upcoming : current).push(row);
+  return { current, upcoming };
+}
+
 /** "01.03.2026 – 28.02.2027", "ab 01.03.2026" or "bis 28.02.2027". */
 export function formatPeriod(start: string | null, end: string | null): string {
   if (start && end) return `${formatDate(start)} – ${formatDate(end)}`;

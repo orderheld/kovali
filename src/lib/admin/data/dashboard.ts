@@ -16,7 +16,10 @@ export const NEXT_STEP_DAYS = 7;
 /** Application deadlines within this many days are shown. */
 export const DEADLINE_DAYS = 7;
 
-/** Vacancy next steps due by today + 7 days (overdue ones first) and deadlines in the next 7 days. */
+/**
+ * Vacancy next steps due by today + 7 days (overdue ones first) and application deadlines in
+ * the next 7 days of vacancies he has not applied for yet.
+ */
 export async function dashboardAgenda(today = todayIso()) {
   const db = await getDb();
   const columns = {
@@ -42,7 +45,8 @@ export async function dashboardAgenda(today = todayIso()) {
       .select(columns)
       .from(mandates)
       .leftJoin(companies, eq(companies.id, mandates.companyId))
-      .where(and(open, gte(mandates.deadline, today), lte(mandates.deadline, addDaysIso(today, DEADLINE_DAYS))))
+      // Once he has applied, the deadline no longer matters (as on the vacancy page).
+      .where(and(open, isNull(mandates.appliedAt), gte(mandates.deadline, today), lte(mandates.deadline, addDaysIso(today, DEADLINE_DAYS))))
       .orderBy(asc(mandates.deadline), asc(mandates.id))
       .limit(20),
   ]);

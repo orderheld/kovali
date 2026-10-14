@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ArrowRight, Briefcase, Calculator, CalendarClock, FileSignature, Pin, Plus, Settings2, Telescope, TextQuote } from "lucide-react";
 import { CopyButton } from "@/components/admin/copy-button";
 import { Badge, Card, CardBody, CardHeader, EmptyState, LinkButton, Mono, Notice, PageHeader, StatTile } from "@/components/admin/ui";
-import { formatPeriod, periodStatus } from "@/lib/admin/assignment-period";
+import { formatPeriod, periodStatus, splitByStart } from "@/lib/admin/assignment-period";
 import { requireAdmin } from "@/lib/admin/auth/session";
 import { listEndingContracts } from "@/lib/admin/contracts/data";
 import { CONTRACT_ENDING_DAYS, contractExpiry, expiryLabel, expiryTone } from "@/lib/admin/contracts/expiry";
@@ -62,9 +62,12 @@ export default async function DashboardPage() {
     setupProgress(),
   ]);
   const { settings, saved } = earningsSettings;
-  const next = running.length ? null : await nextBestStep();
+  // Only assignments that have started count; one marked as running that starts later (e.g. the
+  // follow-up of the current one) gets its own line outside the total.
+  const { current, upcoming } = splitByStart(running, today);
+  const next = current.length ? null : await nextBestStep();
 
-  const withInput = running.map((a) => ({ a, input: assignmentEarningsInput(a) }));
+  const withInput = current.map((a) => ({ a, input: assignmentEarningsInput(a) }));
   const inputs = withInput.map((x) => x.input).filter((i): i is EarningsInput => i !== null);
   const total = computeEarningsTotal(inputs, settings);
   const withoutRate = withInput.filter((x) => !x.input).map((x) => x.a);
@@ -118,11 +121,11 @@ export default async function DashboardPage() {
         <Card>
           <CardHeader
             icon={Briefcase}
-            title={running.length > 1 ? `Aktuelle Aufträge (${running.length})` : "Aktueller Auftrag"}
+            title={current.length > 1 ? `Aktuelle Aufträge (${current.length})` : "Aktueller Auftrag"}
             description={
-              running.length > 1
+              current.length > 1
                 ? "Zusammen gerechnet. Rechnungen über die Einzelfirma teilen sich AHV und Fixkosten."
-                : running.length === 1
+                : current.length === 1
                   ? undefined
                   : "Gerade läuft kein Auftrag."
             }
@@ -134,31 +137,38 @@ export default async function DashboardPage() {
               ) : null
             }
           />
-          {running.length === 0 ? (
-            <EmptyState
-              icon={Briefcase}
-              title="Kein laufender Auftrag"
-              action={
-                <span className="flex flex-wrap justify-center gap-2">
-                  <NextStepAction next={next} />
-                  {next?.kind === "zusage" ? null : (
-                    <LinkButton href="/admin/auftraege/neu" variant={next?.kind === "keine" || next?.kind === "vakanz" ? "primary" : "secondary"} icon={Plus}>
-                      Auftrag erfassen
-                    </LinkButton>
-                  )}
-                </span>
-              }
-            >
-              <NextStepText next={next} today={today} />
-            </EmptyState>
+          {current.length === 0 ? (
+            <>
+              <EmptyState
+                icon={Briefcase}
+                title="Kein laufender Auftrag"
+                action={
+                  <span className="flex flex-wrap justify-center gap-2">
+                    <NextStepAction next={next} />
+                    {next?.kind === "zusage" ? null : (
+                      <LinkButton href="/admin/auftraege/neu" variant={next?.kind === "keine" || next?.kind === "vakanz" ? "primary" : "secondary"} icon={Plus}>
+                        Auftrag erfassen
+                      </LinkButton>
+                    )}
+                  </span>
+                }
+              >
+                <NextStepText next={next} today={today} />
+              </EmptyState>
+              {upcoming.length ? (
+                <CardBody className="pt-0">
+                  <UpcomingNotice rows={upcoming} />
+                </CardBody>
+              ) : null}
+            </>
           ) : (
             <>
-              {running.length === 1 ? <SingleAssignment a={running[0]} today={today} /> : <AssignmentRows rows={withInput} settings={settings} today={today} />}
+              {current.length === 1 ? <SingleAssignment a={current[0]} today={today} /> : <AssignmentRows rows={withInput} settings={settings} today={today} />}
               {total ? (
                 <>
                   <div className="grid gap-3 px-5 pt-4 sm:grid-cols-2 xl:grid-cols-4">
-                    {running.length === 1 ? (
-                      <StatTile label={rateLabel(running[0])} value={formatRate(running[0].rateAmount, running[0].rateUnit, true)} hint={modelLabel(running[0].billing, running[0].rateBasis)} />
+                    {current.length === 1 ? (
+                      <StatTile label={rateLabel(current[0])} value={formatRate(current[0].rateAmount, current[0].rateUnit, true)} hint={modelLabel(current[0].billing, current[0].rateBasis)} />
                     ) : (
                       <StatTile label="Stunden pro Monat" value={formatNumber(total.hoursPerMonth, 1)} hint="alle Aufträge zusammen" />
                     )}
@@ -170,8 +180,9 @@ export default async function DashboardPage() {
                     />
                     <StatTile label="Bleibt dir pro Jahr" value={money(total.net.year)} hint="über 12 Monate verteilt" />
                   </div>
-                  {total.notices.length || withoutRate.length ? (
+                  {total.notices.length || withoutRate.length || upcoming.length ? (
                     <div className="space-y-2 px-5 pt-4">
+                      {upcoming.length ? <UpcomingNotice rows={upcoming} /> : null}
                       {withoutRate.length ? (
                         <Notice tone="amber">
                           Ohne Satz und darum nicht mitgerechnet:{" "}
@@ -196,10 +207,11 @@ export default async function DashboardPage() {
                   <EarningsBreakdown earnings={total} />
                 </>
               ) : (
-                <CardBody>
+                <CardBody className="space-y-2">
                   <Notice tone="amber" title="Noch kein Satz erfasst">
                     Trag beim Auftrag Satz und Abrechnung ein, dann siehst du hier, was dir pro Monat bleibt.
                   </Notice>
+                  {upcoming.length ? <UpcomingNotice rows={upcoming} /> : null}
                 </CardBody>
               )}
             </>
@@ -392,6 +404,22 @@ function SingleAssignment({ a, today }: { a: RunningRow; today: string }) {
         ) : null}
       </div>
     </div>
+  );
+}
+
+/** Assignments marked as running that start after today: named, but not in the total. */
+function UpcomingNotice({ rows }: { rows: RunningRow[] }) {
+  return (
+    <Notice tone="blue" icon={CalendarClock}>
+      {rows.map((a) => (
+        <span key={a.id} className="block">
+          <Link href={`/admin/auftraege/${a.id}`} className="font-medium underline underline-offset-2">
+            «{displayNo.assignment(a.id)} {a.title}»
+          </Link>{" "}
+          startet am {formatDate(a.startDate)} und ist noch nicht mitgerechnet.
+        </span>
+      ))}
+    </Notice>
   );
 }
 

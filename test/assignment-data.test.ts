@@ -189,8 +189,16 @@ describe.skipIf(!url)("assignments, earnings settings and dashboard (database)",
     expect(await data.nextBestStep()).toMatchObject({ kind: "geplant", title: "Requirements Engineer" });
 
     expect(await data.vacancyPipeline()).toEqual({ angeboten: 1, neu: 1, gewonnen: 1 });
+    await client.query(
+      `insert into mandates (title, status, deadline, applied_at) values
+         ('Frist offen', 'in_bearbeitung', '2026-10-17', null),
+         ('Schon beworben', 'angeboten', '2026-10-17', '2026-10-12')`,
+    );
     const agenda = await data.dashboardAgenda(today);
     expect(agenda.nextSteps.map((m) => m.title)).toEqual(["Testmanager"]);
+    // The deadline of a vacancy he has applied for is no longer shown.
+    expect(agenda.deadlines.map((m) => m.title)).toEqual(["Frist offen"]);
+    await client.query("delete from mandates where title in ('Frist offen', 'Schon beworben')");
 
     await client.query(
       `insert into assignments (title, status, end_date, rate_amount) values ('Läuft länger', 'laufend', '2027-06-30', 120), ('Läuft kürzer', 'laufend', '2026-12-31', 110), ('Vorbei', 'beendet', '2026-01-31', 100)`,
