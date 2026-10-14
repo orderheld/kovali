@@ -213,9 +213,13 @@ export function SetupGenerator() {
               <img src={qr} alt="QR-Code für die Authenticator-App" width={220} height={220} className="rounded-md border border-line" />
             ) : null}
             <div>
-              <p>QR-Code mit der App scannen, dann den angezeigten Code hier prüfen:</p>
+              <p id="totp-test-hint">QR-Code mit der App scannen, dann den angezeigten Code hier prüfen:</p>
               <div className="mt-2 flex gap-2">
                 <input
+                  aria-label="Code aus der Authenticator-App"
+                  aria-describedby="totp-test-hint"
+                  autoComplete="off"
+                  maxLength={6}
                   className={cn(input, "w-32")}
                   inputMode="numeric"
                   placeholder="123456"

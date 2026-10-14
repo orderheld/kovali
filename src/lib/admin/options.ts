@@ -128,7 +128,7 @@ export const languageLevels = options([
   { value: "c2", label: "C2 – verhandlungssicher" },
   { value: "c1", label: "C1 – fliessend" },
   { value: "b2", label: "B2 – gut" },
-  { value: "b1", label: "B1 – Grundkenntnisse erweitert" },
+  { value: "b1", label: "B1 – erweiterte Grundkenntnisse" },
   { value: "a2", label: "A2 – Grundkenntnisse" },
 ]);
 

@@ -146,7 +146,7 @@ export default async function SearchPage({ searchParams }: PageProps<"/admin/suc
             </Group>
           ) : null}
           {results.mandates.total ? (
-            <Group title="Mandate" icon={Briefcase} total={results.mandates.total} moreHref={listHref("/admin/mandate", { q })}>
+            <Group title="Mandate" icon={Briefcase} total={results.mandates.total} moreHref={listHref("/admin/mandate", { q, status: "alle" })}>
               {results.mandates.rows.map((m) => (
                 <Row key={m.id} href={`/admin/mandate/${m.id}`}>
                   <span className="min-w-0 flex-1 basis-60">

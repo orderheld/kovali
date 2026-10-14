@@ -5,6 +5,7 @@ import { decidedSubmissionStatuses, statusAfterConsent, statusAfterWithdrawal } 
 import { getDb, type AdminDb } from "../db/client";
 import { candidates, companies, mandates, submissions, vacancyShares } from "../db/schema";
 import { todayIso } from "../format";
+import { isCapitalCompany } from "../legal-form";
 
 /**
  * Submissions (a candidate proposed for a mandate) and vacancy shares (a mandate offered to a
@@ -37,6 +38,7 @@ export interface CandidateFirm {
   name: string;
   kind: string;
   legalForm: string | null;
+  legalName: string | null;
 }
 
 export const NO_OWN_FIRM =
@@ -48,21 +50,16 @@ export const SOLE_PROPRIETOR_WARNING =
 export const UNKNOWN_LEGAL_FORM_WARNING =
   "Rechtsform der Firma nicht erfasst. Falls Einzelfirma: höheres Risiko Scheinselbständigkeit, AHV-Bestätigung der Selbständigkeit einholen.";
 
-/** GmbH or AG, also in the French and Italian forms used in Switzerland (Sàrl, Sagl, SA). */
-export function isCapitalCompany(legalForm: string | null | undefined): boolean {
-  if (!legalForm) return false;
-  return /(?<![\p{L}])(gmbh|ag|sa|s\.a\.|sàrl|sarl|sagl|aktiengesellschaft|gesellschaft mit beschränkter haftung)(?![\p{L}])/iu.test(legalForm.trim());
-}
-
 export type FirmCheck = { ok: false; error: string } | { ok: true; firm: CandidateFirm; warning: string | null };
 
 /**
  * May a candidate be proposed? Only with a linked company of kind "subunternehmer". A firm that
- * is not a GmbH or AG (sole proprietorship or unknown) is allowed with a warning.
+ * is not a GmbH or AG (sole proprietorship or unknown) is allowed with a warning. Without a
+ * legal form, the name decides (as on the candidate page).
  */
 export function subcontractorCheck(firm: CandidateFirm | null): FirmCheck {
   if (!firm || firm.kind !== "subunternehmer") return { ok: false, error: NO_OWN_FIRM };
-  if (isCapitalCompany(firm.legalForm)) return { ok: true, firm, warning: null };
+  if (isCapitalCompany(firm)) return { ok: true, firm, warning: null };
   const form = firm.legalForm?.trim();
   if (!form) return { ok: true, firm, warning: UNKNOWN_LEGAL_FORM_WARNING };
   if (/einzel/i.test(form)) return { ok: true, firm, warning: SOLE_PROPRIETOR_WARNING };
@@ -73,7 +70,7 @@ export function subcontractorCheck(firm: CandidateFirm | null): FirmCheck {
 export async function candidateFirm(candidateId: number): Promise<CandidateFirm | null> {
   const db = await getDb();
   const [row] = await db
-    .select({ id: companies.id, name: companies.name, kind: companies.kind, legalForm: companies.legalForm })
+    .select({ id: companies.id, name: companies.name, kind: companies.kind, legalForm: companies.legalForm, legalName: companies.legalName })
     .from(candidates)
     .innerJoin(companies, eq(companies.id, candidates.companyId))
     .where(eq(candidates.id, candidateId))
@@ -88,14 +85,23 @@ const firmColumns = {
   firmName: firm.name,
   firmKind: firm.kind,
   firmLegalForm: firm.legalForm,
+  firmLegalName: firm.legalName,
 };
 
 /** The firm a profile went through at the hand-over (submissions.subcontractor_company_id). */
 const handoverFirm = alias(companies, "handover_firm");
 
 /** Firm columns of a row as CandidateFirm, or null. */
-export function firmOf(row: { firmId: number | null; firmName: string | null; firmKind: string | null; firmLegalForm: string | null }): CandidateFirm | null {
-  return row.firmId && row.firmName && row.firmKind ? { id: row.firmId, name: row.firmName, kind: row.firmKind, legalForm: row.firmLegalForm } : null;
+export function firmOf(row: {
+  firmId: number | null;
+  firmName: string | null;
+  firmKind: string | null;
+  firmLegalForm: string | null;
+  firmLegalName: string | null;
+}): CandidateFirm | null {
+  return row.firmId && row.firmName && row.firmKind
+    ? { id: row.firmId, name: row.firmName, kind: row.firmKind, legalForm: row.firmLegalForm, legalName: row.firmLegalName }
+    : null;
 }
 
 /** Submissions of a mandate: active ones first, then by match score. */

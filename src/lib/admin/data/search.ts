@@ -2,8 +2,8 @@ import "server-only";
 import { asc, count, desc, eq, ilike, or, sql, type Column, type SQL } from "drizzle-orm";
 import { getDb } from "../db/client";
 import { candidates, companies, contacts, contracts, documents, mandates, submissions } from "../db/schema";
-import { outerColumn } from "./query";
-import { likePattern } from "./query";
+import { mandateSearchWhere } from "./mandates";
+import { likePattern, outerColumn } from "./query";
 
 /**
  * Global search of the admin area (/admin/suche). A display number such as K-0042 or a
@@ -130,7 +130,8 @@ export async function searchAll(input: string) {
     // Skill lists match case-insensitively, also parts of a skill ("FI" finds "SAP FI").
     sql`exists (select 1 from unnest(${candidates.skills} || ${candidates.sapModules} || ${candidates.detectedSkills}) as s(v) where s.v ilike ${pattern})`,
   );
-  const mandateWhere = or(ilike(mandates.title, pattern), ilike(mandates.reference, pattern), ilike(mandates.endClient, pattern), ilike(mandates.description, pattern));
+  // Same condition as the mandate list, so "Alle anzeigen" there shows these hits.
+  const mandateWhere = mandateSearchWhere(input);
   const companyWhere = or(
     ilike(companies.name, pattern),
     ilike(companies.legalName, pattern),
@@ -176,7 +177,7 @@ export async function searchAll(input: string) {
         .where(mandateWhere)
         .orderBy(desc(mandates.createdAt), desc(mandates.id))
         .limit(SEARCH_GROUP_LIMIT),
-      db.select({ n: count() }).from(mandates).where(mandateWhere),
+      db.select({ n: count() }).from(mandates).leftJoin(companies, eq(companies.id, mandates.companyId)).where(mandateWhere),
     ),
     group(
       db

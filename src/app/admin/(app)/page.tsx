@@ -306,8 +306,8 @@ export default async function DashboardPage() {
               />
               <ul className="divide-y divide-line py-1">
                 <ReviewRow href="/admin/portal" label="Änderungsanträge offen" count={portal.changeRequests} />
-                <ReviewRow href="/admin/portal" label="Hochgeladene Dokumente unbestätigt" count={portal.uploads} />
-                <ReviewRow href="/admin/portal" label="Interesse an Vakanzen, nicht angesehen" count={portal.interested} tone="green" />
+                <ReviewRow href="/admin/portal/dokumente" label="Hochgeladene Dokumente unbestätigt" count={portal.uploads} />
+                <ReviewRow href="/admin/portal/interesse" label="Interesse an Vakanzen, nicht angesehen" count={portal.interested} tone="green" />
               </ul>
             </Card>
 

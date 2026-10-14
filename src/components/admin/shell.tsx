@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useId, useRef, useState, useTransition } from "react";
 import {
   Briefcase,
   Building2,
@@ -107,32 +107,121 @@ function Sidebar({ counts, onNavigate }: { counts: NavCounts; onNavigate?: () =>
   );
 }
 
+function menuItems(menu: HTMLElement | null): HTMLAnchorElement[] {
+  return Array.from(menu?.querySelectorAll<HTMLAnchorElement>('[role="menuitem"]') ?? []);
+}
+
+/** Focuses an entry of a menu; -1 is the last one, and the index wraps around. */
+function focusMenuItem(menu: HTMLElement | null, index: number) {
+  const list = menuItems(menu);
+  list[(index + list.length) % list.length]?.focus();
+}
+
+/**
+ * "Neu" button with the forms to create records. Follows the ARIA menu button pattern (as the
+ * dossier menu): arrow keys move between entries, Escape closes and returns focus to the button.
+ */
 function QuickCreate() {
   // Remembers on which page the menu was opened, so it closes by itself after navigating.
   const pathname = usePathname();
   const [openOn, setOpenOn] = useState<string | null>(null);
   const open = openOn === pathname;
-  const setOpen = (value: boolean | ((o: boolean) => boolean)) =>
-    setOpenOn((typeof value === "function" ? value(open) : value) ? pathname : null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLUListElement>(null);
+  const menuId = useId();
+  // Entry to focus once the menu is rendered (0 = first, -1 = last).
+  const focusOnOpen = useRef<number | null>(null);
+
+  const focusItem = (index: number) => focusMenuItem(menuRef.current, index);
+  const openAndFocus = (index: number) => {
+    focusOnOpen.current = index;
+    setOpenOn(pathname);
+  };
+  const close = (returnFocus = true) => {
+    setOpenOn(null);
+    if (returnFocus) buttonRef.current?.focus();
+  };
+
+  useEffect(() => {
+    const index = focusOnOpen.current;
+    if (!open || index === null) return;
+    focusOnOpen.current = null;
+    focusMenuItem(menuRef.current, index);
+  }, [open]);
+
   return (
-    <div className="relative">
+    <div
+      className="relative"
+      // Closes when focus leaves the button and the menu (Tab, or a click elsewhere).
+      onBlur={(e) => {
+        if (open && !e.currentTarget.contains(e.relatedTarget as Node | null)) setOpenOn(null);
+      }}
+    >
       <button
+        ref={buttonRef}
         type="button"
         aria-expanded={open}
         aria-haspopup="menu"
-        onClick={() => setOpen((o) => !o)}
+        aria-controls={open ? menuId : undefined}
+        onClick={() => (open ? close(false) : openAndFocus(0))}
+        onKeyDown={(e) => {
+          if (e.key === "ArrowDown") {
+            e.preventDefault();
+            openAndFocus(0);
+          } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            openAndFocus(-1);
+          } else if (e.key === "Escape" && open) {
+            e.preventDefault();
+            close();
+          }
+        }}
         className="inline-flex h-9 items-center gap-1.5 rounded-md bg-blue px-3 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
       >
         <Plus aria-hidden className="size-4" />
-        <span className="hidden sm:inline">Neu</span>
+        {/* Visible from sm on; below that only for screen readers and voice control. */}
+        <span className="sr-only sm:not-sr-only">Neu</span>
       </button>
       {open ? (
         <>
-          <button type="button" aria-hidden tabIndex={-1} className="fixed inset-0 z-30 cursor-default" onClick={() => setOpen(false)} />
-          <ul role="menu" className="absolute right-0 z-40 mt-2 w-52 rounded-lg border border-line bg-white py-1 shadow-lg">
+          <button type="button" aria-hidden tabIndex={-1} className="fixed inset-0 z-30 cursor-default" onClick={() => close(false)} />
+          <ul
+            ref={menuRef}
+            id={menuId}
+            role="menu"
+            aria-label="Neu erfassen"
+            onKeyDown={(e) => {
+              const index = menuItems(menuRef.current).indexOf(document.activeElement as HTMLAnchorElement);
+              if (e.key === "ArrowDown") {
+                e.preventDefault();
+                focusItem(index + 1);
+              } else if (e.key === "ArrowUp") {
+                e.preventDefault();
+                focusItem(index - 1);
+              } else if (e.key === "Home") {
+                e.preventDefault();
+                focusItem(0);
+              } else if (e.key === "End") {
+                e.preventDefault();
+                focusItem(-1);
+              } else if (e.key === "Escape") {
+                e.preventDefault();
+                close();
+              } else if (e.key === "Tab") {
+                setOpenOn(null);
+              }
+            }}
+            className="absolute right-0 z-40 mt-2 w-52 rounded-lg border border-line bg-white py-1 shadow-lg"
+          >
             {quickCreate.map((q) => (
               <li key={q.href} role="none">
-                <Link role="menuitem" href={q.href} className="block px-4 py-2 text-sm text-ink hover:bg-mist">
+                <Link
+                  role="menuitem"
+                  href={q.href}
+                  tabIndex={-1}
+                  onClick={() => close(false)}
+                  className="block px-4 py-2 text-sm text-ink hover:bg-mist focus:bg-mist focus:outline-none"
+                >
                   {q.label}
                 </Link>
               </li>
@@ -163,7 +252,7 @@ function LogoutButton({ logout }: { logout: () => Promise<void> }) {
       className="inline-flex h-9 items-center gap-1.5 rounded-md px-2.5 text-sm text-slate hover:bg-mist hover:text-ink disabled:opacity-60"
     >
       <LogOut aria-hidden className="size-4" />
-      <span className="hidden sm:inline">Abmelden</span>
+      <span className="sr-only sm:not-sr-only">Abmelden</span>
     </button>
   );
 }
@@ -180,11 +269,49 @@ export function AdminShell({
   const pathname = usePathname();
   const [drawerOn, setDrawerOn] = useState<string | null>(null);
   const drawer = drawerOn === pathname;
-  const setDrawer = (value: boolean) => setDrawerOn(value ? pathname : null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  // Focus goes back to the menu button once the page behind is no longer inert (not after navigating).
+  const restoreFocus = useRef(false);
+  const openDrawer = () => setDrawerOn(pathname);
+  const closeDrawer = (returnFocus = true) => {
+    restoreFocus.current = returnFocus;
+    setDrawerOn(null);
+  };
+
+  // A modal drawer: focus moves into it, Escape closes it, the page behind is inert (below).
+  useEffect(() => {
+    if (!drawer) {
+      if (restoreFocus.current) menuButtonRef.current?.focus();
+      restoreFocus.current = false;
+      return;
+    }
+    closeRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      restoreFocus.current = true;
+      setDrawerOn(null);
+    };
+    // From lg on the drawer is hidden; the page must not stay inert behind it.
+    const wide = window.matchMedia("(min-width: 64rem)");
+    const onWide = () => {
+      if (wide.matches) setDrawerOn(null);
+    };
+    document.addEventListener("keydown", onKey);
+    wide.addEventListener("change", onWide);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      wide.removeEventListener("change", onWide);
+    };
+  }, [drawer]);
 
   return (
     <div className="flex min-h-dvh flex-1">
-      <a href="#admin-inhalt" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded focus:bg-white focus:px-3 focus:py-2">
+      <a
+        href="#admin-inhalt"
+        inert={drawer}
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded focus:bg-white focus:px-3 focus:py-2"
+      >
         Zum Inhalt springen
       </a>
       <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 lg:block">
@@ -192,12 +319,14 @@ export function AdminShell({
       </aside>
       {drawer ? (
         <div className="fixed inset-0 z-40 lg:hidden" role="dialog" aria-modal="true" aria-label="Navigation">
-          <button type="button" aria-label="Navigation schliessen" className="absolute inset-0 bg-navy/50" onClick={() => setDrawer(false)} />
+          {/* Closes on a click beside the drawer; keyboard users have the close button and Escape. */}
+          <button type="button" aria-hidden tabIndex={-1} className="absolute inset-0 cursor-default bg-navy/50" onClick={() => closeDrawer()} />
           <div className="relative h-full w-72 max-w-[85vw]">
-            <Sidebar counts={counts} onNavigate={() => setDrawer(false)} />
+            <Sidebar counts={counts} onNavigate={() => closeDrawer(false)} />
             <button
+              ref={closeRef}
               type="button"
-              onClick={() => setDrawer(false)}
+              onClick={() => closeDrawer()}
               className="absolute top-4 right-3 rounded p-1.5 text-sky hover:bg-white/10"
               aria-label="Navigation schliessen"
             >
@@ -206,12 +335,13 @@ export function AdminShell({
           </div>
         </div>
       ) : null}
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div inert={drawer} className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-line bg-white/90 px-4 backdrop-blur sm:px-6">
           <button
+            ref={menuButtonRef}
             type="button"
             className="-ml-1 rounded p-1.5 text-slate hover:bg-mist lg:hidden"
-            onClick={() => setDrawer(true)}
+            onClick={openDrawer}
             aria-label="Navigation öffnen"
           >
             <Menu aria-hidden className="size-5" />

@@ -46,6 +46,7 @@ describe("own firm", () => {
     expect(isCapitalCompany({ legalForm: "GmbH" })).toBe(true);
     expect(isCapitalCompany({ legalForm: "Aktiengesellschaft" })).toBe(true);
     expect(isCapitalCompany({ legalForm: "Sàrl" })).toBe(true);
+    expect(isCapitalCompany({ legalForm: "S.A." })).toBe(true);
     expect(isCapitalCompany({ legalForm: null, name: "Muster Analytics AG" })).toBe(true);
     expect(isCapitalCompany({ legalForm: "", legalName: "Beispiel Consulting GmbH", name: "Beispiel" })).toBe(true);
   });

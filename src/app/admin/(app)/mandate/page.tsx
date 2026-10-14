@@ -123,7 +123,7 @@ export default async function MandatesPage({ searchParams }: PageProps<"/admin/m
           <SearchBox
             action="/admin/mandate"
             defaultValue={q}
-            placeholder="Titel, Firma, Endkunde"
+            placeholder="Titel, Firma, Endkunde, Beschreibung"
             hidden={{ status: pipeline ? undefined : statusParam, ansicht: pipeline ? "pipeline" : undefined }}
           >
             <label htmlFor="mandate-firma" className="sr-only">

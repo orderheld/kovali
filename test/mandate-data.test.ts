@@ -89,6 +89,22 @@ describe.skipIf(!url)("mandate data", () => {
     expect(await mandatesData.mandateCompanyOptions()).toEqual([{ value: 1, label: "Alpenblick Consulting AG" }]);
   });
 
+  it("finds the same mandates in the list as in the global search", async () => {
+    const db = await getDb();
+    const { eq } = await import("drizzle-orm");
+    const { searchAll } = await import("@/lib/admin/data/search");
+    await db.update(schema.mandates).set({ description: "Migration auf S/4HANA im Finanzbereich" }).where(eq(schema.mandates.id, 2));
+    // The description of a won mandate: "Alle anzeigen" opens the list with status "alle".
+    expect((await searchAll("s/4hana"))?.mandates).toMatchObject({ total: 1, rows: [{ id: 2 }] });
+    expect((await mandatesData.listMandates({ q: "s/4hana", statuses: null, page: 1 })).rows.map((r) => r.id)).toEqual([2]);
+    // The client's name finds its mandates in both.
+    const list = await mandatesData.listMandates({ q: "alpenblick", statuses: null, page: 1 });
+    const global = await searchAll("alpenblick");
+    expect(list.total).toBe(3);
+    expect(global?.mandates.total).toBe(3);
+    expect(global?.mandates.rows.map((r) => r.id).sort()).toEqual(list.rows.map((r) => r.id).sort());
+  });
+
   it("counts contacts and open mandates per company in the company list", async () => {
     const db = await getDb();
     // Contact ids deliberately differ from company ids: an unqualified "id" in the subquery would match wrongly.

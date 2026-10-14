@@ -47,7 +47,7 @@ const entityLabels: Record<string, string> = {
   privacy: "Datenschutz",
   change_request: "Änderungsantrag",
   vacancy_share: "Vakanz-Freigabe",
-  account: "Portal-Konto",
+  candidate_account: "Portal-Konto",
 };
 
 /** "Kandidat K-0042", "Dokument #12" or "–". */
