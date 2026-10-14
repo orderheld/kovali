@@ -48,7 +48,7 @@ export function MobileNav() {
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((v) => !v)}
-        className="-mr-2 inline-flex size-11 items-center justify-center rounded-md text-ink hover:bg-paper"
+        className="-mr-2 inline-flex size-11 items-center justify-center rounded-md text-white hover:bg-white/10"
       >
         <span className="sr-only">{open ? "Menü schliessen" : "Menü öffnen"}</span>
         {open ? <X aria-hidden className="size-6" /> : <Menu aria-hidden className="size-6" />}
@@ -56,11 +56,12 @@ export function MobileNav() {
       <div
         id={panelId}
         hidden={!open}
-        className="fixed inset-x-0 bottom-0 top-[4.5rem] z-40 overflow-y-auto border-t border-line bg-white"
+        className="fixed inset-x-0 bottom-0 top-[4.5rem] z-40 overflow-y-auto border-t border-white/10 bg-night"
       >
-        <nav aria-label="Hauptnavigation mobil" className="px-5 pb-10 pt-4 sm:px-8">
-          <ul className="divide-y divide-line">
-            {items.map((item) => {
+        <div aria-hidden className="tech-grid pointer-events-none absolute inset-0 [--grid-color:rgb(143_201_255/0.06)] [mask-image:linear-gradient(to_bottom,black,transparent_70%)]" />
+        <nav aria-label="Hauptnavigation mobil" className="relative px-5 pb-10 pt-4 sm:px-8">
+          <ul className="divide-y divide-white/10">
+            {items.map((item, i) => {
               const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
               return (
                 <li key={item.href}>
@@ -69,12 +70,15 @@ export function MobileNav() {
                     onClick={close}
                     aria-current={active ? "page" : undefined}
                     className={cn(
-                      "flex items-center justify-between py-4 text-lg font-medium",
-                      active ? "text-blue" : "text-ink",
+                      "flex items-center gap-4 py-4 text-lg font-medium",
+                      active ? "text-electric" : "text-white",
                     )}
                   >
-                    {item.label}
-                    <ArrowRight aria-hidden className="size-4 text-slate" />
+                    <span aria-hidden className="w-6 font-mono text-xs text-sky/70">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <span className="flex-1">{item.label}</span>
+                    <ArrowRight aria-hidden className="size-4 text-white/50" />
                   </Link>
                 </li>
               );
@@ -83,7 +87,7 @@ export function MobileNav() {
           <Link
             href={primaryCta.href}
             onClick={close}
-            className="mt-8 flex h-12 items-center justify-center rounded-md bg-blue font-medium text-white hover:bg-blue-700"
+            className="mt-8 flex h-12 items-center justify-center rounded-lg bg-electric font-medium text-night hover:bg-sky"
           >
             {primaryCta.label}
           </Link>

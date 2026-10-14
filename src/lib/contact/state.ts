@@ -6,19 +6,25 @@ export type ContactField =
   | "email"
   | "phone"
   | "requestType"
-  | "service"
+  | "services"
   | "projectDescription"
   | "start"
+  | "duration"
+  | "workload"
   | "workMode"
   | "location"
+  | "requirements"
   | "message"
   | "consent";
 
-/** Fields that can carry an error: the text fields plus the optional file. */
+/** Fields that can carry an error: the form fields plus the optional file. */
 export type ContactErrorField = ContactField | "attachment";
 
-/** Raw text values, sent back on errors so the form keeps what the user typed. */
-export type ContactValues = Partial<Record<ContactField, string>>;
+/** Fields with one text value. "services" is a multi-select and keeps a list. */
+export type ContactTextField = Exclude<ContactField, "services">;
+
+/** Raw values, sent back on errors so the form keeps what the user entered. */
+export type ContactValues = Partial<Record<ContactTextField, string>> & { services?: string[] };
 
 export type ContactState =
   | { status: "idle" }

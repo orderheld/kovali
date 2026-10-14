@@ -38,8 +38,10 @@ Die aktive Richtung liegt zusätzlich in `public/brand/` und als `src/app/icon.s
 | Navy | `#0B1733` | Stamm des K, Text, dunkle Flächen |
 | Corporate Blue | `#145BCE` | Oberer Arm, Links, Buttons |
 | Electric Blue | `#35A9FF` | Unterer Arm, Akzente auf Navy. Nie als Text auf Weiss. |
-| Paper | `#F7F5F0` | Helle Flächen der Website |
-| Mist | `#F4F8FC` | Werkzeugleisten der Beispiel-Artefakte |
+| Night | `#060B18` | Dunkle Flächen der Website: Hero, Abschluss, Footer |
+| Azure | `#1F7BEA` | Mittleres Blau des dunklen Logos, für Verläufe |
+| Cloud | `#F4F7FB` | Hellgraue Flächen der Website |
+| Mist | `#F4F8FC` | Admin-Bereich und Upload-Felder |
 
 ## Regeln
 

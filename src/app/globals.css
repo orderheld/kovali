@@ -1,9 +1,12 @@
 @import "tailwindcss";
 
 /*
- * KOVALI design tokens. Colours and type follow the brand concept:
- * Navy carries the brand, Corporate Blue is the accent for text and actions,
- * Electric Blue is only used on dark backgrounds or as a graphic accent.
+ * KOVALI design tokens, taken from the logo (brand/tools/directions.py, Signature):
+ * ink/navy for the wordmark and the stem, Corporate Blue and Electric Blue for the two arms.
+ * Corporate Blue is the accent for text and actions on light surfaces; Electric Blue is
+ * used on dark surfaces and as a graphic accent, never as text on white.
+ * The admin area reads the same names (ink, slate, blue, line, mist, navy, sky, electric,
+ * paper, field, hint, pass/fail/open): keep them defined and close to these values.
  */
 @theme {
   --color-navy: #0b1733;
@@ -18,10 +21,17 @@
   --color-line: #dce4ef;
   --color-ink: #0b1733;
 
-  /* Warm light surfaces of the public site. Mist stays for artefact toolbars and file drop zones. */
-  --color-paper: #f7f5f0; /* hero, section and CTA background */
-  --color-paper-2: #efebe3; /* portrait placeholder, quiet panels */
-  --color-paper-line: #e4ded2; /* hairlines on paper, decorative */
+  /* Public site surfaces. */
+  --color-night: #060b18; /* deepest surface: heroes, CTA, footer */
+  --color-azure: #1f7bea; /* the mid blue of the dark logo, for gradients and rules */
+  --color-cloud: #f4f7fb; /* cool light grey section background */
+  --color-cloud-line: #e2e8f1; /* hairlines on cloud */
+
+  /* Admin only (warm surfaces of the previous site design). The public site does not use them. */
+  --color-paper: #f7f5f0;
+  --color-paper-2: #efebe3;
+  --color-paper-line: #e4ded2;
+
   --color-field: #7c8599; /* input and checkbox borders, 3.70:1 on white (WCAG 1.4.11) */
   --color-hint: #6b7489; /* placeholder text, 4.68:1 on white */
 
@@ -36,40 +46,33 @@
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, "SFMono-Regular", monospace;
 
-  --text-display: clamp(2.5rem, 1.5rem + 4.2vw, 4.5rem);
-  --text-display--line-height: 1.04;
-  --text-display--letter-spacing: -0.02em;
-  --text-h1: clamp(2.25rem, 1.6rem + 2.6vw, 3.5rem);
-  --text-h1--line-height: 1.08;
-  --text-h1--letter-spacing: -0.015em;
-  --text-h2: clamp(1.75rem, 1.3rem + 1.8vw, 2.75rem);
-  --text-h2--line-height: 1.12;
-  --text-h2--letter-spacing: -0.01em;
+  /* Geist throughout, as in the logo's descriptor. Large headings run tight. */
+  --text-display: clamp(2.5rem, 1.55rem + 3.6vw, 4.25rem);
+  --text-display--line-height: 1.03;
+  --text-display--letter-spacing: -0.035em;
+  --text-h1: clamp(2.25rem, 1.55rem + 2.5vw, 3.5rem);
+  --text-h1--line-height: 1.06;
+  --text-h1--letter-spacing: -0.032em;
+  --text-h2: clamp(1.875rem, 1.4rem + 1.7vw, 2.75rem);
+  --text-h2--line-height: 1.1;
+  --text-h2--letter-spacing: -0.028em;
   --text-h3: 1.25rem;
   --text-h3--line-height: 1.35;
+  --text-h3--letter-spacing: -0.012em;
   --text-lead: clamp(1.125rem, 1.05rem + 0.3vw, 1.3125rem);
   --text-lead--line-height: 1.6;
-  /* Large serif numerals (years, prices) and serif statements. */
-  --text-numeral: clamp(4rem, 2.6rem + 5vw, 7rem);
-  --text-numeral--line-height: 0.9;
-  --text-numeral--letter-spacing: -0.03em;
+  /* Large figures (years of experience). */
+  --text-numeral: clamp(3.5rem, 2.6rem + 3.4vw, 5.5rem);
+  --text-numeral--line-height: 0.95;
+  --text-numeral--letter-spacing: -0.05em;
   --text-statement: clamp(1.375rem, 1.1rem + 1.1vw, 2rem);
-  --text-statement--line-height: 1.35;
+  --text-statement--line-height: 1.3;
+  --text-statement--letter-spacing: -0.022em;
 
-  --container-site: 75rem;
+  --container-site: 76rem;
   --container-prose: 42rem;
 
   --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-/*
- * Newsreader is loaded with next/font in site-chrome.tsx and its variable is set on the
- * `.site` wrapper, not on :root. `inline` makes `font-display` resolve the variable where it
- * is used, inside the site. Revert path to a sans display face: point this at
- * var(--font-geist-sans) and change the `.site` heading rule below accordingly.
- */
-@theme inline {
-  --font-display: var(--font-newsreader), ui-serif, Georgia, serif;
 }
 
 @layer base {
@@ -97,10 +100,15 @@
     text-wrap: pretty;
   }
 
-  /* Public site only: h1 and h2 in Newsreader. The admin area keeps its own type. */
+  /* Public site: dark page background behind the dark header and footer (also on overscroll);
+     <main> is white. The admin area keeps the white body. */
+  body:has(> .site) {
+    background: var(--color-night);
+  }
+
+  /* Public site only: headings in Geist, semibold and tight. The admin area keeps its own type. */
   .site :where(h1, h2) {
-    font-family: var(--font-newsreader), ui-serif, Georgia, serif;
-    font-weight: 500;
+    font-weight: 600;
     hyphens: auto;
     /* Last resort where no hyphenation dictionary exists, e.g. "Datenschutzerklärung" at 320 px. */
     overflow-wrap: break-word;
@@ -119,10 +127,15 @@
   .on-dark :focus-visible {
     outline-color: var(--color-electric);
   }
+
+  /* White panels inside a dark section (e.g. example artefacts) go back to the light ring. */
+  .on-dark .on-light :focus-visible {
+    outline-color: var(--color-blue);
+  }
 }
 
 @layer components {
-  /* Short kicker above a heading, e.g. on the home hero. Plain sans, no rule, no uppercase. */
+  /* Short kicker above a heading (admin and portal use this plain version). */
   .eyebrow {
     font-family: var(--font-sans);
     font-size: 0.875rem;
@@ -134,6 +147,46 @@
   }
   .on-dark .eyebrow {
     color: var(--color-electric);
+  }
+
+  /* Public site: technical label in Geist Mono with a small square node, e.g. "■ IT CONSULTING". */
+  .site .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.625rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    line-height: 1rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .site .eyebrow::before {
+    content: "";
+    width: 0.375rem;
+    height: 0.375rem;
+    flex: none;
+    background: currentColor;
+    box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 18%, transparent);
+  }
+
+  /* Fine technical grid. Set --grid-color and --grid-size where it is used. */
+  .tech-grid {
+    background-image:
+      linear-gradient(to right, var(--grid-color, rgb(220 228 239 / 0.7)) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--grid-color, rgb(220 228 239 / 0.7)) 1px, transparent 1px);
+    background-size: var(--grid-size, 56px) var(--grid-size, 56px);
+    background-position: -1px -1px;
+  }
+
+  /* One arm of the logo as a hairline at 48 degrees, rising to the right from its left end. */
+  .arm-line {
+    position: absolute;
+    bottom: 0;
+    height: 1px;
+    width: 140%;
+    transform-origin: 0 50%;
+    rotate: -48deg;
   }
 
   /* Article and legal text. */
@@ -154,9 +207,9 @@
     margin-top: 2.25em;
     color: var(--color-ink);
     font-size: 1.75rem;
-    line-height: 1.25;
-    font-weight: 500;
-    letter-spacing: -0.01em;
+    line-height: 1.2;
+    font-weight: 600;
+    letter-spacing: -0.025em;
   }
   .prose-kovali h3 {
     margin-top: 1.75em;
@@ -164,6 +217,7 @@
     font-size: 1.1875rem;
     line-height: 1.4;
     font-weight: 600;
+    letter-spacing: -0.01em;
   }
   .prose-kovali h2 + *,
   .prose-kovali h3 + * {
@@ -206,10 +260,13 @@
     transform: rotate(-48deg);
   }
   .prose-kovali ol {
-    list-style: decimal;
+    list-style: decimal-leading-zero;
+    padding-left: 2.25rem;
   }
   .prose-kovali ol > li::marker {
     color: var(--color-blue);
+    font-family: var(--font-mono);
+    font-size: 0.8125em;
     font-weight: 500;
   }
   .prose-kovali li + li {
@@ -219,26 +276,25 @@
 
 /*
  * Motion: one-shot only, never infinite (WCAG 2.2.2), off for reduced motion.
- * Content never depends on an animation having run.
- *   kv-rise   fade and rise, 0.7 s (hero text); stagger with --kv-delay
- *   kv-line   fade and slide in from the left, 0.4 s (lines of an artefact); --kv-delay
- *   kv-reveal rise bound to scrolling into view, screen only and only where scroll timelines
- *             exist. It never changes opacity: content further down stays fully visible in a
- *             print, a full-page capture or an automated contrast check, none of which scroll
+ * Text never starts invisible: kv-rise and kv-reveal only move content, so a print, a
+ * full-page capture or an automated contrast check always sees it in full.
+ *   kv-rise   rise into place, 0.8 s (hero text); stagger with --kv-delay
+ *   kv-line   slide in from the left, 0.4 s (lines of an artefact); --kv-delay
+ *   kv-draw   draw a decorative stroke (set pathLength="1"); --kv-delay
+ *   kv-glow   decorative glow fades in, 1.6 s
+ *   kv-reveal rise bound to scrolling into view, where scroll timelines exist
  */
 @keyframes kv-rise {
   from {
-    opacity: 0;
-    transform: translateY(12px);
+    transform: translateY(14px);
   }
   to {
-    opacity: 1;
     transform: none;
   }
 }
 @keyframes kv-reveal {
   from {
-    transform: translateY(20px);
+    transform: translateY(24px);
   }
   to {
     transform: none;
@@ -246,22 +302,63 @@
 }
 @keyframes kv-line {
   from {
-    opacity: 0;
-    transform: translateX(-4px);
+    transform: translateX(-6px);
   }
   to {
-    opacity: 1;
+    transform: none;
+  }
+}
+/* The dash pattern lives only in the keyframes: once the draw ends, the stroke is plain and complete. */
+@keyframes kv-draw {
+  from {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes kv-arm {
+  from {
+    scale: 0 1;
+  }
+  to {
+    scale: 1 1;
+  }
+}
+@keyframes kv-glow {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: var(--kv-glow-opacity, 1);
     transform: none;
   }
 }
 
-.kv-rise {
-  animation: kv-rise 0.7s var(--ease-out-soft) both;
-  animation-delay: var(--kv-delay, 0s);
-}
-.kv-line {
-  animation: kv-line 0.4s var(--ease-out-soft) both;
-  animation-delay: var(--kv-delay, 0s);
+@media screen and (prefers-reduced-motion: no-preference) {
+  .kv-rise {
+    animation: kv-rise 0.8s var(--ease-out-soft) both;
+    animation-delay: var(--kv-delay, 0s);
+  }
+  .kv-line {
+    animation: kv-line 0.45s var(--ease-out-soft) both;
+    animation-delay: var(--kv-delay, 0s);
+  }
+  .kv-draw {
+    animation: kv-draw 1.4s var(--ease-out-soft) backwards;
+    animation-delay: var(--kv-delay, 0.2s);
+  }
+  .kv-glow {
+    animation: kv-glow 1.6s var(--ease-out-soft) both;
+    animation-delay: var(--kv-delay, 0s);
+  }
+  .arm-line {
+    animation: kv-arm 1.8s var(--ease-out-soft) both;
+    animation-delay: var(--kv-delay, 0.3s);
+  }
 }
 
 @supports (animation-timeline: view()) {
@@ -278,20 +375,15 @@
 @media print {
   .kv-rise,
   .kv-line,
-  .kv-reveal {
+  .kv-reveal,
+  .kv-draw,
+  .kv-glow,
+  .arm-line {
     animation: none !important;
-    opacity: 1 !important;
-    transform: none !important;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .kv-rise,
-  .kv-line,
-  .kv-reveal {
-    animation: none !important;
-    opacity: 1;
-  }
   html {
     scroll-behavior: auto;
   }

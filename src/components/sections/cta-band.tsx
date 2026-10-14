@@ -1,3 +1,4 @@
+import { DarkBackdrop } from "@/components/brand/motifs";
 import { ButtonLink } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { site } from "@/config/site";
@@ -23,8 +24,9 @@ interface CtaBandProps {
 }
 
 /**
- * Closing call to action as a paper "letter": heading, text, buttons and mail line on the
- * left, Ferhat Demir's signature (portrait tile, name, title) on the right.
+ * Closing call to action on near-black ink, flowing into the dark footer: heading, text,
+ * buttons (full width below sm) and mail line on the left, Ferhat Demir's signature (round
+ * avatar, name, title in mono) on the right, as wide as its content.
  */
 export function CtaBand({
   title = contactCta.title,
@@ -36,38 +38,44 @@ export function CtaBand({
 }: CtaBandProps) {
   const email = site.contact.email.value;
   return (
-    <section aria-labelledby={headingId} className="border-t border-paper-line bg-paper">
-      <Container className="grid gap-10 py-20 md:py-28 lg:grid-cols-12 lg:items-end lg:gap-8">
+    <section aria-labelledby={headingId} className="on-dark relative isolate overflow-hidden bg-night text-white">
+      <DarkBackdrop variant="band" />
+      <Container className="relative grid gap-12 py-20 md:py-28 lg:grid-cols-12 lg:items-end lg:gap-8">
         <div className="lg:col-span-7">
-          <h2 id={headingId} className="text-h2 font-medium text-ink">
+          <h2 id={headingId} className="text-h2 font-semibold text-white">
             {title}
           </h2>
-          <div className="mt-5 max-w-2xl text-lead text-slate">{text}</div>
-          <div className="mt-9 flex flex-wrap gap-3">
-            <ButtonLink href={primary.href} arrow>
+          <div className="mt-5 max-w-2xl text-lead text-white/70">{text}</div>
+          <div className="mt-9 grid gap-3 sm:flex sm:flex-wrap">
+            <ButtonLink href={primary.href} variant="inverse" arrow>
               {primary.label}
             </ButtonLink>
             {secondary ? (
-              <ButtonLink href={secondary.href} variant="secondary" className="border-field bg-transparent">
+              <ButtonLink href={secondary.href} variant="outline-inverse">
                 {secondary.label}
               </ButtonLink>
             ) : null}
           </div>
           {showMail ? (
-            <p className="mt-6 text-slate">
+            <p className="mt-7 text-white/70">
               Oder direkt per E-Mail:{" "}
-              <a href={`mailto:${email}`} className="text-blue underline underline-offset-[3px] hover:text-blue-700">
+              <a
+                href={`mailto:${email}`}
+                className="text-electric underline decoration-electric/40 underline-offset-[3px] transition-colors hover:decoration-electric"
+              >
                 {email}
               </a>
             </p>
           ) : null}
         </div>
-        <div className="flex items-center gap-4 lg:col-span-4 lg:col-start-9">
-          <Portrait size="sm" />
-          <p className="text-[0.9375rem] leading-snug text-slate">
-            <span className="block font-semibold text-ink">{founder.name}</span>
-            {founder.role}
-          </p>
+        <div className="lg:col-span-4 lg:col-start-9 lg:justify-self-end">
+          <div className="flex w-fit items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 pr-6 backdrop-blur-sm">
+            <Portrait size="md" />
+            <p className="min-w-0 font-mono text-xs uppercase leading-5 tracking-[0.08em]">
+              <span className="block font-medium text-white">{founder.name}</span>
+              <span className="block text-sky">{founder.role}</span>
+            </p>
+          </div>
         </div>
       </Container>
     </section>

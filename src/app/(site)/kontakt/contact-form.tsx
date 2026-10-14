@@ -1,7 +1,6 @@
 "use client";
 
 import { startTransition, useActionState, useEffect, useRef, useState } from "react";
-import { ChevronDown } from "lucide-react";
 import { FileDrop } from "@/components/forms/file-drop";
 import {
   ChoiceChips,
@@ -11,6 +10,7 @@ import {
   Field,
   FormStep,
   Honeypot,
+  MultiChoiceChips,
   SubmitError,
   SubmitRow,
   SuccessPanel,
@@ -20,15 +20,17 @@ import {
 import {
   ATTACHMENT_MAX_BYTES,
   ATTACHMENT_MAX_LABEL,
+  durationOptions,
   requestTypes,
-  serviceOptions,
+  serviceChoices,
   startOptions,
+  workloadOptions,
   workModes,
 } from "@/lib/contact/options";
 import {
   initialContactState,
   type ContactErrorField,
-  type ContactField,
+  type ContactTextField,
   type ContactValues,
 } from "@/lib/contact/state";
 import { cn } from "@/lib/utils";
@@ -36,27 +38,28 @@ import { submitContact } from "./actions";
 
 export interface ContactDefaults {
   requestType?: string;
-  service?: string;
+  services?: string[];
 }
 
+/** In the order of the form, so the error summary lists the fields as they appear. */
 const FIELD_LABELS: Record<ContactErrorField, string> = {
-  name: "Name",
-  company: "Unternehmen",
-  email: "Geschäftliche E-Mail",
-  phone: "Telefon",
   requestType: "Art der Anfrage",
-  service: "Gewünschte Leistung",
+  services: "Gewünschte Leistungen",
   projectDescription: "Beschreibung",
   attachment: "Anforderungsprofil",
-  start: "Gewünschter Start",
+  start: "Beginn",
+  duration: "Laufzeit",
+  workload: "Pensum",
   workMode: "Arbeitsmodell",
   location: "Einsatzort",
+  requirements: "Voraussetzungen",
+  company: "Unternehmen",
+  name: "Name",
+  email: "Geschäftliche E-Mail",
+  phone: "Telefon",
   message: "Nachricht",
   consent: "Datenschutz",
 };
-
-/** Optional details, collapsed until the visitor opens them or one of them needs attention. */
-const DETAIL_FIELDS: ContactField[] = ["start", "workMode", "location", "message"];
 
 /** Quick check in the browser, so an unsuitable file fails before it is uploaded. */
 function attachmentProblem(file: File | undefined): string | undefined {
@@ -106,11 +109,10 @@ export function ContactForm({
   const values: ContactValues = state.status === "invalid" || state.status === "error" ? state.values : {};
   const serverErrors = state.status === "invalid" ? state.errors : {};
   const errors: Partial<Record<ContactErrorField, string>> = fileError ? { ...serverErrors, attachment: fileError } : serverErrors;
-  const errorEntries = (Object.entries(errors) as [ContactErrorField, string][]).map(
-    ([field, message]): [string, string, string] => [field, FIELD_LABELS[field], message],
-  );
-  const v = (field: ContactField, fallback = "") => values[field] ?? fallback;
-  const detailsOpen = DETAIL_FIELDS.some((f) => values[f] || errors[f]);
+  const errorEntries = (Object.keys(FIELD_LABELS) as ContactErrorField[])
+    .filter((field) => errors[field])
+    .map((field): [string, string, string] => [field, FIELD_LABELS[field], errors[field] as string]);
+  const v = (field: ContactTextField, fallback = "") => values[field] ?? fallback;
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     // Dispatch manually so the browser keeps all entered values and the chosen file.
@@ -151,19 +153,20 @@ export function ContactForm({
           defaultValue={v("requestType", defaults.requestType)}
           error={errors.requestType}
         />
-        <ChoiceChips
-          name="service"
-          legend="Gewünschte Leistung"
+        <MultiChoiceChips
+          name="services"
+          legend="Gewünschte Leistungen"
           optional
-          options={serviceOptions}
-          defaultValue={v("service", defaults.service)}
-          error={errors.service}
+          hint="Sie können mehrere Leistungen wählen."
+          options={serviceChoices}
+          defaultValues={values.services ?? defaults.services}
+          error={errors.services}
         />
         <Field
           id="projectDescription"
           label="Beschreibung"
           required
-          hint="Aufgabe oder gesuchte Unterstützung, Zeitraum und Pensum oder Ausgangslage und Ziel des Projekts. Bitte keine vertraulichen Kundendaten."
+          hint="Aufgabe oder gesuchte Unterstützung, Ausgangslage und Ziel. Bitte keine vertraulichen Kundendaten."
           error={errors.projectDescription}
         >
           {(p) => (
@@ -171,7 +174,7 @@ export function ContactForm({
               {...p}
               name="projectDescription"
               rows={5}
-              placeholder="Zum Beispiel: Business Analysis für die Ablösung einer Fachapplikation, ab März, 80 bis 100 %, vor Ort und remote."
+              placeholder="Zum Beispiel: Business Analysis für die Ablösung einer Fachapplikation in einem laufenden Kundenmandat."
               defaultValue={v("projectDescription")}
               className={cn(inputClass, "resize-y")}
             />
@@ -186,38 +189,61 @@ export function ContactForm({
           error={errors.attachment}
           onSelect={(file) => setFileError(attachmentProblem(file))}
         />
-
-        <details open={detailsOpen} className="group rounded-lg border border-line">
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 font-medium text-ink marker:hidden hover:text-blue [&::-webkit-details-marker]:hidden">
-            <span>
-              Rahmen angeben <span className="font-normal text-slate">(optional: Start, Arbeitsmodell, Einsatzort)</span>
-            </span>
-            <ChevronDown aria-hidden className="size-5 shrink-0 text-slate transition-transform group-open:rotate-180" />
-          </summary>
-          <div className="space-y-6 border-t border-line px-5 pb-6 pt-5">
-            <ChoiceChips name="start" legend="Gewünschter Start" options={startOptions} defaultValue={v("start")} error={errors.start} />
-            <ChoiceChips name="workMode" legend="Arbeitsmodell" options={workModes} defaultValue={v("workMode")} error={errors.workMode} />
-            <Field id="location" label="Einsatzort" error={errors.location}>
-              {(p) => (
-                <input {...p} name="location" type="text" placeholder="z. B. Ort oder Region" defaultValue={v("location")} className={inputClass} />
-              )}
-            </Field>
-            <Field id="message" label="Nachricht" hint="Weitere Fragen, Rahmenbedingungen oder Rückrufwunsch." error={errors.message}>
-              {(p) => <textarea {...p} name="message" rows={3} defaultValue={v("message")} className={cn(inputClass, "resize-y")} />}
-            </Field>
-          </div>
-        </details>
       </FormStep>
 
-      <FormStep number={2} title="Ihre Kontaktdaten">
+      <FormStep number={2} title="Zeitraum und Voraussetzungen">
+        <ChoiceChips name="start" legend="Beginn" optional options={startOptions} defaultValue={v("start")} error={errors.start} />
+        <ChoiceChips
+          name="duration"
+          legend="Laufzeit"
+          optional
+          options={durationOptions}
+          defaultValue={v("duration")}
+          error={errors.duration}
+        />
+        <ChoiceChips
+          name="workload"
+          legend="Pensum"
+          optional
+          options={workloadOptions}
+          defaultValue={v("workload")}
+          error={errors.workload}
+        />
+        <ChoiceChips
+          name="workMode"
+          legend="Arbeitsmodell"
+          optional
+          options={workModes}
+          defaultValue={v("workMode")}
+          error={errors.workMode}
+        />
+        <Field id="location" label="Einsatzort" optional error={errors.location}>
+          {(p) => (
+            <input {...p} name="location" type="text" placeholder="z. B. Ort oder Region" defaultValue={v("location")} className={inputClass} />
+          )}
+        </Field>
+        <Field
+          id="requirements"
+          label="Voraussetzungen"
+          optional
+          hint="Zum Beispiel Erfahrung, Methoden, Tools, Sprachen, Zertifikate oder Sicherheitsprüfung."
+          error={errors.requirements}
+        >
+          {(p) => (
+            <textarea {...p} name="requirements" rows={4} defaultValue={v("requirements")} className={cn(inputClass, "resize-y")} />
+          )}
+        </Field>
+      </FormStep>
+
+      <FormStep number={3} title="Unternehmen und Kontakt">
         <div className="grid gap-6 sm:grid-cols-2">
-          <Field id="name" label="Name" required error={errors.name}>
-            {(p) => <input {...p} name="name" type="text" autoComplete="name" defaultValue={v("name")} className={inputClass} />}
-          </Field>
-          <Field id="company" label="Unternehmen" optional error={errors.company}>
+          <Field id="company" label="Unternehmen" required error={errors.company}>
             {(p) => (
               <input {...p} name="company" type="text" autoComplete="organization" defaultValue={v("company")} className={inputClass} />
             )}
+          </Field>
+          <Field id="name" label="Name" required error={errors.name}>
+            {(p) => <input {...p} name="name" type="text" autoComplete="name" defaultValue={v("name")} className={inputClass} />}
           </Field>
           <Field id="email" label="Geschäftliche E-Mail" required error={errors.email}>
             {(p) => (
@@ -228,6 +254,9 @@ export function ContactForm({
             {(p) => <input {...p} name="phone" type="tel" autoComplete="tel" defaultValue={v("phone")} className={inputClass} />}
           </Field>
         </div>
+        <Field id="message" label="Nachricht" optional hint="Weitere Fragen oder ein Rückrufwunsch." error={errors.message}>
+          {(p) => <textarea {...p} name="message" rows={3} defaultValue={v("message")} className={cn(inputClass, "resize-y")} />}
+        </Field>
       </FormStep>
 
       <Honeypot />

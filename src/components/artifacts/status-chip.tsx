@@ -1,7 +1,8 @@
 import type { Priority, TestStatus } from "@/content/work-samples";
 import { cn } from "@/lib/utils";
 
-const chip = "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium";
+const chip =
+  "inline-flex items-center gap-1.5 whitespace-nowrap rounded-[5px] px-1.5 py-0.5 font-mono text-[0.6875rem] font-medium leading-4";
 
 const statuses: Record<TestStatus, { glyph: string; word: string; className: string }> = {
   pass: { glyph: "✓", word: "bestanden", className: "bg-pass-bg text-pass" },
@@ -22,7 +23,7 @@ export function StatusChip({ status, className }: { status: TestStatus; classNam
 
 const priorities: Record<Priority, string> = {
   Muss: "bg-navy text-white",
-  Soll: "bg-[#eaf2fd] text-blue",
+  Soll: "bg-blue/10 text-blue",
   Kann: "border border-field text-slate",
 };
 

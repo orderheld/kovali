@@ -56,7 +56,7 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     serverActions: {
-      // The profile form and the admin upload files of up to 4 MB (CV_MAX_BYTES,
+      // The contact form and the admin upload files of up to 4 MB (ATTACHMENT_MAX_BYTES,
       // DOCUMENT_MAX_BYTES). 4.5 MB is also the request body limit of Vercel Functions,
       // so a larger value would not help.
       bodySizeLimit: "4.5mb",
@@ -64,7 +64,7 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
-      // "Für Partner" became "Für Unternehmen" (two entries: companies and specialists).
+      // "Für Partner" became "Für Unternehmen".
       { source: "/partner", destination: "/unternehmen", permanent: true },
       // Requirements Engineering is part of the combined service Business Analysis & Requirements Engineering.
       { source: "/leistungen/requirements-engineering", destination: "/leistungen/business-analysis", permanent: true },
@@ -77,6 +77,9 @@ const nextConfig: NextConfig = {
       { source: "/leistungen/it-consulting", destination: "/leistungen", permanent: true },
       // No prices on the site (Ferhat Demir, 14.10.2026). Temporary, in case a price page returns.
       { source: "/preise", destination: "/leistungen", permanent: false },
+      // The page for specialists was removed: the site addresses companies only (Ferhat Demir,
+      // 14.10.2026). Temporary, so browsers do not cache it in case the path is used again.
+      { source: "/fachleute", destination: "/unternehmen", permanent: false },
     ];
   },
   async headers() {

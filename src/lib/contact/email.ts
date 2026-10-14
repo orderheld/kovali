@@ -2,7 +2,15 @@ import "server-only";
 import { Resend } from "resend";
 import { serverEnv } from "@/lib/env";
 import type { Attachment } from "./attachment";
-import { labelOf, requestTypes, serviceOptions, startOptions, workModes } from "./options";
+import {
+  durationOptions,
+  labelOf,
+  requestTypes,
+  serviceLabels,
+  startOptions,
+  workloadOptions,
+  workModes,
+} from "./options";
 import type { ContactInput } from "./schema";
 
 export type EmailResult = { ok: true; id: string | null } | { ok: false; error: string };
@@ -10,16 +18,19 @@ export type EmailResult = { ok: true; id: string | null } | { ok: false; error: 
 const attachmentLabel = { pdf: "Anforderungsprofil (PDF) im Anhang", docx: "Anforderungsprofil (Word) im Anhang" };
 
 function rows(input: ContactInput, reference: string, attachment?: Attachment): [string, string][] {
+  // labelOf returns "–" for fields left empty.
   return [
     ["Referenz", reference],
     ["Art der Anfrage", labelOf(requestTypes, input.requestType)],
-    ["Gewünschte Leistung", input.service ? labelOf(serviceOptions, input.service) : "–"],
+    ["Leistungen", serviceLabels(input.services)],
+    ["Unternehmen", input.company],
     ["Name", input.name],
-    ["Unternehmen", input.company ?? "–"],
     ["E-Mail", input.email],
     ["Telefon", input.phone ?? "–"],
-    ["Gewünschter Start", input.start ? labelOf(startOptions, input.start) : "–"],
-    ["Arbeitsmodell", input.workMode ? labelOf(workModes, input.workMode) : "–"],
+    ["Beginn", labelOf(startOptions, input.start)],
+    ["Laufzeit", labelOf(durationOptions, input.duration)],
+    ["Pensum", labelOf(workloadOptions, input.workload)],
+    ["Arbeitsmodell", labelOf(workModes, input.workMode)],
     ["Einsatzort", input.location ?? "–"],
     ["Anhang", attachment ? attachmentLabel[attachment.kind] : "–"],
   ];
@@ -46,6 +57,9 @@ export function renderText(input: ContactInput, reference: string, attachment?: 
     "Beschreibung:",
     input.projectDescription,
     "",
+    "Voraussetzungen:",
+    input.requirements ?? "–",
+    "",
     "Nachricht:",
     input.message ?? "–",
     "",
@@ -66,6 +80,7 @@ export function renderHtml(input: ContactInput, reference: string, attachment?: 
 <p style="margin:0 0 16px;font-size:16px;color:#0B1733"><strong>Neue Anfrage über kovali.ch</strong></p>
 <table style="border-collapse:collapse;font-size:14px">${table}</table>
 ${block("Beschreibung", input.projectDescription)}
+${block("Voraussetzungen", input.requirements ?? "–")}
 ${block("Nachricht", input.message ?? "–")}
 <p style="margin:24px 0 0;color:#4A5878;font-size:12px">Einwilligung Datenschutz: bestätigt. Antworten gehen direkt an ${escapeHtml(input.email)}.</p>
 </div>`;
@@ -76,7 +91,7 @@ export async function sendContactEmail(
   reference: string,
   attachment?: Attachment,
 ): Promise<EmailResult> {
-  const subject = `Anfrage ${labelOf(requestTypes, input.requestType)}: ${input.company ?? input.name} (${reference})`;
+  const subject = `Anfrage ${labelOf(requestTypes, input.requestType)}: ${input.company} (${reference})`;
 
   if (serverEnv.dryRun) {
     // The full text is only printed locally; deployed dry runs log the reference only.

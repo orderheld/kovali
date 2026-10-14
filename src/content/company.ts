@@ -1,4 +1,6 @@
 import type { StaticImageData } from "next/image";
+import portraitImage from "@/assets/ferhat-demir.webp";
+import avatarImage from "@/assets/ferhat-demir-avatar.webp";
 import { site } from "@/config/site";
 import type { TitledText } from "./types";
 
@@ -38,8 +40,10 @@ export interface ExperienceFigure {
 export const founder: {
   name: string;
   role: string;
-  /** Static import of src/assets/ferhat-demir.jpg once the photo exists; null shows the "FD" monogram. */
-  portrait: StaticImageData | null;
+  /** Cutout with transparent background (src/assets/ferhat-demir.webp), shown on a composed dark frame. */
+  portrait: StaticImageData;
+  /** Square head crop of the same cutout, for round avatars. */
+  avatar: StaticImageData;
   experience: readonly ExperienceFigure[];
   experienceNote: string;
   /** Running-text version of the figures, for bylines and contact cards. */
@@ -55,7 +59,8 @@ export const founder: {
 } = {
   name: "Ferhat Demir",
   role: site.contact.title,
-  portrait: null,
+  portrait: portraitImage,
+  avatar: avatarImage,
   experience: [
     { value: "10+", label: "Jahre in der IT", since: "2016-08" },
     // "5+" as in his CV ("über fünf Jahre"), decided by the thread lead (spec addendum 1).

@@ -51,8 +51,9 @@ export function IndustryCards({
           <li
             key={industry.id}
             id={industry.id}
-            className="min-w-0 scroll-mt-28 border-t border-line pt-6 in-[.bg-paper]:border-paper-line"
+            className="relative min-w-0 scroll-mt-28 border-t border-line pt-6 in-[.bg-cloud]:border-cloud-line"
           >
+            <span aria-hidden className="absolute -top-px left-0 h-0.5 w-10 bg-blue" />
             <Heading className="hyphens-auto break-words text-h3 font-semibold">{industry.name}</Heading>
             <p className="mt-3 hyphens-auto break-words leading-relaxed text-slate">{industry.summary}</p>
             <p className="mt-4 text-sm leading-7">
@@ -66,15 +67,19 @@ export function IndustryCards({
 
   return (
     <ul aria-labelledby={labelledBy} className="grid gap-5 lg:grid-cols-3">
-      {list.map((industry) => (
+      {list.map((industry, i) => (
         <li
           key={industry.id}
           id={industry.id}
-          className="flex min-w-0 scroll-mt-28 flex-col rounded-xl border border-line bg-white p-7"
+          className="relative flex min-w-0 scroll-mt-28 flex-col overflow-hidden rounded-xl border border-line bg-white p-7 shadow-[0_1px_0_rgb(11_23_51/0.03)]"
         >
-          <Heading className="hyphens-auto break-words text-h3 font-semibold">{industry.name}</Heading>
+          <span aria-hidden className="absolute inset-x-0 top-0 h-0.5 bg-linear-to-r from-blue to-electric" />
+          <p aria-hidden className="font-mono text-xs text-blue">
+            {String(i + 1).padStart(2, "0")}
+          </p>
+          <Heading className="mt-3 hyphens-auto break-words text-h3 font-semibold">{industry.name}</Heading>
           <p className="mt-3 hyphens-auto break-words leading-relaxed text-slate">{industry.summary}</p>
-          <ul className="mt-5 space-y-2 text-[0.9375rem] text-ink">
+          <ul className="mb-6 mt-5 space-y-2 text-[0.9375rem] text-ink">
             {industry.points.map((p) => (
               <li key={p} className="flex gap-3">
                 <Tick />
@@ -82,7 +87,7 @@ export function IndustryCards({
               </li>
             ))}
           </ul>
-          <p className="mt-auto pt-6 text-sm leading-7">
+          <p className="mt-auto border-t border-line pt-5 text-sm leading-7">
             <ServiceLinks slugs={industry.services} />
           </p>
         </li>
