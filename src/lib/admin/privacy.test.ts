@@ -135,6 +135,8 @@ describe("anonymisation values", () => {
     ] as const) {
       expect(v[key], key).toBeNull();
     }
+    // CV keywords came from the deleted CVs.
+    expect(v.detectedSkills).toEqual([]);
     // The objection date stays, so an anonymised profile is never passed on again.
     expect(v).not.toHaveProperty("objectionAt");
     expect(v.status).toBe("archiviert");

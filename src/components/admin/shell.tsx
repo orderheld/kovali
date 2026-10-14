@@ -351,13 +351,17 @@ export function AdminShell({
             <label htmlFor="admin-search" className="sr-only">
               Suchen
             </label>
+            {/* Short placeholder on phones, the long one would be cut off («Kandidaten, Mandate, Fir…»). */}
             <input
               id="admin-search"
               name="q"
               type="search"
-              placeholder="Kandidaten, Mandate, Firmen, Verträge suchen …"
-              className="h-9 w-full rounded-md border border-line bg-mist/60 pr-3 pl-9 text-sm text-ink placeholder:text-slate/60 focus:border-blue focus:bg-white focus:ring-2 focus:ring-blue/20 focus:outline-none"
+              placeholder="Suchen …"
+              className="peer h-9 w-full rounded-md border border-line bg-mist/60 pr-3 pl-9 text-sm text-ink placeholder:text-slate/60 focus:border-blue focus:bg-white focus:ring-2 focus:ring-blue/20 focus:outline-none sm:placeholder:text-transparent"
             />
+            <span aria-hidden className="pointer-events-none absolute inset-y-0 right-3 left-9 hidden items-center text-sm text-slate/60 sm:peer-placeholder-shown:flex">
+              <span className="truncate">Kandidaten, Mandate, Firmen, Verträge suchen …</span>
+            </span>
           </form>
           <div className="ml-auto flex items-center gap-2">
             <QuickCreate />

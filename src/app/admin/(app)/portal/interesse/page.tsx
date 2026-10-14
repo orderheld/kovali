@@ -92,7 +92,7 @@ export default async function PortalInterestPage() {
         <Card>
           <CardHeader
             title="Neues Interesse"
-            description="Die Person hat im Portal eingewilligt, dass ihr Profil für dieses Mandat weitergegeben wird. Ein Vorschlag (vorgemerkt) wurde angelegt."
+            description="Die Person hat im Portal eingewilligt, dass ihr Profil für dieses Mandat weitergegeben wird. Sie steht im Mandat als Vorschlag; gab es noch keinen, ist er neu angelegt (vorgemerkt)."
           />
           {interests.length ? (
             <ul className="divide-y divide-line">
@@ -110,8 +110,8 @@ export default async function PortalInterestPage() {
           <Card>
             <CardHeader
               title="Zurückgezogen"
+              icon={Undo2}
               description="Interesse oder Einwilligung im Portal zurückgezogen, obwohl die Person schon als Vorschlag erfasst ist."
-              actions={<Undo2 aria-hidden className="size-4 text-slate" />}
             />
             <ul className="divide-y divide-line">
               {withdrawals.map((s) => (

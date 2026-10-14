@@ -1,7 +1,7 @@
 "use client";
 
-import { startTransition, useActionState, useId, useLayoutEffect, useState, useTransition } from "react";
-import { AlertCircle, Check, Copy, Link2, Loader2, Mail } from "lucide-react";
+import { createContext, startTransition, use, useActionState, useId, useLayoutEffect, useState, useTransition } from "react";
+import { AlertCircle, Check, Copy, Link2, Loader2, Mail, X } from "lucide-react";
 import { ActionForm, FieldShell, TextAreaField } from "@/components/admin/form";
 import { buttonClass } from "@/components/admin/ui";
 import type { ActionState } from "@/lib/admin/forms";
@@ -29,17 +29,36 @@ export type EmailMode = "send" | "dry-run" | "off";
 // --- One-time link --------------------------------------------------------------
 
 /** Shows a just-issued link once, with copy and (if configured) sending by e-mail. */
-export function LinkPanel({ link, emailMode, message }: { link: Extract<LinkState, { status: "success" }>["link"]; emailMode: EmailMode; message?: string }) {
+export function LinkPanel({
+  link,
+  emailMode,
+  message,
+  onClose,
+}: {
+  link: Extract<LinkState, { status: "success" }>["link"];
+  emailMode: EmailMode;
+  message?: string;
+  /** Shows a "Schliessen" button. */
+  onClose?: () => void;
+}) {
   const [copied, setCopied] = useState(false);
   const [sending, start] = useTransition();
   const [sent, setSent] = useState<ActionState | null>(null);
   const id = useId();
   return (
     <div className="rounded-lg border border-emerald-200 bg-emerald-50/70 p-4" role="status">
-      <p className="flex items-center gap-2 text-sm font-medium text-emerald-900">
-        <Link2 aria-hidden className="size-4" />
-        {message ?? "Link erstellt."} Er wird nur jetzt angezeigt.
-      </p>
+      <div className="flex items-start gap-2">
+        <p className="flex flex-1 items-center gap-2 text-sm font-medium text-emerald-900">
+          <Link2 aria-hidden className="size-4 shrink-0" />
+          <span>{message ?? "Link erstellt."} Er wird nur jetzt angezeigt.</span>
+        </p>
+        {onClose ? (
+          <button type="button" onClick={onClose} className={buttonClass("ghost", "sm", "-my-1 shrink-0")}>
+            <X aria-hidden className="size-4" />
+            Schliessen
+          </button>
+        ) : null}
+      </div>
       <label htmlFor={id} className="mt-3 block text-[0.8125rem] font-medium text-ink">
         {link.kind === "einladung" ? "Einladungslink" : "Link zum Passwort setzen"} für {link.email}
       </label>
@@ -93,17 +112,58 @@ export function LinkPanel({ link, emailMode, message }: { link: Extract<LinkStat
 
 type InviteCandidate = { id: number; label: string; email: string | null };
 
-function InviteFormInner({ candidates, fixed, emailMode }: { candidates: InviteCandidate[]; fixed?: InviteCandidate; emailMode: EmailMode }) {
+type InviteHostValue = {
+  /** Result of the last "Zugang erstellen"; a success is shown by the host, not by the form. */
+  state: LinkState;
+  action: (data: FormData) => void;
+  pending: boolean;
+  /** The form waits while the new link is shown. */
+  linkShown: boolean;
+  /** Counts the closed links, so the form starts empty again afterwards. */
+  generation: number;
+};
+
+const InviteHost = createContext<InviteHostValue | null>(null);
+
+function InviteLinkHostInner({ emailMode, children }: { emailMode: EmailMode; children: React.ReactNode }) {
   const [state, action, pending] = useActionState(createPortalInvitation, linkIdle);
+  const [closed, setClosed] = useState<{ state: LinkState | null; count: number }>({ state: null, count: 0 });
+  const shown = state.status === "success" && closed.state !== state ? state : null;
+  const value: InviteHostValue = {
+    state: state.status === "success" ? linkIdle : state,
+    action,
+    pending,
+    linkShown: shown !== null,
+    generation: closed.count,
+  };
+  return (
+    <InviteHost value={value}>
+      <div className="space-y-4">
+        {shown ? <LinkPanel link={shown.link} emailMode={emailMode} message={shown.message} onClose={() => setClosed((c) => ({ state: shown, count: c.count + 1 }))} /> : null}
+        {children}
+      </div>
+    </InviteHost>
+  );
+}
+
+/**
+ * Keeps the one-time link of a new access visible above its children. Creating an access calls
+ * refresh(), and the server may then render something else in place of the form (on the
+ * candidate page: the account's actions), which would otherwise take the link with it.
+ * Wrap the area that contains the InviteForm; the link stays until "Schliessen".
+ */
+export function InviteLinkHost(props: { emailMode: EmailMode; children: React.ReactNode }) {
+  const key = useFreshKey();
+  return <InviteLinkHostInner key={key} {...props} />;
+}
+
+function InviteFormInner({ candidates, fixed, host }: { candidates: InviteCandidate[]; fixed?: InviteCandidate; host: InviteHostValue }) {
+  const { state, action, pending } = host;
   const [candidateId, setCandidateId] = useState<string>(fixed ? String(fixed.id) : "");
   const [email, setEmail] = useState(fixed?.email ?? "");
   const selectId = useId();
   const emailId = useId();
   const errors = state.status === "error" ? state.errors : undefined;
-
-  if (state.status === "success") {
-    return <LinkPanel link={state.link} emailMode={emailMode} message={state.message} />;
-  }
 
   return (
     <form
@@ -171,9 +231,18 @@ function InviteFormInner({ candidates, fixed, emailMode }: { candidates: InviteC
   );
 }
 
+/** "Zugang erstellen". Inside an InviteLinkHost the new link survives the refresh after creating. */
 export function InviteForm(props: { candidates: InviteCandidate[]; fixed?: InviteCandidate; emailMode: EmailMode }) {
-  const key = useFreshKey();
-  return <InviteFormInner key={key} {...props} />;
+  const host = use(InviteHost);
+  if (!host) {
+    return (
+      <InviteLinkHost emailMode={props.emailMode}>
+        <InviteForm {...props} />
+      </InviteLinkHost>
+    );
+  }
+  if (host.linkShown) return null;
+  return <InviteFormInner key={host.generation} candidates={props.candidates} fixed={props.fixed} host={host} />;
 }
 
 // --- New link for an existing account ---------------------------------------------

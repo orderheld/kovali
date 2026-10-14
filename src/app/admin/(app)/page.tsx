@@ -24,11 +24,12 @@ import {
 } from "lucide-react";
 import { Badge, Card, CardBody, CardHeader, EmptyState, LinkButton, Mono, Notice, PageHeader, StatTile } from "@/components/admin/ui";
 import { requireAdmin } from "@/lib/admin/auth/session";
-import { dashboardAgenda, dashboardKpis, portalReviewCounts, privacyCounts, recentActivities, setupProgress } from "@/lib/admin/data/dashboard";
+import { dashboardAgenda, dashboardKpis, privacyCounts, recentActivities, setupProgress } from "@/lib/admin/data/dashboard";
 import { adminEnv } from "@/lib/admin/env";
 import { displayNo, formatDate, formatDateTime, todayIso } from "@/lib/admin/format";
 import { labelOf, mandatePriorities, mandateStatuses, toneOf, type Tone } from "@/lib/admin/options";
 import { addDaysIso } from "@/lib/admin/privacy";
+import { portalCounts } from "@/lib/portal/admin";
 import { cn } from "@/lib/utils";
 
 /** Admin pages read the session and the database per request and may block. */
@@ -102,7 +103,8 @@ export default async function DashboardPage() {
   const [kpis, agenda, portal, privacy, recent, progress] = await Promise.all([
     dashboardKpis(today),
     dashboardAgenda(today),
-    portalReviewCounts(),
+    // Same counts as the navigation badge.
+    portalCounts(),
     privacyCounts(today),
     recentActivities(15),
     setupProgress(),
@@ -117,7 +119,6 @@ export default async function DashboardPage() {
     { label: "Zwei-Faktor-Anmeldung einrichten", hint: "Code auf der Einrichtungsseite erzeugen und bei Vercel eintragen.", href: "/admin/einrichtung", done: twoFactor },
   ];
   const stepsDone = steps.filter((s) => s.done).length;
-  const portalTotal = portal.changeRequests + portal.uploads + portal.interested;
   const privacyTotal = privacy.overdue + privacy.dueSoon + privacy.noConsentOld + privacy.submissionsAwaitingConsent;
 
   return (
@@ -302,12 +303,15 @@ export default async function DashboardPage() {
               <CardHeader
                 title="Kandidatenportal"
                 description="Eingänge von Kandidaten, die du prüfen solltest."
-                actions={portalTotal ? <Badge tone="amber">{portalTotal}</Badge> : null}
+                actions={portal.total ? <Badge tone="amber">{portal.total}</Badge> : null}
               />
               <ul className="divide-y divide-line py-1">
-                <ReviewRow href="/admin/portal" label="Änderungsanträge offen" count={portal.changeRequests} />
+                <ReviewRow href="/admin/portal" label="Änderungsanträge offen" count={portal.changes} />
                 <ReviewRow href="/admin/portal/dokumente" label="Hochgeladene Dokumente unbestätigt" count={portal.uploads} />
-                <ReviewRow href="/admin/portal/interesse" label="Interesse an Vakanzen, nicht angesehen" count={portal.interested} tone="green" />
+                <ReviewRow href="/admin/portal/interesse" label="Interesse an Vakanzen, nicht angesehen" count={portal.interest} tone="green" />
+                {portal.withdrawals ? (
+                  <ReviewRow href="/admin/portal/interesse" label="Im Portal zurückgezogen, nicht angesehen" count={portal.withdrawals} tone="red" />
+                ) : null}
               </ul>
             </Card>
 

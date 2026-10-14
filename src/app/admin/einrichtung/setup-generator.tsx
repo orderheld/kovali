@@ -123,7 +123,11 @@ function Step({ icon: Icon, title, children }: { icon: typeof KeyRound; title: s
 const input =
   "block w-full rounded-md border border-line bg-white px-3 py-2 text-[0.9375rem] text-ink focus:border-blue focus:ring-2 focus:ring-blue/20 focus:outline-none";
 
-export function SetupGenerator() {
+/**
+ * The generators for the missing values. ADMIN_SECRET is offered only while it is not set:
+ * a new one would make every stored document unreadable.
+ */
+export function SetupGenerator({ password, secret: showSecret, totp: showTotp }: { password: boolean; secret: boolean; totp: boolean }) {
   const [pw, setPw] = useState("");
   const [pw2, setPw2] = useState("");
   const [hash, setHash] = useState<string | null>(null);
@@ -142,112 +146,121 @@ export function SetupGenerator() {
 
   const warn = weakness(pw);
   const mismatch = pw2.length > 0 && pw !== pw2;
+  // Numbered only when more than one step is shown.
+  const shown = [password && "password", showSecret && "secret", showTotp && "totp"].filter(Boolean);
+  const title = (step: string, text: string) => (shown.length > 1 ? `${shown.indexOf(step) + 1}. ${text}` : text);
 
   return (
     <div className="space-y-4">
-      <Step icon={KeyRound} title="1. Passwort festlegen">
-        <p>Das Passwort wird hier im Browser in einen Hash umgerechnet. Nur der Hash kommt zu Vercel, das Passwort selbst wird nirgends gespeichert.</p>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <label className="block text-sm font-medium text-ink">
-            Passwort
-            <input type="password" autoComplete="new-password" className={cn(input, "mt-1.5")} value={pw} onChange={(e) => { setPw(e.target.value); setHash(null); }} />
-          </label>
-          <label className="block text-sm font-medium text-ink">
-            Passwort wiederholen
-            <input type="password" autoComplete="new-password" className={cn(input, "mt-1.5")} value={pw2} onChange={(e) => { setPw2(e.target.value); setHash(null); }} />
-          </label>
-        </div>
-        {warn ? <p className="mt-2 text-[0.8125rem] font-medium text-amber-800">{warn}</p> : null}
-        {mismatch ? <p className="mt-2 text-[0.8125rem] font-medium text-red-700">Die beiden Eingaben stimmen nicht überein.</p> : null}
-        <button
-          type="button"
-          className={cn(buttonClass("primary", "md"), "mt-4")}
-          disabled={!pw || pw !== pw2 || busy}
-          onClick={async () => {
-            setBusy(true);
-            try {
-              setHash(await hashPassword(pw));
-            } finally {
-              setBusy(false);
-            }
-          }}
-        >
-          {busy ? "Wird berechnet …" : "Hash erzeugen"}
-        </button>
-        {hash ? <CopyValue name="ADMIN_PASSWORD_HASH" value={hash} /> : null}
-      </Step>
-
-      <Step icon={ShieldCheck} title="2. Geheimer Schlüssel">
-        <p>
-          Damit werden Lebensläufe und Dokumente verschlüsselt. Den Wert einmal erzeugen, in Vercel eintragen und zusätzlich im Passwort-Manager
-          ablegen. <strong className="text-ink">Er darf nie mehr geändert werden</strong>, sonst lassen sich gespeicherte Dokumente nicht mehr öffnen.
-        </p>
-        <button type="button" className={cn(buttonClass("secondary", "md"), "mt-4")} onClick={() => setSecret(base64url(random(32)))}>
-          <RefreshCw aria-hidden className="size-4" />
-          {secret ? "Neu erzeugen" : "Schlüssel erzeugen"}
-        </button>
-        {secret ? <CopyValue name="ADMIN_SECRET" value={secret} /> : null}
-      </Step>
-
-      <Step icon={Smartphone} title="3. Zwei-Faktor-Code (empfohlen)">
-        <p>
-          Mit einer Authenticator-App (z.&nbsp;B. Microsoft Authenticator, Google Authenticator, 1Password) braucht die Anmeldung zusätzlich einen
-          sechsstelligen Code. Ein erratenes Passwort reicht dann nicht mehr.
-        </p>
-        <button
-          type="button"
-          className={cn(buttonClass("secondary", "md"), "mt-4")}
-          onClick={() => {
-            setTotp(base32(random(20)));
-            setTest("");
-            setTestResult(null);
-          }}
-        >
-          <RefreshCw aria-hidden className="size-4" />
-          {totp ? "Neu erzeugen" : "Code-Schlüssel erzeugen"}
-        </button>
-        {totp ? (
-          <div className="mt-4 grid gap-4 sm:grid-cols-[auto_1fr] sm:items-start">
-            {qr ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={qr} alt="QR-Code für die Authenticator-App" width={220} height={220} className="rounded-md border border-line" />
-            ) : null}
-            <div>
-              <p id="totp-test-hint">QR-Code mit der App scannen, dann den angezeigten Code hier prüfen:</p>
-              <div className="mt-2 flex gap-2">
-                <input
-                  aria-label="Code aus der Authenticator-App"
-                  aria-describedby="totp-test-hint"
-                  autoComplete="off"
-                  maxLength={6}
-                  className={cn(input, "w-32")}
-                  inputMode="numeric"
-                  placeholder="123456"
-                  value={test}
-                  onChange={(e) => {
-                    setTest(e.target.value);
-                    setTestResult(null);
-                  }}
-                />
-                <button
-                  type="button"
-                  className={buttonClass("secondary", "md")}
-                  onClick={async () => {
-                    const code = test.replace(/\s/g, "");
-                    const valid = await Promise.all([-1, 0, 1].map((o) => totpNow(totp, o)));
-                    setTestResult(valid.includes(code));
-                  }}
-                >
-                  Prüfen
-                </button>
-              </div>
-              {testResult === true ? <p className="mt-2 text-[0.8125rem] font-medium text-emerald-700">Der Code stimmt. Die App ist richtig eingerichtet.</p> : null}
-              {testResult === false ? <p className="mt-2 text-[0.8125rem] font-medium text-red-700">Der Code stimmt nicht. Bitte nochmals scannen.</p> : null}
-              <CopyValue name="ADMIN_TOTP_SECRET" value={totp} />
-            </div>
+      {password ? (
+        <Step icon={KeyRound} title={title("password", "Passwort festlegen")}>
+          <p>Das Passwort wird hier im Browser in einen Hash umgerechnet. Nur der Hash kommt zu Vercel, das Passwort selbst wird nirgends gespeichert.</p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <label className="block text-sm font-medium text-ink">
+              Passwort
+              <input type="password" autoComplete="new-password" className={cn(input, "mt-1.5")} value={pw} onChange={(e) => { setPw(e.target.value); setHash(null); }} />
+            </label>
+            <label className="block text-sm font-medium text-ink">
+              Passwort wiederholen
+              <input type="password" autoComplete="new-password" className={cn(input, "mt-1.5")} value={pw2} onChange={(e) => { setPw2(e.target.value); setHash(null); }} />
+            </label>
           </div>
-        ) : null}
-      </Step>
+          {warn ? <p className="mt-2 text-[0.8125rem] font-medium text-amber-800">{warn}</p> : null}
+          {mismatch ? <p className="mt-2 text-[0.8125rem] font-medium text-red-700">Die beiden Eingaben stimmen nicht überein.</p> : null}
+          <button
+            type="button"
+            className={cn(buttonClass("primary", "md"), "mt-4")}
+            disabled={!pw || pw !== pw2 || busy}
+            onClick={async () => {
+              setBusy(true);
+              try {
+                setHash(await hashPassword(pw));
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            {busy ? "Wird berechnet …" : "Hash erzeugen"}
+          </button>
+          {hash ? <CopyValue name="ADMIN_PASSWORD_HASH" value={hash} /> : null}
+        </Step>
+      ) : null}
+
+      {showSecret ? (
+        <Step icon={ShieldCheck} title={title("secret", "Geheimer Schlüssel")}>
+          <p>
+            Damit werden Lebensläufe und Dokumente verschlüsselt. Den Wert einmal erzeugen, in Vercel eintragen und zusätzlich im Passwort-Manager
+            ablegen. <strong className="text-ink">Er darf nie mehr geändert werden</strong>, sonst lassen sich gespeicherte Dokumente nicht mehr öffnen.
+          </p>
+          <button type="button" className={cn(buttonClass("secondary", "md"), "mt-4")} onClick={() => setSecret(base64url(random(32)))}>
+            <RefreshCw aria-hidden className="size-4" />
+            {secret ? "Neu erzeugen" : "Schlüssel erzeugen"}
+          </button>
+          {secret ? <CopyValue name="ADMIN_SECRET" value={secret} /> : null}
+        </Step>
+      ) : null}
+
+      {showTotp ? (
+        <Step icon={Smartphone} title={title("totp", "Zwei-Faktor-Code (empfohlen)")}>
+          <p>
+            Mit einer Authenticator-App (z.&nbsp;B. Microsoft Authenticator, Google Authenticator, 1Password) braucht die Anmeldung zusätzlich einen
+            sechsstelligen Code. Ein erratenes Passwort reicht dann nicht mehr.
+          </p>
+          <button
+            type="button"
+            className={cn(buttonClass("secondary", "md"), "mt-4")}
+            onClick={() => {
+              setTotp(base32(random(20)));
+              setTest("");
+              setTestResult(null);
+            }}
+          >
+            <RefreshCw aria-hidden className="size-4" />
+            {totp ? "Neu erzeugen" : "Code-Schlüssel erzeugen"}
+          </button>
+          {totp ? (
+            <div className="mt-4 grid gap-4 sm:grid-cols-[auto_1fr] sm:items-start">
+              {qr ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={qr} alt="QR-Code für die Authenticator-App" width={220} height={220} className="rounded-md border border-line" />
+              ) : null}
+              <div>
+                <p id="totp-test-hint">QR-Code mit der App scannen, dann den angezeigten Code hier prüfen:</p>
+                <div className="mt-2 flex gap-2">
+                  <input
+                    aria-label="Code aus der Authenticator-App"
+                    aria-describedby="totp-test-hint"
+                    autoComplete="off"
+                    maxLength={6}
+                    className={cn(input, "w-32")}
+                    inputMode="numeric"
+                    placeholder="123456"
+                    value={test}
+                    onChange={(e) => {
+                      setTest(e.target.value);
+                      setTestResult(null);
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className={buttonClass("secondary", "md")}
+                    onClick={async () => {
+                      const code = test.replace(/\s/g, "");
+                      const valid = await Promise.all([-1, 0, 1].map((o) => totpNow(totp, o)));
+                      setTestResult(valid.includes(code));
+                    }}
+                  >
+                    Prüfen
+                  </button>
+                </div>
+                {testResult === true ? <p className="mt-2 text-[0.8125rem] font-medium text-emerald-700">Der Code stimmt. Die App ist richtig eingerichtet.</p> : null}
+                {testResult === false ? <p className="mt-2 text-[0.8125rem] font-medium text-red-700">Der Code stimmt nicht. Bitte nochmals scannen.</p> : null}
+                <CopyValue name="ADMIN_TOTP_SECRET" value={totp} />
+              </div>
+            </div>
+          ) : null}
+        </Step>
+      ) : null}
     </div>
   );
 }

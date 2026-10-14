@@ -11,16 +11,51 @@ import { SESSION_IDLE_MS } from "./session";
  * these; every caller has checked requireAdmin() first.
  */
 
-/** Same three counts as the "Kandidatenportal" badge in the admin navigation. */
-export async function portalCounts() {
+/**
+ * Answers in the portal that Ferhat has not reviewed yet: new interest, and withdrawals where
+ * the person is already a submission for the mandate (withdrawals without one need nothing
+ * and are marked reviewed right away, see answerVacancy). Both need the submissions join.
+ */
+const openInterestWhere = and(eq(vacancyShares.response, "interessiert"), isNull(vacancyShares.reviewedAt));
+const openWithdrawalWhere = and(eq(vacancyShares.response, "kein_interesse"), isNull(vacancyShares.reviewedAt), isNotNull(submissions.id));
+
+const shareSubmissionJoin = and(eq(submissions.mandateId, vacancyShares.mandateId), eq(submissions.candidateId, vacancyShares.candidateId));
+
+/**
+ * Open items of the candidate portal, overall or for one candidate: the counts of the
+ * "Kandidatenportal" navigation badge, the portal tabs, the dashboard and the account card on
+ * the candidate page, all from this one function so they cannot diverge.
+ */
+export async function portalCounts(candidateId?: number) {
   const db = await getDb();
-  const [[changes], [uploads], [interest]] = await Promise.all([
-    db.select({ n: count() }).from(changeRequests).where(eq(changeRequests.status, "offen")),
-    db.select({ n: count() }).from(documents).where(and(eq(documents.uploadedBy, "kandidat"), isNull(documents.confirmedAt))),
-    db.select({ n: count() }).from(vacancyShares).where(and(eq(vacancyShares.response, "interessiert"), isNull(vacancyShares.reviewedAt))),
+  const [[changes], [uploads], [answers]] = await Promise.all([
+    db
+      .select({ n: count() })
+      .from(changeRequests)
+      .where(and(eq(changeRequests.status, "offen"), candidateId ? eq(changeRequests.candidateId, candidateId) : undefined)),
+    db
+      .select({ n: count() })
+      .from(documents)
+      .where(and(eq(documents.uploadedBy, "kandidat"), isNull(documents.confirmedAt), candidateId ? eq(documents.candidateId, candidateId) : undefined)),
+    db
+      .select({
+        interest: sql<number>`count(*) filter (where ${openInterestWhere})`.mapWith(Number),
+        withdrawals: sql<number>`count(*) filter (where ${openWithdrawalWhere})`.mapWith(Number),
+      })
+      .from(vacancyShares)
+      .leftJoin(submissions, shareSubmissionJoin)
+      .where(and(isNull(vacancyShares.reviewedAt), candidateId ? eq(vacancyShares.candidateId, candidateId) : undefined)),
   ]);
-  return { changes: changes?.n ?? 0, uploads: uploads?.n ?? 0, interest: interest?.n ?? 0 };
+  const counts = {
+    changes: changes?.n ?? 0,
+    uploads: uploads?.n ?? 0,
+    interest: answers?.interest ?? 0,
+    withdrawals: answers?.withdrawals ?? 0,
+  };
+  return { ...counts, answers: counts.interest + counts.withdrawals, total: counts.changes + counts.uploads + counts.interest + counts.withdrawals };
 }
+
+export type PortalCounts = Awaited<ReturnType<typeof portalCounts>>;
 
 export type ChangeReview = {
   id: number;
@@ -165,15 +200,8 @@ function shareQuery(response: "interessiert" | "kein_interesse") {
       .from(vacancyShares)
       .innerJoin(candidates, eq(candidates.id, vacancyShares.candidateId))
       .innerJoin(mandates, eq(mandates.id, vacancyShares.mandateId))
-      .leftJoin(submissions, and(eq(submissions.mandateId, vacancyShares.mandateId), eq(submissions.candidateId, vacancyShares.candidateId)))
-      .where(
-        and(
-          eq(vacancyShares.response, response),
-          isNull(vacancyShares.reviewedAt),
-          // Withdrawals only matter when the person is in the pipeline for the mandate.
-          response === "kein_interesse" ? isNotNull(submissions.id) : undefined,
-        ),
-      )
+      .leftJoin(submissions, shareSubmissionJoin)
+      .where(response === "interessiert" ? openInterestWhere : openWithdrawalWhere)
       .orderBy(desc(vacancyShares.responseAt), desc(vacancyShares.id))
       .limit(200),
   );
@@ -260,21 +288,4 @@ async function activeSessionCounts(accountIds: number[]): Promise<Map<number, nu
     )
     .groupBy(candidateSessions.accountId);
   return new Map(rows.map((r) => [r.accountId, r.n]));
-}
-
-/** Open portal items of one candidate (for the account card on the candidate page). */
-export async function candidatePortalItems(candidateId: number) {
-  const db = await getDb();
-  const [[changes], [uploads], [interest]] = await Promise.all([
-    db.select({ n: count() }).from(changeRequests).where(and(eq(changeRequests.candidateId, candidateId), eq(changeRequests.status, "offen"))),
-    db
-      .select({ n: count() })
-      .from(documents)
-      .where(and(eq(documents.candidateId, candidateId), eq(documents.uploadedBy, "kandidat"), isNull(documents.confirmedAt))),
-    db
-      .select({ n: count() })
-      .from(vacancyShares)
-      .where(and(eq(vacancyShares.candidateId, candidateId), eq(vacancyShares.response, "interessiert"), isNull(vacancyShares.reviewedAt))),
-  ]);
-  return { changes: changes?.n ?? 0, uploads: uploads?.n ?? 0, interest: interest?.n ?? 0 };
 }

@@ -2,7 +2,6 @@
 
 import { eq } from "drizzle-orm";
 import { refresh } from "next/cache";
-import { redirect } from "next/navigation";
 import { z } from "zod";
 import { logActivity } from "@/lib/admin/activities";
 import { audit } from "@/lib/admin/audit";
@@ -15,6 +14,7 @@ import { displayNo, formatDate, todayIso } from "@/lib/admin/format";
 import { f, fail, ok, parseForm, type ActionState } from "@/lib/admin/forms";
 import { candidateStatuses, labelOf } from "@/lib/admin/options";
 import { deleteCandidateRecord } from "@/lib/admin/privacy";
+import { redirectAfterChange } from "@/lib/admin/redirect";
 import { normalizeSkills, skillGroups } from "@/lib/admin/skills";
 import { defaultRetentionUntil, retentionInputError, retentionWithoutConsent } from "./rules";
 import { adoptSkillsSchema, liftObjectionSchema, objectionSchema, parseCandidateForm, type CandidateInput } from "./schema";
@@ -70,7 +70,7 @@ export async function createCandidate(_prev: ActionState, formData: FormData): P
   await logActivity({ type: "candidate", id: row.id }, `Kandidat erfasst, aufbewahren bis ${formatDate(values.retentionUntil)}.`);
   await audit("create", { entity: "candidate", entityId: row.id, summary: `Kandidat ${no}` });
   if (values.consentAt) await audit("consent", { entity: "candidate", entityId: row.id, summary: `Einwilligung Kandidat ${no} erfasst` });
-  redirect(`/admin/kandidaten/${row.id}`);
+  redirectAfterChange(`/admin/kandidaten/${row.id}`);
 }
 
 export async function updateCandidate(id: number, _prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -124,7 +124,7 @@ export async function updateCandidate(id: number, _prev: ActionState, formData: 
     }
   }
   await audit("update", { entity: "candidate", entityId: candidateId, summary: `Kandidat ${no}` });
-  redirect(`/admin/kandidaten/${candidateId}`);
+  redirectAfterChange(`/admin/kandidaten/${candidateId}`);
 }
 
 async function logOwnFirmChange(owner: { type: "candidate"; id: number }, companyId: number | null) {
@@ -189,7 +189,7 @@ export async function deleteCandidate(id: number): Promise<ActionState> {
   // cascade); contracts keep their data, lose the link and keep only the number in the title.
   if (!(await deleteCandidateRecord(candidateId))) return fail("Diesen Kandidaten gibt es nicht mehr.");
   await audit("delete", { entity: "candidate", entityId: candidateId, summary: `Kandidat ${displayNo.candidate(candidateId)} mit allen Dokumenten` });
-  redirect("/admin/kandidaten");
+  redirectAfterChange("/admin/kandidaten");
 }
 
 /**

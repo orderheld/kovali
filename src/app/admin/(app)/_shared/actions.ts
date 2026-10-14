@@ -7,7 +7,7 @@ import { logActivity } from "@/lib/admin/activities";
 import { audit } from "@/lib/admin/audit";
 import { requireAdmin } from "@/lib/admin/auth/session";
 import { getDb } from "@/lib/admin/db/client";
-import { activities, documents } from "@/lib/admin/db/schema";
+import { activities, candidates, documents } from "@/lib/admin/db/schema";
 import { checkUpload, refreshDetectedSkills, storeDocument } from "@/lib/admin/documents";
 import { fail, ok, parseForm, f, type ActionState } from "@/lib/admin/forms";
 import { activityKinds, documentKinds, labelOf, valuesOf } from "@/lib/admin/options";
@@ -50,8 +50,24 @@ export async function uploadDocument(owner: OwnerRef, _prev: ActionState, formDa
   await logActivity(target, `Dokument hochgeladen: ${labelOf(documentKinds, kind.data)} (${file.filename})`);
   await audit("create", { entity: "document", entityId: stored.id, summary: `Dokument zu ${ownerEntity(target)} ${target.id}` });
   refresh();
-  const skills = stored.detectedSkills.length;
-  return ok(skills ? `Gespeichert und verschlüsselt. Im Lebenslauf erkannt: ${skills} Stichworte.` : "Gespeichert und verschlüsselt.");
+  if (target.type !== "candidate" || !stored.detectedSkills.length) return ok("Gespeichert und verschlüsselt.");
+  return ok(`Gespeichert und verschlüsselt. Im Lebenslauf ${detectedText(stored.detectedSkills.length, await newSkillCount(target.id, stored.detectedSkills))}.`);
+}
+
+/** How many of the detected skills are not in the candidate's profile yet (as in the "Im Lebenslauf erkannt" card). */
+async function newSkillCount(candidateId: number, detected: string[]): Promise<number> {
+  const db = await getDb();
+  const [c] = await db.select({ skills: candidates.skills, sapModules: candidates.sapModules }).from(candidates).where(eq(candidates.id, candidateId)).limit(1);
+  const inProfile = new Set([...(c?.skills ?? []), ...(c?.sapModules ?? [])].map((s) => s.toLowerCase()));
+  return detected.filter((s) => !inProfile.has(s.toLowerCase())).length;
+}
+
+/** "11 Stichworte erkannt, 8 davon neu". */
+function detectedText(total: number, fresh: number): string {
+  const found = total === 1 ? "1 Stichwort erkannt" : `${total} Stichworte erkannt`;
+  if (fresh === 0) return `${found}, ${total === 1 ? "steht" : "alle stehen"} schon im Profil`;
+  if (fresh === total) return `${found}, ${total === 1 ? "noch nicht im Profil" : "alle neu"}`;
+  return `${found}, ${fresh} davon neu`;
 }
 
 export async function deleteDocument(id: number): Promise<ActionState> {

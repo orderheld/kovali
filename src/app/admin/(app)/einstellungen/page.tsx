@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { KeyRound, Laptop, ShieldAlert, ShieldCheck, Smartphone } from "lucide-react";
 import { Badge, Card, CardBody, CardHeader, DescriptionList, LinkButton, Notice } from "@/components/admin/ui";
 import { activeAdminSessions, requireAdmin } from "@/lib/admin/auth/session";
@@ -31,9 +32,9 @@ export default async function SecurityPage() {
       {totp ? null : (
         <Notice tone="amber" icon={ShieldAlert} title="Zwei-Faktor-Code ist nicht eingerichtet" className="mb-6">
           Mit dem Passwort allein kommt jeder in den Admin-Bereich, der es kennt. Richte den Code einer Authenticator-App ein (ADMIN_TOTP_SECRET bei Vercel).{" "}
-          <a href="/admin/einrichtung" className="font-medium underline underline-offset-2">
+          <Link href="/admin/einrichtung" className="font-medium underline underline-offset-2">
             Zur Einrichtung
-          </a>
+          </Link>
         </Notice>
       )}
 

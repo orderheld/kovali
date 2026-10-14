@@ -1,7 +1,7 @@
 import "server-only";
 import { and, asc, count, desc, eq, gte, inArray, isNotNull, isNull, lte, sql } from "drizzle-orm";
 import { getDb } from "../db/client";
-import { activities, candidates, changeRequests, companies, contracts, documents, mandates, submissions, vacancyShares } from "../db/schema";
+import { activities, candidates, companies, contracts, mandates, submissions } from "../db/schema";
 import { displayNo, fullName, todayIso } from "../format";
 import { openMandateStatuses } from "../options";
 import { addDaysIso, isAnonymisedSql, privacyCounts } from "../privacy";
@@ -74,17 +74,6 @@ export async function dashboardAgenda(today = todayIso()) {
       .limit(20),
   ]);
   return { nextSteps, deadlines };
-}
-
-/** Items from the candidate portal waiting for Ferhat (same rules as the navigation badge). */
-export async function portalReviewCounts() {
-  const db = await getDb();
-  const [[changes], [uploads], [answers]] = await Promise.all([
-    db.select({ n: count() }).from(changeRequests).where(eq(changeRequests.status, "offen")),
-    db.select({ n: count() }).from(documents).where(and(eq(documents.uploadedBy, "kandidat"), isNull(documents.confirmedAt))),
-    db.select({ n: count() }).from(vacancyShares).where(and(eq(vacancyShares.response, "interessiert"), isNull(vacancyShares.reviewedAt))),
-  ]);
-  return { changeRequests: changes?.n ?? 0, uploads: uploads?.n ?? 0, interested: answers?.n ?? 0 };
 }
 
 export { privacyCounts };

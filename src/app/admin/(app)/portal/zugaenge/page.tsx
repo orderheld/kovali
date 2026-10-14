@@ -9,7 +9,7 @@ import { invitableCandidates } from "@/lib/portal/accounts";
 import { listAccounts } from "@/lib/portal/admin";
 import { portalEmailMode } from "@/lib/portal/email";
 import { AccountActions, linkInfo } from "../account-parts";
-import { InviteForm } from "../client";
+import { InviteForm, InviteLinkHost } from "../client";
 import { PortalHeader } from "../header";
 
 /** Admin pages read the session and the database per request and may block. */
@@ -33,14 +33,17 @@ export default async function PortalAccountsPage() {
             description="Die E-Mail-Adresse der Person ist vorausgefüllt und kann geändert werden. Den Link schickst du selbst oder per E-Mail."
           />
           <CardBody>
-            {invitable.length ? (
-              <InviteForm
-                emailMode={emailMode}
-                candidates={invitable.map((c) => ({ id: c.id, label: `${c.lastName} ${c.firstName} (${displayNo.candidate(c.id)})`, email: c.email }))}
-              />
-            ) : (
-              <p className="text-sm text-slate">Alle aktuellen Kandidatinnen und Kandidaten haben schon einen Zugang.</p>
-            )}
+            {/* Outside the condition: the link of the last invitable person stays when the form gives way to the note. */}
+            <InviteLinkHost emailMode={emailMode}>
+              {invitable.length ? (
+                <InviteForm
+                  emailMode={emailMode}
+                  candidates={invitable.map((c) => ({ id: c.id, label: `${c.lastName} ${c.firstName} (${displayNo.candidate(c.id)})`, email: c.email }))}
+                />
+              ) : (
+                <p className="text-sm text-slate">Alle aktuellen Kandidatinnen und Kandidaten haben schon einen Zugang.</p>
+              )}
+            </InviteLinkHost>
           </CardBody>
         </Card>
 

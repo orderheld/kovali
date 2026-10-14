@@ -27,7 +27,11 @@ export interface CandidateFilter {
 /** Profile skills, SAP modules and CV keywords as one array, for searching. */
 const allSkills = sql`(${candidates.skills} || ${candidates.sapModules} || ${candidates.detectedSkills})`;
 
-function skillEquals(skill: string): SQL {
+/**
+ * The candidate has this skill, compared case-insensitively after normalisation, so aliases
+ * find the canonical name ("S4HANA" finds "SAP S/4HANA"). Also used by the global search.
+ */
+export function hasSkill(skill: string): SQL {
   return sql`exists (select 1 from unnest(${allSkills}) as s(skill) where lower(s.skill) = lower(${normalizeSkill(skill)}))`;
 }
 
@@ -45,12 +49,12 @@ function candidateWhere(f: CandidateFilter, withStatus = true): SQL | undefined 
           ilike(candidates.email, pattern),
           ilike(candidates.headline, pattern),
           sql`exists (select 1 from unnest(${allSkills}) as s(skill) where s.skill ilike ${pattern})`,
-          skillEquals(f.q ?? ""),
+          hasSkill(f.q ?? ""),
           number ? eq(candidates.id, Number(number[1])) : undefined,
         )
       : undefined,
     f.discipline ? arrayContains(candidates.disciplines, [f.discipline]) : undefined,
-    f.skill?.trim() ? skillEquals(f.skill) : undefined,
+    f.skill?.trim() ? hasSkill(f.skill) : undefined,
     f.engagement ? eq(candidates.engagement, f.engagement) : undefined,
     f.availableBy ? or(isNull(candidates.availableFrom), lte(candidates.availableFrom, f.availableBy)) : undefined,
     f.ownFirm === undefined ? undefined : f.ownFirm ? isNotNull(candidates.companyId) : isNull(candidates.companyId),

@@ -100,17 +100,23 @@ export function CardHeader({
   title,
   description,
   actions,
+  icon: Icon,
   className,
 }: {
   title: string;
   description?: React.ReactNode;
   actions?: React.ReactNode;
+  /** Decorative, before the title. */
+  icon?: LucideIcon;
   className?: string;
 }) {
   return (
     <div className={cn("flex flex-wrap items-start justify-between gap-3 border-b border-line px-5 py-4", className)}>
       <div className="min-w-0">
-        <h2 className="text-[0.9375rem] font-semibold text-ink">{title}</h2>
+        <h2 className={cn("text-[0.9375rem] font-semibold text-ink", Icon && "flex items-center gap-2")}>
+          {Icon ? <Icon aria-hidden className="size-4 shrink-0 text-slate" /> : null}
+          {title}
+        </h2>
         {description ? <p className="mt-0.5 text-sm text-slate">{description}</p> : null}
       </div>
       {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}

@@ -2,7 +2,6 @@
 
 import { and, eq, sql } from "drizzle-orm";
 import { refresh } from "next/cache";
-import { redirect } from "next/navigation";
 import { z } from "zod";
 import { logActivity } from "@/lib/admin/activities";
 import { audit } from "@/lib/admin/audit";
@@ -11,6 +10,7 @@ import { getDb } from "@/lib/admin/db/client";
 import { activities, candidates, companies, contacts } from "@/lib/admin/db/schema";
 import { displayNo } from "@/lib/admin/format";
 import { fail, ok, parseForm, type ActionState } from "@/lib/admin/forms";
+import { redirectAfterChange } from "@/lib/admin/redirect";
 import { companySchema, contactSchema } from "./schema";
 
 const idSchema = z.number().int().positive();
@@ -22,7 +22,7 @@ export async function createCompany(_prev: ActionState, formData: FormData): Pro
   const db = await getDb();
   const [row] = await db.insert(companies).values(parsed.data).returning({ id: companies.id });
   await audit("create", { entity: "company", entityId: row.id, summary: `Firma ${displayNo.company(row.id)}` });
-  redirect(`/admin/firmen/${row.id}`);
+  redirectAfterChange(`/admin/firmen/${row.id}`);
 }
 
 export async function updateCompany(id: number, _prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -38,7 +38,7 @@ export async function updateCompany(id: number, _prev: ActionState, formData: Fo
     .returning({ id: companies.id });
   if (!row) return fail("Diese Firma gibt es nicht mehr.");
   await audit("update", { entity: "company", entityId: companyId, summary: `Firma ${displayNo.company(companyId)}` });
-  redirect(`/admin/firmen/${companyId}`);
+  redirectAfterChange(`/admin/firmen/${companyId}`);
 }
 
 export async function deleteCompany(id: number): Promise<ActionState> {
@@ -65,7 +65,7 @@ export async function deleteCompany(id: number): Promise<ActionState> {
     await logActivity({ type: "candidate", id: candidateId }, `Eigene Firma ${displayNo.company(companyId)} gelöscht; Verknüpfung entfernt.`);
   }
   await audit("delete", { entity: "company", entityId: companyId, summary: `Firma ${displayNo.company(companyId)}` });
-  redirect("/admin/firmen");
+  redirectAfterChange("/admin/firmen");
 }
 
 export async function createContact(companyId: number, _prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -82,7 +82,7 @@ export async function createContact(companyId: number, _prev: ActionState, formD
     .returning({ id: contacts.id });
   await logActivity({ type: "company", id: cid }, `Kontakt erfasst: ${[parsed.data.firstName, parsed.data.lastName].filter(Boolean).join(" ")}`);
   await audit("create", { entity: "contact", entityId: row.id, summary: `Kontakt bei Firma ${displayNo.company(cid)}` });
-  redirect(`/admin/firmen/${cid}`);
+  redirectAfterChange(`/admin/firmen/${cid}`);
 }
 
 export async function updateContact(companyId: number, contactId: number, _prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -99,7 +99,7 @@ export async function updateContact(companyId: number, contactId: number, _prev:
     .returning({ id: contacts.id });
   if (!row) return fail("Diesen Kontakt gibt es nicht mehr.");
   await audit("update", { entity: "contact", entityId: kid, summary: `Kontakt bei Firma ${displayNo.company(cid)}` });
-  redirect(`/admin/firmen/${cid}`);
+  redirectAfterChange(`/admin/firmen/${cid}`);
 }
 
 export async function deleteContact(companyId: number, contactId: number): Promise<ActionState> {

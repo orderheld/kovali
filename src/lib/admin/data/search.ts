@@ -3,6 +3,7 @@ import { asc, count, desc, eq, ilike, or, sql, type Column, type SQL } from "dri
 import { getDb } from "../db/client";
 import { candidates, companies, contacts, contracts, documents, mandates, submissions } from "../db/schema";
 import { retainedContractCounts } from "../privacy";
+import { hasSkill } from "./candidates";
 import { mandateSearchWhere } from "./mandates";
 import { likePattern, outerColumn } from "./query";
 
@@ -128,8 +129,10 @@ export async function searchAll(input: string) {
     ilike(candidates.email, pattern),
     ilike(candidates.headline, pattern),
     phoneMatches(candidates.phone, phones),
-    // Skill lists match case-insensitively, also parts of a skill ("FI" finds "SAP FI").
+    // Skill lists match case-insensitively, also parts of a skill ("FI" finds "SAP FI"), and
+    // aliases as in the candidate filter ("S4HANA" finds "SAP S/4HANA").
     sql`exists (select 1 from unnest(${candidates.skills} || ${candidates.sapModules} || ${candidates.detectedSkills}) as s(v) where s.v ilike ${pattern})`,
+    hasSkill(input),
   );
   // Same condition as the mandate list, so "Alle anzeigen" there shows these hits.
   const mandateWhere = mandateSearchWhere(input);

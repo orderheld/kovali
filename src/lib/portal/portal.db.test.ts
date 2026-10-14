@@ -171,7 +171,12 @@ describe.skipIf(!url)("candidate portal (database)", () => {
     expect(sub.consent_at).not.toBeNull();
     expect(sub.withdrawn_at).not.toBeNull();
     expect((await m.admin.openWithdrawals()).map((s) => s.candidateId)).toEqual([ids.anna]);
-    expect((await m.admin.portalCounts()).interest).toBe(0);
+    // The withdrawal needs a look: it counts in the badge, the Interesse tab and the candidate card.
+    const counts = await m.admin.portalCounts();
+    expect(counts).toMatchObject({ interest: 0, withdrawals: 1, answers: 1 });
+    expect(counts.total).toBe(counts.changes + counts.uploads + 1);
+    expect(await m.admin.portalCounts(ids.anna)).toMatchObject({ interest: 0, withdrawals: 1 });
+    expect(await m.admin.portalCounts(ids.beat)).toMatchObject({ interest: 0, withdrawals: 0 });
 
     // The admin side refuses the next step towards the client.
     const { markSubmissionStatus } = await import("@/lib/admin/data/submissions");

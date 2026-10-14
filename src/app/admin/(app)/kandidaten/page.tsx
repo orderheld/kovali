@@ -9,6 +9,7 @@ import { availabilityText } from "@/lib/admin/dossier";
 import { displayNo, formatChf, todayIso } from "@/lib/admin/format";
 import { candidateStatuses, disciplines, engagements, labelOf, rateUnits, toneOf } from "@/lib/admin/options";
 import { dedupe } from "@/lib/admin/forms";
+import { isAnonymised } from "@/lib/admin/privacy";
 import { skillSuggestions } from "@/lib/admin/skills";
 import { SearchBox } from "../_shared/search-box";
 import { privacyFlag } from "./rules";
@@ -166,17 +167,19 @@ export default async function CandidatesPage({ searchParams }: PageProps<"/admin
               </thead>
               <tbody>
                 {rows.map((c) => {
-                  const flag = privacyFlag(c, today);
+                  const anonymised = isAnonymised(c);
+                  // An anonymised profile has neither consent nor a firm any more; that is no task.
+                  const flag = anonymised ? null : privacyFlag(c, today);
                   return (
                     <tr key={c.id} className="hover:bg-mist/50">
                       <Td className="min-w-40">
                         <Link href={`${BASE}/${c.id}`} className="font-medium text-ink hover:text-blue hover:underline">
-                          {c.lastName} {c.firstName}
+                          {anonymised ? "Anonymisiert" : `${c.lastName} ${c.firstName}`}
                         </Link>
                         {/* relative: keeps the sr-only text inside the scrolling table, it would widen the page at 390 px. */}
                         <div className="relative mt-0.5 flex flex-wrap items-center gap-x-2">
                           <Mono>{displayNo.candidate(c.id)}</Mono>
-                          {c.companyName ? (
+                          {anonymised ? null : c.companyName ? (
                             <span className="inline-flex max-w-44 items-center gap-1 truncate text-xs text-slate" title={`Eigene Firma: ${c.companyName}`}>
                               <Building2 aria-hidden className="size-3 shrink-0" />
                               <span className="sr-only">Eigene Firma: </span>

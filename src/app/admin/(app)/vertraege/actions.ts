@@ -2,7 +2,6 @@
 
 import { and, eq, isNull } from "drizzle-orm";
 import { refresh } from "next/cache";
-import { redirect } from "next/navigation";
 import { z } from "zod";
 import { logActivity } from "@/lib/admin/activities";
 import { audit } from "@/lib/admin/audit";
@@ -19,6 +18,7 @@ import { addMonthsIso, displayNo, formatDate, todayIso } from "@/lib/admin/forma
 import { fail, formObject, ok, parseForm, type ActionState } from "@/lib/admin/forms";
 import { companyKinds, labelOf } from "@/lib/admin/options";
 import type { OwnerRef } from "@/lib/admin/owner";
+import { redirectAfterChange } from "@/lib/admin/redirect";
 import { contractSchema, DATA_PREFIX, statusDateSchema, type ContractInput } from "./schema";
 
 const idSchema = z.number().int().positive();
@@ -160,7 +160,7 @@ export async function createContract(templateId: string, _prev: ActionState, for
   const row = await insertContractWithNumber(db, { ...checked.values, template: template.id, status: "entwurf" }, contractYear());
   await logActivity(owners({ ...checked.values, id: row.id }), `Vertrag ${row.number} als Entwurf erstellt: ${checked.values.title}`);
   await audit("create", { entity: "contract", entityId: row.id, summary: `Vertrag ${row.number}` });
-  redirect(`/admin/vertraege/${row.id}`);
+  redirectAfterChange(`/admin/vertraege/${row.id}`);
 }
 
 export async function updateContract(id: number, _prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -182,7 +182,7 @@ export async function updateContract(id: number, _prev: ActionState, formData: F
   if (!row) return fail("Der Vertrag ist kein Entwurf mehr und wurde nicht geändert.");
   await logActivity({ type: "contract", id: contractId }, "Entwurf bearbeitet.");
   await audit("update", { entity: "contract", entityId: contractId, summary: `Vertrag ${current.number}` });
-  redirect(`/admin/vertraege/${contractId}`);
+  redirectAfterChange(`/admin/vertraege/${contractId}`);
 }
 
 /** Status changes without a date: sent, back to draft, cancelled, reopened. */
@@ -372,7 +372,7 @@ export async function copyContract(id: number): Promise<ActionState> {
   await logActivity({ type: "contract", id: row.id }, `Entwurf als Kopie von ${current.number} erstellt.`);
   await logActivity({ type: "contract", id: contractId }, `Als neuer Entwurf ${row.number} kopiert.`);
   await audit("create", { entity: "contract", entityId: row.id, summary: `Vertrag ${row.number} (Kopie von ${current.number})` });
-  redirect(`/admin/vertraege/${row.id}/bearbeiten`);
+  redirectAfterChange(`/admin/vertraege/${row.id}/bearbeiten`);
 }
 
 export async function deleteContract(id: number): Promise<ActionState> {
@@ -391,5 +391,5 @@ export async function deleteContract(id: number): Promise<ActionState> {
     return fail("Nur Entwürfe können gelöscht werden.");
   }
   await audit("delete", { entity: "contract", entityId: contractId, summary: `Vertrag ${row.number}` });
-  redirect("/admin/vertraege");
+  redirectAfterChange("/admin/vertraege");
 }

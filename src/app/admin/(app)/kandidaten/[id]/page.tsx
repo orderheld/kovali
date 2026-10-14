@@ -41,6 +41,7 @@ import {
   workPermits,
 } from "@/lib/admin/options";
 import type { Tone } from "@/lib/admin/options";
+import { anonymisedAt, isAnonymised } from "@/lib/admin/privacy";
 import { cn } from "@/lib/utils";
 import { ActivityFeed } from "../../_shared/activity-feed";
 import { DocumentsCard } from "../../_shared/documents-card";
@@ -88,15 +89,18 @@ export default async function CandidatePage({ params }: PageProps<"/admin/kandid
   if (!c) notFound();
 
   const today = todayIso();
-  const [proposals, matches, company, firmChoices] = await Promise.all([
+  // Kept only for statistics: no editing, no dossier, no matching, no tasks such as missing consent.
+  const anonymised = isAnonymised(c);
+  const [proposals, matches, company, firmChoices, anonymisedOn] = await Promise.all([
     listCandidateSubmissions(id),
-    matchingMandatesFor(c, today, 5),
+    anonymised ? [] : matchingMandatesFor(c, today, 5),
     c.companyId ? getCompany(c.companyId) : null,
-    c.companyId ? [] : companyOptions(["subunternehmer"]),
+    c.companyId || anonymised ? [] : companyOptions(["subunternehmer"]),
+    anonymised ? anonymisedAt(id) : null,
   ]);
   const owner = { type: "candidate" as const, id };
   const no = displayNo.candidate(id);
-  const name = `${c.firstName} ${c.lastName}`;
+  const name = anonymised ? "Anonymisiertes Profil" : `${c.firstName} ${c.lastName}`;
 
   const languages = list<LanguageSkill>(c.languages).filter((l) => l?.language);
   const experience = sortExperience(list<ExperienceEntry>(c.experience).filter((e) => e?.role));
@@ -130,7 +134,7 @@ export default async function CandidatePage({ params }: PageProps<"/admin/kandid
                 Widerspruch gegen Weitergabe
               </Badge>
             ) : null}
-            {company ? null : (
+            {company || anonymised ? null : (
               <Badge tone="amber">
                 <Building2 aria-hidden className="size-3" />
                 Ohne eigene Firma
@@ -143,15 +147,17 @@ export default async function CandidatePage({ params }: PageProps<"/admin/kandid
           </>
         }
         actions={
-          <>
-            <DossierMenu
-              links={dossierLinks}
-              note="Für eine Firma das Dossier beim Vorschlag im Mandat erstellen: dort wird die Einwilligung für das Mandat geprüft."
-            />
-            <LinkButton href={`/admin/kandidaten/${id}/bearbeiten`} variant="primary" icon={Pencil}>
-              Bearbeiten
-            </LinkButton>
-          </>
+          anonymised ? undefined : (
+            <>
+              <DossierMenu
+                links={dossierLinks}
+                note="Für eine Firma das Dossier beim Vorschlag im Mandat erstellen: dort wird die Einwilligung für das Mandat geprüft."
+              />
+              <LinkButton href={`/admin/kandidaten/${id}/bearbeiten`} variant="primary" icon={Pencil}>
+                Bearbeiten
+              </LinkButton>
+            </>
+          )
         }
       />
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_26rem]">
@@ -161,7 +167,7 @@ export default async function CandidatePage({ params }: PageProps<"/admin/kandid
             <CardBody className="space-y-5">
               {c.summary ? (
                 <p className="max-w-3xl text-[0.9375rem] leading-relaxed whitespace-pre-line text-ink">{c.summary}</p>
-              ) : (
+              ) : anonymised ? null : (
                 <p className="text-sm text-slate">
                   Noch kein Kurzprofil.{" "}
                   <Link href={`/admin/kandidaten/${id}/bearbeiten`} className="text-blue hover:underline">
@@ -210,7 +216,7 @@ export default async function CandidatePage({ params }: PageProps<"/admin/kandid
             </CardBody>
           </Card>
 
-          {pendingSkills.length ? (
+          {pendingSkills.length && !anonymised ? (
             <Card>
               <CardHeader
                 title="Im Lebenslauf erkannt"
@@ -292,7 +298,7 @@ export default async function CandidatePage({ params }: PageProps<"/admin/kandid
                     </div>
                     <span className="flex flex-wrap items-center gap-1.5">
                       <Badge tone={toneOf(submissionStatuses, p.status)}>{labelOf(submissionStatuses, p.status)}</Badge>
-                      {p.withdrawnAt ? (
+                      {anonymised ? null : p.withdrawnAt ? (
                         <Badge tone="red">
                           <ShieldAlert aria-hidden className="size-3" />
                           Widerrufen am {formatDate(p.withdrawnAt)}
@@ -308,83 +314,89 @@ export default async function CandidatePage({ params }: PageProps<"/admin/kandid
                           Ohne Einwilligung
                         </Badge>
                       )}
-                      <LinkButton
-                        href={dossierHref(id, { format: "pdf", variant: p.profileVariant === "namentlich" ? "namentlich" : "anonym", mandateId: p.mandateId })}
-                        size="sm"
-                        variant="ghost"
-                        icon={FileDown}
-                        download
-                      >
-                        <span>
-                          Dossier <span className="sr-only">für {displayNo.mandate(p.mandateId)}, </span>
-                          <span className="text-xs text-slate">({labelOf(profileVariants, p.profileVariant)})</span>
-                        </span>
-                      </LinkButton>
+                      {anonymised ? null : (
+                        <LinkButton
+                          href={dossierHref(id, { format: "pdf", variant: p.profileVariant === "namentlich" ? "namentlich" : "anonym", mandateId: p.mandateId })}
+                          size="sm"
+                          variant="ghost"
+                          icon={FileDown}
+                          download
+                        >
+                          <span>
+                            Dossier <span className="sr-only">für {displayNo.mandate(p.mandateId)}, </span>
+                            <span className="text-xs text-slate">({labelOf(profileVariants, p.profileVariant)})</span>
+                          </span>
+                        </LinkButton>
+                      )}
                     </span>
                   </li>
                 ))}
               </ul>
             ) : (
               <CardBody>
-                <p className="text-sm text-slate">Noch keine Vorschläge. Ein Profil schlägst du im Mandat vor, mit der Einwilligung für genau dieses Mandat.</p>
-              </CardBody>
-            )}
-          </Card>
-
-          <Card>
-            <CardHeader title="Passende Mandate" description="Offene Mandate ohne Vorschlag für dieses Profil, nach Übereinstimmung sortiert." />
-            {matches.length ? (
-              <ul className="divide-y divide-line">
-                {matches.map(({ mandate: m, match }) => (
-                  <li key={m.id} className="flex items-start gap-4 px-5 py-3">
-                    <span
-                      className={`mt-0.5 flex size-11 shrink-0 flex-col items-center justify-center rounded-full text-sm font-semibold tabular-nums ring-1 ring-inset ${
-                        scoreTone(match.score) === "green"
-                          ? "bg-emerald-50 text-emerald-700 ring-emerald-600/20"
-                          : scoreTone(match.score) === "blue"
-                            ? "bg-blue/10 text-blue-700 ring-blue/20"
-                            : "bg-slate/10 text-slate ring-slate/15"
-                      }`}
-                    >
-                      {match.score}
-                      <span className="sr-only"> von 100 Punkten</span>
-                    </span>
-                    <div className="min-w-0 flex-1 text-sm">
-                      <Link href={`/admin/mandate/${m.id}?kandidat=${id}`} className="font-medium text-ink hover:text-blue hover:underline">
-                        {m.title}
-                      </Link>
-                      <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-slate">
-                        <Mono>{displayNo.mandate(m.id)}</Mono>
-                        {m.companyName ? <span>{m.companyName}</span> : null}
-                        {m.startDate ? <span>Start {formatDate(m.startDate)}</span> : null}
-                      </p>
-                      {match.reasons.length ? <p className="mt-1 text-[0.8125rem] text-ink">{match.reasons.slice(0, 3).join(" · ")}</p> : null}
-                      {match.missingRequired.length ? (
-                        <p className="mt-0.5 text-[0.8125rem] text-slate">Fehlt: {match.missingRequired.slice(0, 4).join(", ")}</p>
-                      ) : null}
-                      {match.warnings.length ? (
-                        <p className="mt-0.5 flex items-start gap-1 text-[0.8125rem] text-amber-800">
-                          <AlertTriangle aria-hidden className="mt-0.5 size-3.5 shrink-0" />
-                          {match.warnings.slice(0, 2).join(" · ")}
-                        </p>
-                      ) : null}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <CardBody>
-                <p className="flex items-center gap-2 text-sm text-slate">
-                  <Sparkles aria-hidden className="size-4" />
-                  Kein offenes Mandat ohne Vorschlag für dieses Profil.
+                <p className="text-sm text-slate">
+                  {anonymised ? "Keine Vorschläge." : "Noch keine Vorschläge. Ein Profil schlägst du im Mandat vor, mit der Einwilligung für genau dieses Mandat."}
                 </p>
               </CardBody>
             )}
           </Card>
+
+          {anonymised ? null : (
+            <Card>
+              <CardHeader title="Passende Mandate" description="Offene Mandate ohne Vorschlag für dieses Profil, nach Übereinstimmung sortiert." />
+              {matches.length ? (
+                <ul className="divide-y divide-line">
+                  {matches.map(({ mandate: m, match }) => (
+                    <li key={m.id} className="flex items-start gap-4 px-5 py-3">
+                      <span
+                        className={`mt-0.5 flex size-11 shrink-0 flex-col items-center justify-center rounded-full text-sm font-semibold tabular-nums ring-1 ring-inset ${
+                          scoreTone(match.score) === "green"
+                            ? "bg-emerald-50 text-emerald-700 ring-emerald-600/20"
+                            : scoreTone(match.score) === "blue"
+                              ? "bg-blue/10 text-blue-700 ring-blue/20"
+                              : "bg-slate/10 text-slate ring-slate/15"
+                        }`}
+                      >
+                        {match.score}
+                        <span className="sr-only"> von 100 Punkten</span>
+                      </span>
+                      <div className="min-w-0 flex-1 text-sm">
+                        <Link href={`/admin/mandate/${m.id}?kandidat=${id}`} className="font-medium text-ink hover:text-blue hover:underline">
+                          {m.title}
+                        </Link>
+                        <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-slate">
+                          <Mono>{displayNo.mandate(m.id)}</Mono>
+                          {m.companyName ? <span>{m.companyName}</span> : null}
+                          {m.startDate ? <span>Start {formatDate(m.startDate)}</span> : null}
+                        </p>
+                        {match.reasons.length ? <p className="mt-1 text-[0.8125rem] text-ink">{match.reasons.slice(0, 3).join(" · ")}</p> : null}
+                        {match.missingRequired.length ? (
+                          <p className="mt-0.5 text-[0.8125rem] text-slate">Fehlt: {match.missingRequired.slice(0, 4).join(", ")}</p>
+                        ) : null}
+                        {match.warnings.length ? (
+                          <p className="mt-0.5 flex items-start gap-1 text-[0.8125rem] text-amber-800">
+                            <AlertTriangle aria-hidden className="mt-0.5 size-3.5 shrink-0" />
+                            {match.warnings.slice(0, 2).join(" · ")}
+                          </p>
+                        ) : null}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <CardBody>
+                  <p className="flex items-center gap-2 text-sm text-slate">
+                    <Sparkles aria-hidden className="size-4" />
+                    Kein offenes Mandat ohne Vorschlag für dieses Profil.
+                  </p>
+                </CardBody>
+              )}
+            </Card>
+          )}
         </div>
 
         <div className="min-w-0 space-y-6">
-          <Card className={company ? undefined : "border-amber-300"}>
+          <Card className={company || anonymised ? undefined : "border-amber-300"}>
             <CardHeader title="Eigene Firma" description="Profile gehen nur über die eigene Firma der Fachperson an Firmen, als Subunternehmen von KOVALI." />
             <CardBody className="space-y-4">
               {company ? (
@@ -418,6 +430,8 @@ export default async function CandidatePage({ params }: PageProps<"/admin/kandid
                     Verknüpfung lösen
                   </ActionButton>
                 </>
+              ) : anonymised ? (
+                <p className="text-sm text-slate">Keine: Die Verknüpfung wurde beim Anonymisieren gelöst.</p>
               ) : (
                 <>
                   <Notice tone="amber" icon={AlertTriangle} title="Keine eigene Firma erfasst – Profil kann nicht vorgeschlagen werden" />
@@ -501,77 +515,86 @@ export default async function CandidatePage({ params }: PageProps<"/admin/kandid
                 </LinkButton>
               }
             />
-            <CardBody className="space-y-4">
-              {retention.state === "overdue" ? (
-                <Notice tone="red" icon={ShieldAlert} title="Aufbewahrungsfrist abgelaufen">
-                  Aufbewahren bis {formatDate(c.retentionUntil)}. Profil löschen oder Einwilligung erneuern und Frist verlängern.
+            {anonymised ? (
+              <CardBody>
+                <Notice tone="neutral" icon={ShieldCheck} title={anonymisedOn ? `Anonymisiert am ${formatDate(anonymisedOn)}` : "Anonymisiert"}>
+                  Name, Kontaktdaten, Dokumente und Verlauf sind gelöscht; übrig sind nur Angaben ohne Personenbezug für die Statistik.
+                  {c.objectionAt ? ` Der Widerspruch vom ${formatDate(c.objectionAt)} bleibt vermerkt: Das Profil wird nie mehr weitergegeben.` : null}
                 </Notice>
-              ) : retention.state === "due" ? (
-                <Notice
-                  tone="amber"
-                  icon={ShieldAlert}
-                  title={retention.days === 0 ? "Frist endet heute" : `Frist endet in ${retention.days === 1 ? "1 Tag" : `${retention.days} Tagen`}`}
-                >
-                  Einwilligung einholen und Frist verlängern, sonst das Profil löschen.
-                </Notice>
-              ) : null}
-              {c.objectionAt ? (
-                <Notice tone="red" icon={ShieldAlert} title="Widerspruch gegen jede Weitergabe">
-                  <p>
-                    Seit {formatDate(c.objectionAt)}
-                    {c.objectionNote ? `: ${c.objectionNote}` : ""}.
-                  </p>
-                  <p className="mt-1">
-                    Kein Vormerken, keine Einwilligung und kein Vorschlag bei irgendeinem Mandat. Erst eine neue, ausdrückliche Einwilligung für ein Mandat hebt
-                    den Widerspruch auf, oder du hebst ihn hier mit Begründung auf.
-                  </p>
-                  <details className={cn(detailsClass, "mt-3 text-ink")}>
-                    <summary className={summaryClass}>Widerspruch aufheben</summary>
-                    <div className="p-3">
-                      <LiftObjectionForm action={liftCandidateObjection.bind(null, id)} />
+              </CardBody>
+            ) : (
+              <CardBody className="space-y-4">
+                {retention.state === "overdue" ? (
+                  <Notice tone="red" icon={ShieldAlert} title="Aufbewahrungsfrist abgelaufen">
+                    Aufbewahren bis {formatDate(c.retentionUntil)}. Profil löschen oder Einwilligung erneuern und Frist verlängern.
+                  </Notice>
+                ) : retention.state === "due" ? (
+                  <Notice
+                    tone="amber"
+                    icon={ShieldAlert}
+                    title={retention.days === 0 ? "Frist endet heute" : `Frist endet in ${retention.days === 1 ? "1 Tag" : `${retention.days} Tagen`}`}
+                  >
+                    Einwilligung einholen und Frist verlängern, sonst das Profil löschen.
+                  </Notice>
+                ) : null}
+                {c.objectionAt ? (
+                  <Notice tone="red" icon={ShieldAlert} title="Widerspruch gegen jede Weitergabe">
+                    <p>
+                      Seit {formatDate(c.objectionAt)}
+                      {c.objectionNote ? `: ${c.objectionNote}` : ""}.
+                    </p>
+                    <p className="mt-1">
+                      Kein Vormerken, keine Einwilligung und kein Vorschlag bei irgendeinem Mandat. Erst eine neue, ausdrückliche Einwilligung für ein Mandat hebt
+                      den Widerspruch auf, oder du hebst ihn hier mit Begründung auf.
+                    </p>
+                    <details className={cn(detailsClass, "mt-3 text-ink")}>
+                      <summary className={summaryClass}>Widerspruch aufheben</summary>
+                      <div className="p-3">
+                        <LiftObjectionForm action={liftCandidateObjection.bind(null, id)} />
+                      </div>
+                    </details>
+                  </Notice>
+                ) : null}
+                {!c.consentAt ? (
+                  <Notice tone="amber" icon={ShieldAlert} title={c.consentNote ? "Keine gültige Einwilligung" : "Keine Einwilligung erfasst"}>
+                    {c.consentNote ? <span className="whitespace-pre-line">{c.consentNote}. </span> : null}
+                    Ohne Einwilligung höchstens sechs Monate aufbewahren; an Firmen nur mit Einwilligung für das Mandat.
+                  </Notice>
+                ) : null}
+                <DescriptionList
+                  columns={1}
+                  items={[
+                    {
+                      label: "Einwilligung zur Speicherung",
+                      value: c.consentAt ? (
+                        <Badge tone="green">
+                          <ShieldCheck aria-hidden className="size-3" />
+                          Erteilt am {formatDate(c.consentAt)}
+                        </Badge>
+                      ) : (
+                        <Badge tone="amber">Nicht erteilt</Badge>
+                      ),
+                    },
+                    ...(c.consentAt ? [{ label: "Wie erteilt", value: c.consentNote ?? "–" }] : []),
+                    { label: "Datenschutzinformation zugestellt", value: c.privacyInfoAt ? formatDate(c.privacyInfoAt) : "Nicht erfasst" },
+                    { label: "Aufbewahren bis", value: formatDate(c.retentionUntil) },
+                    { label: "Herkunft der Daten", value: labelOf(candidateSources, c.source) },
+                  ]}
+                />
+                {c.objectionAt ? null : (
+                  <details className={detailsClass}>
+                    <summary className={summaryClass}>Widerspruch erfassen (keine Weitergabe mehr)</summary>
+                    <div className="space-y-3 p-3">
+                      <p className="text-[0.8125rem] text-slate">
+                        Gilt für alle Mandate: offene Vorschläge gelten als widerrufen, neues Vormerken ist gesperrt. Für ein einzelnes Mandat erfasst du den
+                        Widerruf im Mandat.
+                      </p>
+                      <ObjectionForm action={recordCandidateObjection.bind(null, id)} today={today} />
                     </div>
                   </details>
-                </Notice>
-              ) : null}
-              {!c.consentAt ? (
-                <Notice tone="amber" icon={ShieldAlert} title={c.consentNote ? "Keine gültige Einwilligung" : "Keine Einwilligung erfasst"}>
-                  {c.consentNote ? <span className="whitespace-pre-line">{c.consentNote}. </span> : null}
-                  Ohne Einwilligung höchstens sechs Monate aufbewahren; an Firmen nur mit Einwilligung für das Mandat.
-                </Notice>
-              ) : null}
-              <DescriptionList
-                columns={1}
-                items={[
-                  {
-                    label: "Einwilligung zur Speicherung",
-                    value: c.consentAt ? (
-                      <Badge tone="green">
-                        <ShieldCheck aria-hidden className="size-3" />
-                        Erteilt am {formatDate(c.consentAt)}
-                      </Badge>
-                    ) : (
-                      <Badge tone="amber">Nicht erteilt</Badge>
-                    ),
-                  },
-                  ...(c.consentAt ? [{ label: "Wie erteilt", value: c.consentNote ?? "–" }] : []),
-                  { label: "Datenschutzinformation zugestellt", value: c.privacyInfoAt ? formatDate(c.privacyInfoAt) : "Nicht erfasst" },
-                  { label: "Aufbewahren bis", value: formatDate(c.retentionUntil) },
-                  { label: "Herkunft der Daten", value: labelOf(candidateSources, c.source) },
-                ]}
-              />
-              {c.objectionAt ? null : (
-                <details className={detailsClass}>
-                  <summary className={summaryClass}>Widerspruch erfassen (keine Weitergabe mehr)</summary>
-                  <div className="space-y-3 p-3">
-                    <p className="text-[0.8125rem] text-slate">
-                      Gilt für alle Mandate: offene Vorschläge gelten als widerrufen, neues Vormerken ist gesperrt. Für ein einzelnes Mandat erfasst du den
-                      Widerruf im Mandat.
-                    </p>
-                    <ObjectionForm action={recordCandidateObjection.bind(null, id)} today={today} />
-                  </div>
-                </details>
-              )}
-            </CardBody>
+                )}
+              </CardBody>
+            )}
           </Card>
 
           <PortalAccountCard candidateId={id} />

@@ -11,6 +11,7 @@ import { audit } from "./audit";
 import { getDb, type AdminDb } from "./db/client";
 import {
   activities,
+  auditLog,
   candidateAccounts,
   candidates,
   changeRequests,
@@ -140,7 +141,8 @@ export function anonymiseEducation(entries: EducationEntry[]): EducationEntry[] 
 /**
  * Column values that replace a candidate's personal data. Skills, disciplines, seniority,
  * languages, certificates, rate and availability stay: without a name they do not identify
- * anyone and still show which profiles KOVALI worked with.
+ * anyone and still show which profiles KOVALI worked with. The keywords detected in CVs go
+ * with the CVs they came from.
  */
 export function anonymisedCandidateValues(c: Pick<Candidate, "id" | "experience" | "education">) {
   return {
@@ -164,6 +166,7 @@ export function anonymisedCandidateValues(c: Pick<Candidate, "id" | "experience"
     regions: null,
     companyId: null,
     lastContactAt: null,
+    detectedSkills: [],
     experience: anonymiseExperience(c.experience ?? []),
     education: anonymiseEducation(c.education ?? []),
     status: "archiviert",
@@ -291,6 +294,18 @@ export async function anonymiseCandidate(id: number): Promise<AnonymiseResult | 
   await audit("anonymise", { entity: "candidate", entityId: id, summary: `Kandidat ${displayNo.candidate(id)} anonymisiert` });
   await logActivity({ type: "candidate", id }, "Anonymisiert");
   return result;
+}
+
+/** When a candidate was anonymised, from the audit log (the history entry can be deleted). */
+export async function anonymisedAt(id: number): Promise<Date | null> {
+  const db = await getDb();
+  const [row] = await db
+    .select({ at: auditLog.at })
+    .from(auditLog)
+    .where(and(eq(auditLog.action, "anonymise"), eq(auditLog.entity, "candidate"), eq(auditLog.entityId, id)))
+    .orderBy(desc(auditLog.at))
+    .limit(1);
+  return row?.at ?? null;
 }
 
 /**

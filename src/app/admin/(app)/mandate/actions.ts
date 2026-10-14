@@ -2,7 +2,6 @@
 
 import { and, eq, inArray, ne } from "drizzle-orm";
 import { refresh } from "next/cache";
-import { redirect } from "next/navigation";
 import { z } from "zod";
 import { logActivity } from "@/lib/admin/activities";
 import { audit } from "@/lib/admin/audit";
@@ -26,6 +25,7 @@ import { fail, ok, parseForm, type ActionState } from "@/lib/admin/forms";
 import { matchCandidate } from "@/lib/admin/matching";
 import { consentMethods, labelOf, mandateStatuses, portalVisibilities, profileVariants, submissionStatuses } from "@/lib/admin/options";
 import type { OwnerRef } from "@/lib/admin/owner";
+import { redirectAfterChange } from "@/lib/admin/redirect";
 import { normalizeSkills } from "@/lib/admin/skills";
 import {
   consentTimestamp,
@@ -104,7 +104,7 @@ export async function createMandate(_prev: ActionState, formData: FormData): Pro
   const owners: OwnerRef[] = [mandateOwner(row.id), ...(values.companyId ? [{ type: "company" as const, id: values.companyId }] : [])];
   await logActivity(owners, `Mandat erfasst: «${values.title}» (${displayNo.mandate(row.id)}), Status ${labelOf(mandateStatuses, values.status)}`);
   await audit("create", { entity: "mandate", entityId: row.id, summary: `Mandat ${displayNo.mandate(row.id)}` });
-  redirect(`/admin/mandate/${row.id}`);
+  redirectAfterChange(`/admin/mandate/${row.id}`);
 }
 
 export async function updateMandate(id: number, _prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -127,7 +127,7 @@ export async function updateMandate(id: number, _prev: ActionState, formData: Fo
     await logActivity(mandateOwner(mandateId), `Status geändert: ${labelOf(mandateStatuses, current.status)} → ${labelOf(mandateStatuses, values.status)}`);
   }
   await audit("update", { entity: "mandate", entityId: mandateId, summary: `Mandat ${displayNo.mandate(mandateId)}` });
-  redirect(`/admin/mandate/${mandateId}`);
+  redirectAfterChange(`/admin/mandate/${mandateId}`);
 }
 
 export async function deleteMandate(id: number): Promise<ActionState> {
@@ -143,7 +143,7 @@ export async function deleteMandate(id: number): Promise<ActionState> {
   if (!row) return fail("Dieses Mandat gibt es nicht mehr.");
   if (row.companyId) await logActivity({ type: "company", id: row.companyId }, `Mandat gelöscht: «${row.title}» (${displayNo.mandate(row.id)})`);
   await audit("delete", { entity: "mandate", entityId: mandateId, summary: `Mandat ${displayNo.mandate(mandateId)}` });
-  redirect("/admin/mandate");
+  redirectAfterChange("/admin/mandate");
 }
 
 /** Quick status change on the detail page. */

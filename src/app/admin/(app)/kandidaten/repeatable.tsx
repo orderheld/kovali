@@ -93,7 +93,8 @@ export function RepeatableField<T extends object>({
         <ol ref={listRef} className="space-y-3" aria-label={label} aria-describedby={error ? `${baseId}-error` : undefined}>
           {rows.map((row, i) => {
             const title = itemTitle(row.value, i) || `Eintrag ${i + 1}`;
-            const titleId = `${baseId}-${row.key}-title`;
+            // Not "<prefix>-title": the fields of a row get ids from that prefix (e.g. "Abschluss" is "<prefix>-title").
+            const titleId = `${baseId}-heading-${row.key}`;
             return (
               <li key={row.key} data-row={row.key} className="rounded-md border border-line bg-mist/40 p-4">
                 <div role="group" aria-labelledby={titleId}>
