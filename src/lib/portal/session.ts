@@ -33,18 +33,27 @@ export interface CandidateSession {
   lastLoginAt: Date | null;
 }
 
+/** Attributes of the session cookie. Deleting needs the same ones: browsers ignore a `__Host-` cookie without Secure. */
+const COOKIE_OPTIONS = { httpOnly: true, secure: SECURE, sameSite: "lax", path: "/" } as const;
+
+/**
+ * Removes the session cookie from the browser. Only possible in Server Actions and Route
+ * Handlers; while a Server Component renders, cookies are read-only and nothing happens.
+ */
+async function clearPortalCookie(): Promise<void> {
+  try {
+    (await cookies()).set(PORTAL_COOKIE, "", { ...COOKIE_OPTIONS, maxAge: 0, expires: new Date(0) });
+  } catch {
+    // Read-only during rendering: the proxy lets the request through and the page redirects.
+  }
+}
+
 export async function createCandidateSession(accountId: number): Promise<void> {
   const token = randomToken();
   const expiresAt = new Date(Date.now() + SESSION_ABSOLUTE_MS);
   const db = await getDb();
   await db.insert(candidateSessions).values({ id: sha256(token), accountId, expiresAt });
-  (await cookies()).set(PORTAL_COOKIE, token, {
-    httpOnly: true,
-    secure: SECURE,
-    sameSite: "lax",
-    path: "/",
-    expires: expiresAt,
-  });
+  (await cookies()).set(PORTAL_COOKIE, token, { ...COOKIE_OPTIONS, expires: expiresAt });
   // Housekeeping: expired and idle sessions of all accounts are not needed any more.
   await db
     .delete(candidateSessions)
@@ -80,7 +89,11 @@ export const getCandidateSession = cache(async (): Promise<CandidateSession | nu
       ),
     )
     .limit(1);
-  if (!row) return null;
+  if (!row) {
+    // Expired, ended on another device, account locked or forged: drop the cookie, so the proxy sends the next request to the login.
+    await clearPortalCookie();
+    return null;
+  }
   if (now.getTime() - row.lastSeenAt.getTime() > TOUCH_MS) {
     await db.update(candidateSessions).set({ lastSeenAt: now }).where(eq(candidateSessions.id, row.sessionId));
   }
@@ -107,7 +120,7 @@ export async function destroyCandidateSession(): Promise<void> {
     const db = await getDb();
     await db.delete(candidateSessions).where(eq(candidateSessions.id, sha256(token)));
   }
-  jar.delete(PORTAL_COOKIE);
+  await clearPortalCookie();
 }
 
 /** Ends the sessions of an account, optionally except one (the device that changed the password). */

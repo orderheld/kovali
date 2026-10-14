@@ -27,9 +27,10 @@ function active(pathname: string, href: string, exact?: boolean) {
 
 /**
  * Logs out and then loads the login page fresh, so no previously visited portal page stays in
- * the browser's memory (Next.js keeps recent pages mounted for back navigation).
+ * the browser's memory (Next.js keeps recent pages mounted for back navigation). The login page
+ * confirms with «Sie sind abgemeldet».
  */
-export function PortalLogoutButton({ logout, className, label = "Abmelden", target = "/portal/login" }: { logout: () => Promise<void>; className?: string; label?: string; target?: string }) {
+export function PortalLogoutButton({ logout, className, label = "Abmelden", target = "/portal/login?abgemeldet=1" }: { logout: () => Promise<void>; className?: string; label?: string; target?: string }) {
   const [pending, start] = useTransition();
   return (
     <button

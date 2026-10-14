@@ -19,6 +19,7 @@ export type AuditAction =
   | "portal_login"
   | "portal_login_failed"
   | "portal_change"
+  | "portal_logout_all"
   | "review"
   | "anonymise";
 

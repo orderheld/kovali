@@ -24,6 +24,7 @@ export const auditActionLabels: Record<AuditAction, { label: string; tone: Tone 
   portal_login: { label: "Portal-Anmeldung", tone: "green" },
   portal_login_failed: { label: "Portal-Anmeldung fehlgeschlagen", tone: "red" },
   portal_change: { label: "Änderung im Portal", tone: "neutral" },
+  portal_logout_all: { label: "Portal-Abmeldung auf allen Geräten", tone: "amber" },
   review: { label: "Geprüft", tone: "green" },
 };
 

@@ -63,7 +63,6 @@ export default async function AccountPage() {
             <PortalLogoutButton
               logout={logoutEverywhere}
               label="Auf allen Geräten abmelden"
-              target="/portal/login?abgemeldet=1"
               className="h-10 border border-red-200 bg-white px-4 font-medium text-red-700 hover:bg-red-50 hover:text-red-800"
             />
           </div>

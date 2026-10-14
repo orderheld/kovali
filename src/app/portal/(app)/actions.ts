@@ -57,7 +57,11 @@ export async function logoutEverywhere(): Promise<void> {
   const session = await requireCandidate();
   await endAccountSessions(session.accountId);
   await destroyCandidateSession();
-  await portalAudit(session, { entity: "candidate_account", entityId: session.accountId, text: "auf allen Geräten abgemeldet" });
+  await audit("portal_logout_all", {
+    entity: "candidate_account",
+    entityId: session.accountId,
+    summary: `Kandidat ${displayNo.candidate(session.candidateId)}: auf allen Geräten abgemeldet`,
+  });
 }
 
 const passwordChangeSchema = z.object({ current: z.string().min(1, "Bitte Ihr aktuelles Passwort eingeben.").max(PASSWORD_MAX + 1) });

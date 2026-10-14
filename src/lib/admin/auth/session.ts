@@ -28,6 +28,21 @@ export interface AdminSession {
   expiresAt: Date;
 }
 
+/** Attributes of the session cookie. Deleting needs the same ones: browsers ignore a `__Host-` cookie without Secure. */
+const COOKIE_OPTIONS = { httpOnly: true, secure: SECURE, sameSite: "lax", path: "/" } as const;
+
+/**
+ * Removes the session cookie from the browser. Only possible in Server Actions and Route
+ * Handlers; while a Server Component renders, cookies are read-only and nothing happens.
+ */
+async function clearAdminCookie(): Promise<void> {
+  try {
+    (await cookies()).set(ADMIN_COOKIE, "", { ...COOKIE_OPTIONS, maxAge: 0, expires: new Date(0) });
+  } catch {
+    // Read-only during rendering: the proxy lets the request through and the page redirects.
+  }
+}
+
 export async function createAdminSession(): Promise<void> {
   const token = randomToken();
   const expiresAt = new Date(Date.now() + ABSOLUTE_MS);
@@ -38,13 +53,7 @@ export async function createAdminSession(): Promise<void> {
     ipHash: await requestIpHash(),
     userAgent: await requestUserAgent(),
   });
-  (await cookies()).set(ADMIN_COOKIE, token, {
-    httpOnly: true,
-    secure: SECURE,
-    sameSite: "lax",
-    path: "/",
-    expires: expiresAt,
-  });
+  (await cookies()).set(ADMIN_COOKIE, token, { ...COOKIE_OPTIONS, expires: expiresAt });
   // Housekeeping: expired sessions are not needed any more.
   await db.delete(sessions).where(lt(sessions.expiresAt, new Date()));
 }
@@ -69,7 +78,11 @@ export const getAdminSession = cache(async (): Promise<AdminSession | null> => {
       ),
     )
     .limit(1);
-  if (!row) return null;
+  if (!row) {
+    // Expired, ended elsewhere or forged: drop the cookie, so the proxy sends the next request to the login.
+    await clearAdminCookie();
+    return null;
+  }
   if (now.getTime() - row.lastSeenAt.getTime() > TOUCH_MS) {
     await db.update(sessions).set({ lastSeenAt: now }).where(eq(sessions.id, row.id));
   }
@@ -100,14 +113,14 @@ export async function destroyAdminSession(): Promise<void> {
     const db = await getDb();
     await db.delete(sessions).where(eq(sessions.id, sha256(token)));
   }
-  jar.delete(ADMIN_COOKIE);
+  await clearAdminCookie();
 }
 
 /** Ends every admin session, including the current one. */
 export async function destroyAllAdminSessions(): Promise<number> {
   const db = await getDb();
   const rows = await db.delete(sessions).returning({ id: sessions.id });
-  (await cookies()).delete(ADMIN_COOKIE);
+  await clearAdminCookie();
   return rows.length;
 }
 
