@@ -8,6 +8,7 @@ import { randomToken, sha256 } from "@/lib/admin/crypto";
 import { getDb } from "@/lib/admin/db/client";
 import { candidateAccounts, candidateSessions } from "@/lib/admin/db/schema";
 import { isAdminConfigured } from "@/lib/admin/env";
+import { PORTAL_SESSION_ABSOLUTE_MS, PORTAL_SESSION_IDLE_MS } from "@/lib/admin/retention";
 
 /**
  * Sessions of the candidate portal, separate from the admin sessions: a random token in an
@@ -19,8 +20,8 @@ import { isAdminConfigured } from "@/lib/admin/env";
 const SECURE = process.env.NODE_ENV === "production";
 /** Same names as in src/proxy.ts, which only checks that the cookie exists. */
 export const PORTAL_COOKIE = SECURE ? "__Host-kovali-portal" : "kovali-portal";
-export const SESSION_ABSOLUTE_MS = 7 * 24 * 60 * 60 * 1000;
-export const SESSION_IDLE_MS = 8 * 60 * 60 * 1000;
+export const SESSION_ABSOLUTE_MS = PORTAL_SESSION_ABSOLUTE_MS;
+export const SESSION_IDLE_MS = PORTAL_SESSION_IDLE_MS;
 const TOUCH_MS = 5 * 60 * 1000;
 
 export interface CandidateSession {

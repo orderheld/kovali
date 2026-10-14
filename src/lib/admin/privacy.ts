@@ -62,17 +62,14 @@ const subcontractors = alias(companies, "subcontractor");
 
 // --- Retention ------------------------------------------------------------------------------
 
-/** Profiles without consent: at most six months (as promised on the website). */
-export const RETENTION_MONTHS_WITHOUT_CONSENT = 6;
-/** With documented consent for the talent pool: up to 24 months, renewable with a new consent. */
-export const RETENTION_MONTHS_WITH_CONSENT = 24;
-/** Contracts with clients and subcontractors, accounting records (Art. 958f OR). */
-export const RETENTION_YEARS_BUSINESS_RECORDS = 10;
-/**
- * Signed consent forms and NDAs with a person are proof, not business records: kept until
- * possible claims are time-barred, at most ten years (Art. 60 and 127 OR).
- */
-export const RETENTION_YEARS_PROOF_MAX = 10;
+import {
+  RETENTION_MONTHS_WITH_CONSENT,
+  RETENTION_MONTHS_WITHOUT_CONSENT,
+  RETENTION_YEARS_BUSINESS_RECORDS,
+  RETENTION_YEARS_PROOF_MAX,
+} from "./retention";
+
+export { RETENTION_MONTHS_WITH_CONSENT, RETENTION_MONTHS_WITHOUT_CONSENT, RETENTION_YEARS_BUSINESS_RECORDS, RETENTION_YEARS_PROOF_MAX };
 /** Records due within this many days show up as "bald fällig". */
 export const RETENTION_DUE_SOON_DAYS = 30;
 /** Candidates without consent are flagged after this many days. */

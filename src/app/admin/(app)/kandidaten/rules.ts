@@ -6,10 +6,9 @@ import type { Tone } from "@/lib/admin/options";
  * the detail page and the form agree on them.
  */
 
-/** With consent, a profile may be kept for two years before asking again. */
-export const RETENTION_MONTHS_WITH_CONSENT = 24;
-/** Without consent at most six months: the website promises "höchstens sechs Monate". */
-export const RETENTION_MONTHS_WITHOUT_CONSENT = 6;
+import { RETENTION_MONTHS_WITH_CONSENT, RETENTION_MONTHS_WITHOUT_CONSENT } from "@/lib/admin/retention";
+
+export { RETENTION_MONTHS_WITH_CONSENT, RETENTION_MONTHS_WITHOUT_CONSENT };
 /** From this many days before the retention date on, the record is flagged. */
 export const RETENTION_WARN_DAYS = 30;
 

@@ -597,15 +597,19 @@ export default async function CandidatePage({ params }: PageProps<"/admin/kandid
             )}
           </Card>
 
-          <PortalAccountCard candidateId={id} />
-
-          <ActivityFeed owner={owner} />
-          <DocumentsCard
-            owner={owner}
-            defaultKind="cv"
-            title="Lebenslauf und Dokumente"
-            description="Verschlüsselt gespeichert (AES-256), jeder Abruf wird protokolliert. In Lebensläufen (PDF, Word) werden Kompetenzen automatisch erkannt. Keine Gesundheits-, Religions- oder Strafregisterdaten ablegen."
-          />
+          {/* An anonymised profile stays only for statistics: no portal access, notes or documents. */}
+          {anonymised ? null : (
+            <>
+              <PortalAccountCard candidateId={id} />
+              <ActivityFeed owner={owner} />
+              <DocumentsCard
+                owner={owner}
+                defaultKind="cv"
+                title="Lebenslauf und Dokumente"
+                description="Verschlüsselt gespeichert (AES-256), jeder Abruf wird protokolliert. In Lebensläufen (PDF, Word) werden Kompetenzen automatisch erkannt. Keine Gesundheits-, Religions- oder Strafregisterdaten ablegen."
+              />
+            </>
+          )}
         </div>
       </div>
     </>

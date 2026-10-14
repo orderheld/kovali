@@ -1,6 +1,6 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { refresh } from "next/cache";
 import { z } from "zod";
 import { logActivity } from "@/lib/admin/activities";
@@ -12,6 +12,7 @@ import { checkUpload, refreshDetectedSkills, storeDocument } from "@/lib/admin/d
 import { fail, ok, parseForm, f, type ActionState } from "@/lib/admin/forms";
 import { activityKinds, documentKinds, labelOf, valuesOf } from "@/lib/admin/options";
 import { ownerColumns, ownerEntity, ownerSchema, type OwnerRef } from "@/lib/admin/owner";
+import { isAnonymisedSql } from "@/lib/admin/privacy";
 
 /** Notes and documents, shared by candidates, companies, mandates and contracts. */
 
@@ -20,11 +21,20 @@ const noteSchema = z.object({
   body: f.text(4000, "Bitte eine Notiz eingeben."),
 });
 
+/** Anonymised profiles stay only for statistics, so nothing personal may be added to them again. */
+async function isAnonymisedCandidate(target: OwnerRef): Promise<boolean> {
+  if (target.type !== "candidate") return false;
+  const db = await getDb();
+  const [row] = await db.select({ id: candidates.id }).from(candidates).where(and(eq(candidates.id, target.id), isAnonymisedSql)).limit(1);
+  return Boolean(row);
+}
+
 export async function addNote(owner: OwnerRef, _prev: ActionState, formData: FormData): Promise<ActionState> {
   await requireAdmin();
   const target = ownerSchema.parse(owner);
   const parsed = parseForm(noteSchema, formData);
   if (!parsed.ok) return parsed.state;
+  if (await isAnonymisedCandidate(target)) return fail("Das Profil ist anonymisiert: keine neuen Notizen.");
   await logActivity(target, parsed.data.body, parsed.data.kind);
   refresh();
   return ok("Notiz gespeichert.");
@@ -41,6 +51,7 @@ export async function deleteNote(id: number): Promise<ActionState> {
 export async function uploadDocument(owner: OwnerRef, _prev: ActionState, formData: FormData): Promise<ActionState> {
   await requireAdmin();
   const target = ownerSchema.parse(owner);
+  if (await isAnonymisedCandidate(target)) return fail("Das Profil ist anonymisiert: keine neuen Dokumente.");
   const kind = z.enum(valuesOf(documentKinds)).safeParse(formData.get("kind"));
   if (!kind.success) return fail("Bitte die Art des Dokuments wählen.", { kind: "Bitte auswählen." });
   const file = await checkUpload(formData.get("file"));

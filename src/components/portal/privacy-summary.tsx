@@ -1,6 +1,6 @@
 import { ShieldCheck } from "lucide-react";
 import { legalEntityName, site } from "@/config/site";
-import { RETENTION_MONTHS_WITH_CONSENT, RETENTION_MONTHS_WITHOUT_CONSENT, RETENTION_YEARS_BUSINESS_RECORDS } from "@/lib/admin/privacy";
+import { RETENTION_MONTHS_WITH_CONSENT, RETENTION_MONTHS_WITHOUT_CONSENT, RETENTION_YEARS_BUSINESS_RECORDS } from "@/lib/admin/retention";
 
 /**
  * Short privacy notice (Art. 19 DSG) shown when the invitation is accepted and on the account

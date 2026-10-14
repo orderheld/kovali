@@ -1,5 +1,11 @@
 import { LegalPage } from "@/components/sections/legal-page";
 import { legalEntityName, site } from "@/config/site";
+import {
+  PORTAL_SESSION_ABSOLUTE_MS,
+  PORTAL_SESSION_IDLE_MS,
+  RETENTION_MONTHS_WITH_CONSENT,
+  RETENTION_MONTHS_WITHOUT_CONSENT,
+} from "@/lib/admin/retention";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata = pageMetadata({
@@ -9,6 +15,12 @@ export const metadata = pageMetadata({
   path: "/datenschutz",
 });
 
+const numberWords = ["null", "ein", "zwei", "drei", "vier", "fünf", "sechs", "sieben", "acht", "neun", "zehn", "elf", "zwölf"];
+/** Numbers up to twelve in words, as in the rest of the text. */
+const num = (n: number) => numberWords[n] ?? String(n);
+const portalSessionDays = PORTAL_SESSION_ABSOLUTE_MS / 86_400_000;
+const portalIdleHours = PORTAL_SESSION_IDLE_MS / 3_600_000;
+
 export default function DatenschutzPage() {
   const { contact } = site;
   const { address } = contact;
@@ -17,7 +29,8 @@ export default function DatenschutzPage() {
     <LegalPage title="Datenschutzerklärung" path="/datenschutz" updated="Oktober 2026">
       <p>
         Diese Datenschutzerklärung informiert darüber, welche Personendaten beim Besuch dieser Website, bei einer
-        Kontaktaufnahme und beim Senden eines Profils bearbeitet werden. Sie richtet sich nach dem Schweizer Bundesgesetz über den Datenschutz (DSG).
+        Kontaktaufnahme, beim Senden eines Profils, in der Zusammenarbeit mit Fachleuten und im Kandidatenportal bearbeitet
+        werden. Sie richtet sich nach dem Schweizer Bundesgesetz über den Datenschutz (DSG).
       </p>
 
       <h2>1. Verantwortliche Stelle</h2>
@@ -40,11 +53,17 @@ export default function DatenschutzPage() {
         Website und werden nicht mit anderen Daten zusammengeführt.
       </p>
 
-      <h2>3. Keine Cookies, kein Tracking</h2>
+      <h2>3. Cookies und Tracking</h2>
       <p>
-        Diese Website setzt keine Cookies und verwendet keine Analyse-, Werbe- oder Tracking-Dienste. Es sind keine
-        Social-Media-Plugins eingebunden. Schriften und Grafiken werden direkt von dieser Website geladen, es besteht
-        keine Verbindung zu Schriftanbietern wie Google Fonts.
+        Die öffentlichen Seiten dieser Website setzen keine Cookies und verwenden keine Analyse-, Werbe- oder
+        Tracking-Dienste. Es sind keine Social-Media-Plugins eingebunden. Schriften und Grafiken werden direkt von dieser
+        Website geladen, es besteht keine Verbindung zu Schriftanbietern wie Google Fonts.
+      </p>
+      <p>
+        Nur wer sich im Kandidatenportal oder im internen Verwaltungsbereich von {site.brand} anmeldet, erhält ein
+        technisch notwendiges Sitzungscookie. Es enthält eine zufällige Kennung, dient ausschliesslich der Anmeldung und
+        wird beim Abmelden gelöscht. Im Kandidatenportal endet eine Sitzung spätestens nach {num(portalSessionDays)} Tagen
+        oder nach {num(portalIdleHours)} Stunden ohne Aktivität.
       </p>
 
       <h2>4. Kontaktformular und E-Mail</h2>
@@ -62,8 +81,8 @@ export default function DatenschutzPage() {
         </li>
         <li>
           Je nach Konfiguration wird die Anfrage zusätzlich in einer Datenbank des Anbieters Neon (Neon, Inc., USA) mit
-          Speicherort in der Europäischen Union abgelegt, damit keine Anfrage verloren geht. Ein Anforderungsprofil wird
-          dort nicht gespeichert.
+          Speicherort in Frankfurt am Main (Deutschland) abgelegt, damit keine Anfrage verloren geht. Ein
+          Anforderungsprofil wird dort nicht gespeichert.
         </li>
         <li>
           Zum Schutz vor Missbrauch wird aus Ihrer IP-Adresse ein nicht umkehrbarer Hashwert gebildet, mit dem die
@@ -72,7 +91,8 @@ export default function DatenschutzPage() {
       </ul>
       <p>
         Wenn Sie eine E-Mail senden, werden Ihre E-Mail-Adresse und der Inhalt der Nachricht zur Bearbeitung Ihres
-        Anliegens verwendet.
+        Anliegens verwendet. Entsteht eine Zusammenarbeit, erfasst {site.brand} Name, Funktion, E-Mail-Adresse und
+        Telefonnummer der Kontaktpersonen bei Kunden und Partnern in der internen Datenbank (siehe Ziffer 5).
       </p>
 
       <h2>5. Profil und Lebenslauf</h2>
@@ -88,46 +108,106 @@ export default function DatenschutzPage() {
           Website selbst speichert weder das Profil noch den Lebenslauf.
         </li>
         <li>
-          Ihr Profil wird nur mit Ihrer Zustimmung und nur in einer Offerte von {site.brand} für ein konkretes Mandat
-          verwendet, in dem {site.brand} selbst Auftragnehmer ist. {site.brand} vermittelt keine Stellen an Dritte und
-          verleiht kein Personal.
+          Prüft {site.brand} eine Zusammenarbeit, werden Ihre Angaben und Ihr Lebenslauf in der internen
+          Kandidatendatenbank erfasst. Sie liegt beim Anbieter Neon in Frankfurt am Main (Deutschland). Lebensläufe und
+          andere Dokumente werden dort verschlüsselt gespeichert. Erfasst werden auch Ihr Werdegang, Ihre Kompetenzen,
+          Sprachen und Konditionen, Notizen zu Gesprächen sowie Ihre Einwilligungen.
         </li>
         <li>
-          Profile werden höchstens sechs Monate aufbewahrt und danach gelöscht, auf Wunsch jederzeit früher. Entsteht
-          eine Zusammenarbeit, gelten die gesetzlichen Aufbewahrungspflichten.
+          Ihr Profil geht nur mit Ihrer Einwilligung für ein konkretes Mandat und einen bestimmten Empfänger an einen
+          Auftraggeber, ohne Namen und Kontaktdaten oder, wenn Sie ausdrücklich zugestimmt haben, mit Namen. Die
+          Zusammenarbeit läuft über Ihre eigene Firma als Subunternehmerin von {site.brand}; {site.brand} selbst ist
+          Auftragnehmer. {site.brand} vermittelt keine Stellen an Dritte und verleiht kein Personal. Der Empfänger
+          bearbeitet das Profil danach in eigener Verantwortung.
+        </li>
+        <li>
+          Ohne Ihre Einwilligung wird ein Profil höchstens {num(RETENTION_MONTHS_WITHOUT_CONSENT)} Monate aufbewahrt. Mit
+          Ihrer Einwilligung bleibt es höchstens {num(RETENTION_MONTHS_WITH_CONSENT)} Monate gespeichert, länger nur mit
+          einer erneuten Einwilligung. Danach wird es gelöscht oder so anonymisiert, dass es keiner Person mehr
+          zugeordnet werden kann, auf Wunsch jederzeit früher. Entsteht eine Zusammenarbeit, gelten die gesetzlichen
+          Aufbewahrungspflichten.
         </li>
         <li>Der Schutz vor Missbrauch erfolgt wie beim Kontaktformular über einen Hashwert der IP-Adresse.</li>
       </ul>
+      <p>
+        Stammen Ihre Angaben aus einer anderen Quelle, etwa aus einer Empfehlung oder einem öffentlichen beruflichen
+        Profil, informiert {site.brand} Sie bei der ersten Kontaktaufnahme darüber.
+      </p>
       <p>
         Bitte geben Sie im Lebenslauf keine besonders schützenswerten Personendaten an, die für die Prüfung nicht nötig
         sind, zum Beispiel Angaben zur Gesundheit oder zur Religion.
       </p>
 
-      <h2>6. Bekanntgabe ins Ausland</h2>
+      <h2>6. Kandidatenportal</h2>
       <p>
-        Die genannten Dienstleister können Personendaten in den USA bearbeiten. Die Bekanntgabe erfolgt gestützt auf
-        die Zertifizierung der Anbieter unter dem Swiss-U.S. Data Privacy Framework, das der Bundesrat als angemessenen
-        Schutz anerkannt hat, oder auf Standardvertragsklauseln, die vom Eidgenössischen Datenschutz- und
-        Öffentlichkeitsbeauftragten (EDÖB) anerkannt sind. Die Dienstleister bearbeiten die Daten ausschliesslich im
+        Fachleute, mit denen {site.brand} zusammenarbeitet oder eine Zusammenarbeit prüft, erhalten auf Einladung ein
+        Konto im Kandidatenportal. Dort werden folgende Daten bearbeitet:
+      </p>
+      <ul>
+        <li>
+          Ihre E-Mail-Adresse für die Anmeldung und Ihr Passwort. Das Passwort wird nur als nicht umkehrbarer Hashwert
+          gespeichert. Dazu kommen der Zeitpunkt der letzten Anmeldung und die aktiven Sitzungen.
+        </li>
+        <li>
+          Die Angaben, die Sie selbst pflegen: Profil, Kompetenzen, Werdegang, Ausbildung, Sprachen und Verfügbarkeit
+          sowie Dokumente, die Sie hochladen und die verschlüsselt gespeichert werden. Ihre Änderungen gelten als «nicht
+          bestätigt», bis {site.brand} sie geprüft hat. Name, Geburtsdatum, Adresse, Telefonnummer und E-Mail-Adresse
+          ändern Sie über eine Anfrage im Portal.
+        </li>
+        <li>
+          Vakanzen, die {site.brand} Ihnen im Portal zeigt, mit Ihren Antworten. Wenn Sie Interesse melden, willigen Sie
+          für genau diese Vakanz ein, dass {site.brand} Sie dem Auftraggeber ohne Namen vorschlägt. Bevor Ihr Profil mit
+          Namen weitergeht, fragt {site.brand} Sie nochmals. Sie können Ihre Einwilligung im Portal zurückziehen.
+        </li>
+        <li>
+          Einladungen und Links zum Setzen eines neuen Passworts werden über Resend per E-Mail versandt.
+        </li>
+      </ul>
+      <p>
+        Das Konto wird gelöscht, wenn Ihr Profil gelöscht oder anonymisiert wird, und auf Ihren Wunsch jederzeit
+        früher.
+      </p>
+
+      <h2>7. Bekanntgabe ins Ausland</h2>
+      <p>
+        Die interne Datenbank liegt in Frankfurt am Main (Deutschland), die Server-Funktionen dieser Website laufen
+        ebenfalls in Frankfurt. Deutschland bietet nach dem Schweizer Datenschutzrecht einen angemessenen Schutz. Die
+        genannten Dienstleister sind Unternehmen aus den USA und können Personendaten auch dort bearbeiten. Die
+        Bekanntgabe in die USA erfolgt gestützt auf die Zertifizierung der Anbieter unter dem Swiss-U.S. Data Privacy
+        Framework, das der Bundesrat als angemessenen Schutz anerkannt hat, oder auf Standardvertragsklauseln, die vom
+        Eidgenössischen Datenschutz- und Öffentlichkeitsbeauftragten (EDÖB) anerkannt sind. Die Dienstleister bearbeiten die Daten ausschliesslich im
         Auftrag und nach Weisung von {site.brand}.
       </p>
 
-      <h2>7. Aufbewahrung</h2>
+      <h2>8. Aufbewahrung</h2>
       <p>
         Personendaten werden nur so lange aufbewahrt, wie es für den jeweiligen Zweck nötig ist. In der Datenbank
-        gespeicherte Anfragen werden nach spätestens zwölf Monaten automatisch gelöscht, Profile von Fachleuten nach
-        spätestens sechs Monaten. Entsteht aus einer Anfrage
-        eine Geschäftsbeziehung, gelten die gesetzlichen Aufbewahrungspflichten, insbesondere für Geschäftskorrespondenz
-        und Buchhaltungsunterlagen.
+        gespeicherte Anfragen werden nach spätestens zwölf Monaten automatisch gelöscht. Profile von Fachleuten werden
+        ohne Einwilligung nach spätestens {num(RETENTION_MONTHS_WITHOUT_CONSENT)} Monaten gelöscht oder anonymisiert, mit
+        Einwilligung nach spätestens {num(RETENTION_MONTHS_WITH_CONSENT)} Monaten. Entsteht eine Geschäftsbeziehung,
+        gelten die gesetzlichen Aufbewahrungspflichten, insbesondere für Verträge, Geschäftskorrespondenz und
+        Buchhaltungsunterlagen.
       </p>
 
-      <h2>8. Datensicherheit</h2>
-      <p>
-        Die Übertragung zwischen Ihrem Browser und dieser Website ist mit TLS verschlüsselt. Der Zugriff auf
-        Anfragen und Profile ist auf die Personen beschränkt, die sie bearbeiten.
-      </p>
+      <h2>9. Datensicherheit</h2>
+      <ul>
+        <li>Die Übertragung zwischen Ihrem Browser und dieser Website ist mit TLS verschlüsselt.</li>
+        <li>
+          Lebensläufe und andere Dokumente werden vor dem Speichern verschlüsselt (AES-256). Passwörter werden nur als
+          Hashwert gespeichert.
+        </li>
+        <li>
+          Auf die interne Datenbank hat nur {site.brand} Zugriff. Der Zugang ist durch ein Passwort geschützt, die Zahl der
+          Fehlversuche ist begrenzt.
+        </li>
+        <li>
+          Anmeldungen, Änderungen, Abrufe von Dokumenten und Exporte werden in einem Zugriffsprotokoll festgehalten, das
+          selbst keine Namen enthält.
+        </li>
+        <li>Das Kandidatenportal und der Verwaltungsbereich werden nicht von Suchmaschinen erfasst.</li>
+      </ul>
 
-      <h2>9. Ihre Rechte</h2>
+      <h2>10. Ihre Rechte</h2>
       <p>Im Rahmen des DSG haben Sie insbesondere folgende Rechte:</p>
       <ul>
         <li>Auskunft darüber, ob und welche Personendaten über Sie bearbeitet werden</li>
@@ -137,13 +217,19 @@ export default function DatenschutzPage() {
         <li>Widerspruch gegen eine Bearbeitung</li>
       </ul>
       <p>
-        Für die Ausübung dieser Rechte genügt eine E-Mail an <a href={`mailto:${email}`}>{email}</a>. Zur Prüfung
-        Ihrer Identität kann ein Nachweis verlangt werden. Sie haben zudem das Recht, sich beim Eidgenössischen
-        Datenschutz- und Öffentlichkeitsbeauftragten (EDÖB) zu beschweren.
+        Für die Ausübung dieser Rechte genügt eine E-Mail an <a href={`mailto:${email}`}>{email}</a>. Die Auskunft ist
+        kostenlos und erfolgt innerhalb von 30 Tagen, auf Wunsch auch in einem maschinenlesbaren Format. Zur Prüfung
+        Ihrer Identität kann ein Nachweis verlangt werden. Eine erteilte Einwilligung können Sie jederzeit widerrufen.
+        Sie haben zudem das Recht, sich beim Eidgenössischen Datenschutz- und Öffentlichkeitsbeauftragten (EDÖB) zu
+        beschweren.
       </p>
-      <p>Es finden keine automatisierten Einzelentscheidungen und kein Profiling statt.</p>
+      <p>
+        Um passende Fachleute für ein Mandat zu finden, ordnet die interne Datenbank Profile nach ihrer Übereinstimmung
+        mit den Anforderungen. Diese Rangfolge ist ein Hilfsmittel: Ob ein Profil vorgeschlagen wird, entscheidet immer
+        ein Mensch. Es finden keine automatisierten Einzelentscheidungen statt.
+      </p>
 
-      <h2>10. Änderungen</h2>
+      <h2>11. Änderungen</h2>
       <p>
         Diese Datenschutzerklärung kann angepasst werden, wenn sich die Website oder die eingesetzten Dienste ändern.
         Massgebend ist die auf dieser Seite veröffentlichte Fassung.
