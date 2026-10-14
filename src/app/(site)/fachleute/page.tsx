@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Mail } from "lucide-react";
 import { Tick } from "@/components/sections/check-list";
 import { PageHero } from "@/components/sections/page-hero";
@@ -6,7 +7,9 @@ import { ButtonLink, buttonClasses } from "@/components/ui/button";
 import { Faq } from "@/components/ui/faq";
 import { Section, SectionHeader } from "@/components/ui/section";
 import { site } from "@/config/site";
+import { portalLogin } from "@/content/navigation";
 import { specialists } from "@/content/specialists";
+import { isAdminConfigured } from "@/lib/admin/env";
 import { isEmailConfigured, serverEnv } from "@/lib/env";
 import { faqJsonLd, pageMetadata } from "@/lib/seo";
 import { ProfileForm } from "./profile-form";
@@ -20,6 +23,9 @@ export const metadata = pageMetadata({
 
 /** Same rule as on /kontakt: the upload form only appears when profiles can be delivered. */
 const formActive = isEmailConfigured() || serverEnv.dryRun;
+
+/** The portal box appears only once the portal is configured (see the footer). */
+const portalActive = isAdminConfigured();
 
 /*
  * No prices on this page: rates must never read as rates for specialists (spec 4.1).
@@ -125,6 +131,18 @@ export default function FachleutePage() {
                 .
               </p>
             </div>
+            {portalActive ? (
+              <div className="rounded-xl border border-line p-8">
+                <h2 className="font-sans text-sm font-medium text-blue">{specialists.portal.title}</h2>
+                <p className="mt-4 leading-relaxed text-slate">{specialists.portal.text}</p>
+                <Link
+                  href={portalLogin.href}
+                  className="mt-4 inline-block font-medium text-blue underline decoration-1 underline-offset-[3px] hover:decoration-2"
+                >
+                  {portalLogin.label}
+                </Link>
+              </div>
+            ) : null}
           </div>
         </div>
       </Section>
