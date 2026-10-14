@@ -32,14 +32,7 @@ const securityHeaders = [
   },
 ];
 
-/** Files read at runtime by the admin area and the candidate portal (PDF fonts, logo for Word). */
-const documentAssets = [
-  "./node_modules/geist/dist/fonts/geist-sans/Geist-{Regular,Italic,Medium,SemiBold}.ttf",
-  "./node_modules/geist/dist/fonts/geist-mono/GeistMono-Regular.ttf",
-  "./src/lib/admin/render/assets/*",
-];
-
-/** Admin area and candidate portal: never cached, never indexed. */
+/** Admin area: never cached, never indexed. */
 const privateHeaders = [
   { key: "Cache-Control", value: "private, no-store, max-age=0" },
   { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" },
@@ -56,9 +49,9 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     serverActions: {
-      // The profile form and the admin upload files of up to 4 MB (CV_MAX_BYTES,
-      // DOCUMENT_MAX_BYTES). 4.5 MB is also the request body limit of Vercel Functions,
-      // so a larger value would not help.
+      // The admin uploads files of up to 4 MB (DOCUMENT_MAX_BYTES) and the profile form on
+      // the website accepts a CV of the same size. 4.5 MB is also the request body limit of
+      // Vercel Functions, so a larger value would not help.
       bodySizeLimit: "4.5mb",
     },
   },
@@ -82,13 +75,7 @@ const nextConfig: NextConfig = {
       { source: "/:path*", headers: securityHeaders },
       { source: "/admin/:path*", headers: privateHeaders },
       { source: "/admin", headers: privateHeaders },
-      { source: "/portal/:path*", headers: privateHeaders },
-      { source: "/portal", headers: privateHeaders },
     ];
-  },
-  outputFileTracingIncludes: {
-    "/admin/**": documentAssets,
-    "/portal/**": documentAssets,
   },
   turbopack: {
     rules: {

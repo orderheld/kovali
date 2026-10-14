@@ -20,13 +20,14 @@ export default async function EditCompanyPage({ params }: PageProps<"/admin/firm
   if (!id) notFound();
   const [company, impact] = await Promise.all([getCompany(id), companyDeleteImpact(id)]);
   if (!company) notFound();
-  const people = impact.candidates === 1 ? "1 Fachperson" : `${impact.candidates} Fachpersonen`;
-  const proposals = impact.submissions === 1 ? "1 Vorschlag" : `${impact.submissions} Vorschlägen`;
-  const consequences = [
-    impact.candidates ? `${people}, die über diese Firma ${impact.candidates === 1 ? "arbeitet, verliert" : "arbeiten, verlieren"} ihre Firma.` : null,
-    impact.submissions ? `Bei ${proposals} geht die Angabe «über Firma» verloren.` : null,
-  ].filter((line) => line !== null);
-  const description = ["Kontakte, Notizen und Dokumente der Firma werden mitgelöscht. Mandate und Verträge bleiben, verlieren aber die Zuordnung.", ...consequences].join(" ");
+  const linked = [
+    impact.assignments ? (impact.assignments === 1 ? "1 Auftrag" : `${impact.assignments} Aufträge`) : null,
+    impact.mandates ? (impact.mandates === 1 ? "1 Vakanz" : `${impact.mandates} Vakanzen`) : null,
+    impact.contracts ? (impact.contracts === 1 ? "1 Vertrag" : `${impact.contracts} Verträge`) : null,
+  ].filter((part) => part !== null);
+  const total = impact.assignments + impact.mandates + impact.contracts;
+  const consequences = linked.length ? [`${linked.join(", ")} ${total === 1 ? "bleibt" : "bleiben"} erhalten, aber ohne diese Firma.`] : [];
+  const description = ["Kontakte, Notizen und Dokumente der Firma werden mitgelöscht. Aufträge, Vakanzen, Verträge und Textbausteine bleiben, verlieren aber die Zuordnung.", ...consequences].join(" ");
   const confirm = [`«${company.name}» mit allen Kontakten und Dokumenten endgültig löschen?`, ...consequences].join("\n\n");
   return (
     <>

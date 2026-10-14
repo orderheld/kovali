@@ -5,14 +5,14 @@ import { requireAdmin } from "@/lib/admin/auth/session";
 import { listHref, pageNumber, param } from "@/lib/admin/data/query";
 import { formatDateTime } from "@/lib/admin/format";
 import { auditEntries } from "../audit-data";
-import { auditActionLabels, auditActionOptions, auditObject, isAuditAction } from "../audit-labels";
+import { auditActionMeta, auditActionOptions, auditObject, isAuditAction } from "../audit-labels";
 import { AuditText } from "../audit-text";
 import { SettingsHeader } from "../tabs";
 
 /** Admin pages read the session and the database per request and may block. */
 export const instant = false;
 
-export const metadata: Metadata = { title: "Audit-Log" };
+export const metadata: Metadata = { title: "Protokoll" };
 
 export default async function AuditLogPage({ searchParams }: PageProps<"/admin/einstellungen/audit">) {
   await requireAdmin();
@@ -63,7 +63,7 @@ export default async function AuditLogPage({ searchParams }: PageProps<"/admin/e
           <>
             <ul className="divide-y divide-line">
               {log.rows.map((r) => {
-                const meta = isAuditAction(r.action) ? auditActionLabels[r.action] : { label: r.action, tone: "neutral" as const };
+                const meta = auditActionMeta(r.action);
                 return (
                   <li key={r.id} className="flex flex-col gap-1 px-5 py-3 sm:flex-row sm:items-center sm:gap-4">
                     <span className="w-36 shrink-0 text-[0.8125rem] text-slate tabular-nums">{formatDateTime(r.at)}</span>

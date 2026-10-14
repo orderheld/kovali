@@ -1,11 +1,11 @@
 import "server-only";
-import { and, asc, count, desc, eq, ilike, inArray, ne, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, ilike, inArray, or, sql, type SQL } from "drizzle-orm";
 import { getDb } from "../db/client";
-import { candidates, companies, contacts, mandates, submissions } from "../db/schema";
+import { companies, contacts, mandates } from "../db/schema";
 import { openMandateStatuses } from "../options";
-import { likePattern, outerColumn, PAGE_SIZE } from "./query";
+import { likePattern, PAGE_SIZE } from "./query";
 
-/** Queries of the mandate module (list, pipeline, detail, matching pool). */
+/** Queries of the vacancies (table mandates): list, pipeline, detail. */
 
 export interface MandateFilter {
   q?: string;
@@ -21,7 +21,7 @@ export interface MandateFilter {
 export function mandateSearchWhere(q: string | null | undefined): SQL | undefined {
   const pattern = likePattern(q);
   if (!pattern) return undefined;
-  // "M-0007" or "m7" finds the mandate by its display number.
+  // "M-0007" or "m7" finds the vacancy by its display number.
   const number = /^m-?0*(\d{1,9})$/i.exec(q?.trim() ?? "");
   return or(
     ilike(mandates.title, pattern),
@@ -59,7 +59,7 @@ const listColumns = {
   nextStep: mandates.nextStep,
   nextStepAt: mandates.nextStepAt,
   closedAt: mandates.closedAt,
-  submissionCount: sql<number>`(select count(*) from ${submissions} where ${submissions.mandateId} = ${outerColumn(mandates.id)})`.mapWith(Number),
+  appliedAt: mandates.appliedAt,
 };
 
 export type MandateListRow = Awaited<ReturnType<typeof listMandates>>["rows"][number];
@@ -166,57 +166,4 @@ export async function companyExists(id: number): Promise<boolean> {
   const db = await getDb();
   const [row] = await db.select({ id: companies.id }).from(companies).where(eq(companies.id, id)).limit(1);
   return Boolean(row);
-}
-
-/** Candidate columns that matching.ts needs (MatchCandidate), plus what the list shows and the firm. */
-const matchColumns = {
-  id: candidates.id,
-  firstName: candidates.firstName,
-  lastName: candidates.lastName,
-  headline: candidates.headline,
-  status: candidates.status,
-  disciplines: candidates.disciplines,
-  skills: candidates.skills,
-  sapModules: candidates.sapModules,
-  detectedSkills: candidates.detectedSkills,
-  seniority: candidates.seniority,
-  availableFrom: candidates.availableFrom,
-  workloadMin: candidates.workloadMin,
-  workloadMax: candidates.workloadMax,
-  rateAmount: candidates.rateAmount,
-  rateUnit: candidates.rateUnit,
-  consentAt: candidates.consentAt,
-  retentionUntil: candidates.retentionUntil,
-  // Objection to any hand-over: no new shortlist entries while it is set.
-  objectionAt: candidates.objectionAt,
-  // The candidate's own firm: profiles are only passed on through it.
-  firmId: companies.id,
-  firmName: companies.name,
-  firmKind: companies.kind,
-  firmLegalForm: companies.legalForm,
-  firmLegalName: companies.legalName,
-};
-
-export type MatchPoolCandidate = Awaited<ReturnType<typeof matchPool>>[number];
-
-/** All candidates that can be matched (not archived). */
-export async function matchPool() {
-  const db = await getDb();
-  return db
-    .select(matchColumns)
-    .from(candidates)
-    .leftJoin(companies, eq(companies.id, candidates.companyId))
-    .where(ne(candidates.status, "archiviert"));
-}
-
-/** One candidate with the matching columns, whatever its status. */
-export async function matchCandidateRow(id: number) {
-  const db = await getDb();
-  const [row] = await db
-    .select(matchColumns)
-    .from(candidates)
-    .leftJoin(companies, eq(companies.id, candidates.companyId))
-    .where(eq(candidates.id, id))
-    .limit(1);
-  return row ?? null;
 }

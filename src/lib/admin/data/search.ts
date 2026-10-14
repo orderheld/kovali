@@ -1,38 +1,32 @@
 import "server-only";
 import { asc, count, desc, eq, ilike, or, sql, type Column, type SQL } from "drizzle-orm";
 import { getDb } from "../db/client";
-import { candidates, companies, contacts, contracts, documents, mandates, submissions } from "../db/schema";
-import { retainedContractCounts } from "../privacy";
-import { hasSkill } from "./candidates";
+import { companies, contacts, contracts, mandates } from "../db/schema";
 import { mandateSearchWhere } from "./mandates";
-import { likePattern, outerColumn } from "./query";
+import { likePattern } from "./query";
 
 /**
- * Global search of the admin area (/admin/suche). A display number such as K-0042 or a
- * contract number jumps straight to the record; anything else searches candidates, mandates,
- * companies, contacts and contracts. Search terms may contain names, so they are never logged.
+ * Global search of the admin area (/admin/suche). A display number such as M-0007 or a
+ * contract number jumps straight to the record; anything else searches vacancies, companies,
+ * contacts and contracts. Search terms may contain names, so they are never logged.
  */
 
 export const SEARCH_GROUP_LIMIT = 10;
 
-export type JumpTarget =
-  | { kind: "candidate" | "mandate" | "company" | "submission"; id: number }
-  | { kind: "contract"; number: string };
+export type JumpTarget = { kind: "mandate" | "company"; id: number } | { kind: "contract"; number: string };
 
-const PREFIXES: Record<string, "candidate" | "mandate" | "company" | "submission"> = {
-  K: "candidate",
+const PREFIXES: Record<string, "mandate" | "company"> = {
   M: "mandate",
   F: "company",
-  VS: "submission",
 };
 
 /**
- * Recognises display numbers: K-0042, M-7, f0003, VS-0012 and contract numbers such as
- * V-2026-0001 (also "v 2026-1"). Returns null for anything else.
+ * Recognises display numbers: M-7, f0003 and contract numbers such as V-2026-0001 (also
+ * "v 2026-1"). Returns null for anything else.
  */
 export function parseDisplayNumber(input: string): JumpTarget | null {
   const q = input.trim();
-  const record = /^(VS|K|M|F)\s*-?\s*(\d{1,9})$/i.exec(q);
+  const record = /^(M|F)\s*-?\s*(\d{1,9})$/i.exec(q);
   if (record) {
     const id = Number(record[2]);
     if (!Number.isSafeInteger(id) || id <= 0) return null;
@@ -73,22 +67,13 @@ export function phoneVariants(input: string): string[] | null {
 export async function resolveJump(target: JumpTarget): Promise<string | null> {
   const db = await getDb();
   switch (target.kind) {
-    case "candidate": {
-      const [row] = await db.select({ id: candidates.id }).from(candidates).where(eq(candidates.id, target.id)).limit(1);
-      return row ? `/admin/kandidaten/${row.id}` : null;
-    }
     case "mandate": {
       const [row] = await db.select({ id: mandates.id }).from(mandates).where(eq(mandates.id, target.id)).limit(1);
-      return row ? `/admin/mandate/${row.id}` : null;
+      return row ? `/admin/vakanzen/${row.id}` : null;
     }
     case "company": {
       const [row] = await db.select({ id: companies.id }).from(companies).where(eq(companies.id, target.id)).limit(1);
       return row ? `/admin/firmen/${row.id}` : null;
-    }
-    case "submission": {
-      // Submissions are shown on their mandate.
-      const [row] = await db.select({ mandateId: submissions.mandateId }).from(submissions).where(eq(submissions.id, target.id)).limit(1);
-      return row ? `/admin/mandate/${row.mandateId}` : null;
     }
     case "contract": {
       const [row] = await db
@@ -124,17 +109,7 @@ export async function searchAll(input: string) {
   const phones = phoneVariants(input);
   const digits = input.replace(/\D/g, "");
 
-  const candidateWhere = or(
-    nameMatches(candidates.firstName, candidates.lastName, pattern),
-    ilike(candidates.email, pattern),
-    ilike(candidates.headline, pattern),
-    phoneMatches(candidates.phone, phones),
-    // Skill lists match case-insensitively, also parts of a skill ("FI" finds "SAP FI"), and
-    // aliases as in the candidate filter ("S4HANA" finds "SAP S/4HANA").
-    sql`exists (select 1 from unnest(${candidates.skills} || ${candidates.sapModules} || ${candidates.detectedSkills}) as s(v) where s.v ilike ${pattern})`,
-    hasSkill(input),
-  );
-  // Same condition as the mandate list, so "Alle anzeigen" there shows these hits.
+  // Same condition as the vacancy list, so "Alle anzeigen" there shows these hits.
   const mandateWhere = mandateSearchWhere(input);
   const companyWhere = or(
     ilike(companies.name, pattern),
@@ -146,26 +121,7 @@ export async function searchAll(input: string) {
   const contactWhere = or(nameMatches(contacts.firstName, contacts.lastName, pattern), ilike(contacts.email, pattern), phoneMatches(contacts.phone, phones));
   const contractWhere = or(ilike(contracts.number, pattern), ilike(contracts.title, pattern));
 
-  const [candidateResults, mandateResults, companyResults, contactResults, contractResults] = await Promise.all([
-    group(
-      db
-        .select({
-          id: candidates.id,
-          firstName: candidates.firstName,
-          lastName: candidates.lastName,
-          headline: candidates.headline,
-          email: candidates.email,
-          city: candidates.city,
-          status: candidates.status,
-          skills: candidates.skills,
-          sapModules: candidates.sapModules,
-        })
-        .from(candidates)
-        .where(candidateWhere)
-        .orderBy(asc(sql`lower(${candidates.lastName})`), asc(sql`lower(${candidates.firstName})`), asc(candidates.id))
-        .limit(SEARCH_GROUP_LIMIT),
-      db.select({ n: count() }).from(candidates).where(candidateWhere),
-    ),
+  const [mandateResults, companyResults, contactResults, contractResults] = await Promise.all([
     group(
       db
         .select({
@@ -223,7 +179,6 @@ export async function searchAll(input: string) {
   ]);
 
   return {
-    candidates: candidateResults,
     mandates: mandateResults,
     companies: companyResults,
     contacts: contactResults,
@@ -232,35 +187,3 @@ export async function searchAll(input: string) {
 }
 
 export type SearchResults = NonNullable<Awaited<ReturnType<typeof searchAll>>>;
-
-/**
- * Candidates for an access request (Datenschutz > Auskunft): by K-number, name (both orders),
- * e-mail or phone. Skills are left out on purpose: the request names a person.
- */
-export async function findCandidatesForRequest(input: string, limit = 20) {
-  const db = await getDb();
-  const columns = {
-    id: candidates.id,
-    firstName: candidates.firstName,
-    lastName: candidates.lastName,
-    email: candidates.email,
-    city: candidates.city,
-    status: candidates.status,
-    createdAt: candidates.createdAt,
-    // For the confirm texts of anonymise/delete on the Auskunft page.
-    documents: sql<number>`(select count(*) from ${documents} where ${documents.candidateId} = ${outerColumn(candidates.id)})`.mapWith(Number),
-    ...retainedContractCounts,
-  };
-  const target = parseDisplayNumber(input);
-  if (target?.kind === "candidate") {
-    return db.select(columns).from(candidates).where(eq(candidates.id, target.id)).limit(1);
-  }
-  const pattern = likePattern(input);
-  if (!pattern) return [];
-  return db
-    .select(columns)
-    .from(candidates)
-    .where(or(nameMatches(candidates.firstName, candidates.lastName, pattern), ilike(candidates.email, pattern), phoneMatches(candidates.phone, phoneVariants(input))))
-    .orderBy(asc(sql`lower(${candidates.lastName})`), asc(sql`lower(${candidates.firstName})`), asc(candidates.id))
-    .limit(limit);
-}

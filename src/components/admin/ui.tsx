@@ -5,12 +5,12 @@ import type { Tone } from "@/lib/admin/options";
 import { cn } from "@/lib/utils";
 
 /**
- * Building blocks of the admin area and the candidate portal. Server-compatible (no hooks);
- * interactive controls live in form.tsx.
+ * Building blocks of the admin area. Server-compatible (no hooks); interactive controls live
+ * in form.tsx and copy-button.tsx.
  */
 
-type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
-type ButtonSize = "md" | "sm";
+export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
+export type ButtonSize = "md" | "sm";
 
 const buttonBase =
   "inline-flex items-center justify-center gap-2 rounded-md font-medium whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue disabled:pointer-events-none disabled:opacity-55";

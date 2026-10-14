@@ -1,11 +1,15 @@
 import { z } from "zod";
 import type { DocumentOwner } from "./documents";
+import { displayNo } from "./format";
 
 /**
  * The record a note or document belongs to. Passed from pages to the shared actions
- * (bound arguments), so it is validated again on the server.
+ * (bound arguments), so it is validated again on the server. "mandate" is a vacancy (the table
+ * kept its old name), shown under /admin/vakanzen.
  */
-export type OwnerType = "candidate" | "company" | "mandate" | "contract";
+export const ownerTypes = ["company", "mandate", "contract", "assignment"] as const;
+
+export type OwnerType = (typeof ownerTypes)[number];
 
 export interface OwnerRef {
   type: OwnerType;
@@ -13,42 +17,51 @@ export interface OwnerRef {
 }
 
 export const ownerSchema = z.object({
-  type: z.enum(["candidate", "company", "mandate", "contract"]),
+  type: z.enum(ownerTypes),
   id: z.number().int().positive(),
 });
 
 const paths: Record<OwnerType, string> = {
-  candidate: "/admin/kandidaten",
   company: "/admin/firmen",
-  mandate: "/admin/mandate",
+  mandate: "/admin/vakanzen",
   contract: "/admin/vertraege",
+  assignment: "/admin/auftraege",
 };
 
-const entityNames: Record<OwnerType, string> = {
-  candidate: "candidate",
-  company: "company",
-  mandate: "mandate",
-  contract: "contract",
-};
-
+/** Detail page of the record, e.g. /admin/auftraege/3. */
 export function ownerPath(owner: OwnerRef): string {
   return `${paths[owner.type]}/${owner.id}`;
 }
 
+/** Entity name in the audit log ("company", "mandate", "contract", "assignment"). */
 export function ownerEntity(owner: OwnerRef): string {
-  return entityNames[owner.type];
+  return owner.type;
 }
 
-/** Column values for tables with candidate_id / company_id / mandate_id / contract_id. */
+/** Name of the record without personal data, for audit summaries: "Auftrag A-0003", "Vertrag #12". */
+export function ownerLabel(owner: OwnerRef): string {
+  switch (owner.type) {
+    case "company":
+      return `Firma ${displayNo.company(owner.id)}`;
+    case "mandate":
+      return `Vakanz ${displayNo.mandate(owner.id)}`;
+    case "contract":
+      return `Vertrag #${owner.id}`;
+    case "assignment":
+      return `Auftrag ${displayNo.assignment(owner.id)}`;
+  }
+}
+
+/** Column values for tables with company_id / mandate_id / contract_id / assignment_id. */
 export function ownerColumns(owner: OwnerRef): DocumentOwner {
   switch (owner.type) {
-    case "candidate":
-      return { candidateId: owner.id };
     case "company":
       return { companyId: owner.id };
     case "mandate":
       return { mandateId: owner.id };
     case "contract":
       return { contractId: owner.id };
+    case "assignment":
+      return { assignmentId: owner.id };
   }
 }

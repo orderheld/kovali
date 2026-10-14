@@ -13,20 +13,11 @@ export type AuditAction =
   | "delete"
   | "view_document"
   | "download_document"
-  | "export"
-  | "consent"
-  | "share"
-  | "portal_login"
-  | "portal_login_failed"
-  | "portal_change"
-  | "portal_logout_all"
-  | "review"
-  | "anonymise";
+  | "export";
 
 /**
- * Writes an entry to the audit log (accountability under the DSG: who accessed or changed
- * what, and when). `summary` must not contain personal data: use display numbers such as
- * "Kandidat K-0042" instead of names.
+ * Writes an entry to the audit log (who accessed or changed what, and when). `summary` must
+ * not contain names: use display numbers such as "Auftrag A-0003" or "Firma F-0007".
  */
 export async function audit(
   action: AuditAction,

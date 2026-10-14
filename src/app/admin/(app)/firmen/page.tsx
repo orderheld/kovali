@@ -6,7 +6,7 @@ import { requireAdmin } from "@/lib/admin/auth/session";
 import { kindCounts, listCompanies } from "@/lib/admin/data/companies";
 import { listHref, pageNumber, PAGE_SIZE, param } from "@/lib/admin/data/query";
 import { displayNo } from "@/lib/admin/format";
-import { companyKinds, companyStatuses, labelOf, toneOf } from "@/lib/admin/options";
+import { companyKinds, companyStatuses, labelOf, offered, toneOf } from "@/lib/admin/options";
 import { SearchBox } from "../_shared/search-box";
 
 /** Admin pages read the session and the database per request and may block. */
@@ -27,7 +27,7 @@ export default async function CompaniesPage({ searchParams }: PageProps<"/admin/
     <>
       <PageHeader
         title="Firmen und Kontakte"
-        description="Auftraggeber, Endkunden und Subunternehmer mit ihren Ansprechpersonen."
+        description="Vermittler, Endkunden und Partner mit ihren Ansprechpersonen."
         actions={
           <LinkButton href="/admin/firmen/neu" variant="primary" icon={Plus}>
             Firma anlegen
@@ -37,7 +37,7 @@ export default async function CompaniesPage({ searchParams }: PageProps<"/admin/
       <Tabs
         items={[
           { label: "Alle", href: listHref("/admin/firmen", { q }), active: !kind, count: all },
-          ...companyKinds.map((k) => ({
+          ...offered(companyKinds).map((k) => ({
             label: k.label,
             href: listHref("/admin/firmen", { q, art: k.value }),
             active: kind === k.value,
@@ -58,7 +58,7 @@ export default async function CompaniesPage({ searchParams }: PageProps<"/admin/
                   <Th>Art</Th>
                   <Th>Ort</Th>
                   <Th align="right">Kontakte</Th>
-                  <Th align="right">Offene Mandate</Th>
+                  <Th align="right">Offene Vakanzen</Th>
                   <Th>Status</Th>
                 </tr>
               </thead>
@@ -107,7 +107,7 @@ export default async function CompaniesPage({ searchParams }: PageProps<"/admin/
               )
             }
           >
-            {q || kind ? "Andere Suche versuchen oder Filter zurücksetzen." : "Lege Auftraggeber wie GHR Group oder Coopers an, um Mandate und Verträge zuzuordnen."}
+            {q || kind ? "Andere Suche versuchen oder Filter zurücksetzen." : "Lege Vermittler wie GHR Group oder Coopers Group an, um Vakanzen, Aufträge und Verträge zuzuordnen."}
           </EmptyState>
         )}
       </Card>

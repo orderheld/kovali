@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { buttonClass } from "./ui";
 
 /**
- * Forms of the admin area and the candidate portal. ActionForm wires a Server Action through
+ * Forms of the admin area. ActionForm wires a Server Action through
  * useActionState; fields read their error from context by name. Submitting does not reset the
  * form, so entries stay when the server reports a validation error.
  */

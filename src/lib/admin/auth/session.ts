@@ -17,7 +17,7 @@ import { requestIpHash, requestUserAgent } from "../request";
 
 const SECURE = process.env.NODE_ENV === "production";
 export const ADMIN_COOKIE = SECURE ? "__Host-kovali-admin" : "kovali-admin";
-/** Exported for the record of processing activities (privacy.ts), which states them. */
+/** Session lifetime and idle timeout. */
 export const ABSOLUTE_MS = 12 * 60 * 60 * 1000;
 export const IDLE_MS = 4 * 60 * 60 * 1000;
 const TOUCH_MS = 5 * 60 * 1000;

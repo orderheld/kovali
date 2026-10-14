@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
-import { Check, Copy, KeyRound, RefreshCw, ShieldCheck, Smartphone } from "lucide-react";
+import { KeyRound, RefreshCw, ShieldCheck, Smartphone } from "lucide-react";
+import { CopyButton } from "@/components/admin/copy-button";
 import { buttonClass } from "@/components/admin/ui";
 import { cn } from "@/lib/utils";
 
@@ -78,30 +79,18 @@ const COMMON = ["111111", "123456", "12345678", "password", "passwort", "kovali"
 function weakness(pw: string): string | null {
   if (!pw) return null;
   if (COMMON.some((c) => pw.toLowerCase().includes(c)) || /^(.)\1*$/.test(pw)) {
-    return "Dieses Passwort steht in jeder Liste, die Angreifer zuerst ausprobieren. Es schützt die Kandidatendaten kaum.";
+    return "Dieses Passwort steht in jeder Liste, die Angreifer zuerst ausprobieren. Es schützt deine Daten kaum.";
   }
-  if (pw.length < 12) return "Kürzer als 12 Zeichen. Empfohlen sind mindestens 12 Zeichen oder eine Passphrase aus vier Wörtern.";
+  if (pw.length < 12) return "Kürzer als 12 Zeichen. Nimm mindestens 12 Zeichen oder eine Passphrase aus vier Wörtern.";
   return null;
 }
 
 function CopyValue({ name, value }: { name: string; value: string }) {
-  const [copied, setCopied] = useState(false);
   return (
     <div className="mt-3 rounded-md border border-line bg-mist/60 p-3">
       <div className="flex items-center justify-between gap-2">
         <code className="text-xs font-semibold text-ink">{name}</code>
-        <button
-          type="button"
-          className={buttonClass("secondary", "sm")}
-          onClick={async () => {
-            await navigator.clipboard.writeText(value);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-          }}
-        >
-          {copied ? <Check aria-hidden className="size-4" /> : <Copy aria-hidden className="size-4" />}
-          {copied ? "Kopiert" : "Wert kopieren"}
-        </button>
+        <CopyButton value={value} label="Wert kopieren" />
       </div>
       <code className="mt-2 block font-mono text-xs break-all text-slate">{value}</code>
     </div>
@@ -124,8 +113,8 @@ const input =
   "block w-full rounded-md border border-line bg-white px-3 py-2 text-[0.9375rem] text-ink focus:border-blue focus:ring-2 focus:ring-blue/20 focus:outline-none";
 
 /**
- * The generators for the missing values. ADMIN_SECRET is offered only while it is not set:
- * a new one would make every stored document unreadable.
+ * The generators for the missing values (all three are required). ADMIN_SECRET is offered
+ * only while it is not set: a new one would make every stored document unreadable.
  */
 export function SetupGenerator({ password, secret: showSecret, totp: showTotp }: { password: boolean; secret: boolean; totp: boolean }) {
   const [pw, setPw] = useState("");
@@ -189,7 +178,7 @@ export function SetupGenerator({ password, secret: showSecret, totp: showTotp }:
       {showSecret ? (
         <Step icon={ShieldCheck} title={title("secret", "Geheimer Schlüssel")}>
           <p>
-            Damit werden Lebensläufe und Dokumente verschlüsselt. Den Wert einmal erzeugen, in Vercel eintragen und zusätzlich im Passwort-Manager
+            Damit werden deine Verträge und Dokumente verschlüsselt. Den Wert einmal erzeugen, in Vercel eintragen und zusätzlich im Passwort-Manager
             ablegen. <strong className="text-ink">Er darf nie mehr geändert werden</strong>, sonst lassen sich gespeicherte Dokumente nicht mehr öffnen.
           </p>
           <button type="button" className={cn(buttonClass("secondary", "md"), "mt-4")} onClick={() => setSecret(base64url(random(32)))}>
@@ -201,11 +190,17 @@ export function SetupGenerator({ password, secret: showSecret, totp: showTotp }:
       ) : null}
 
       {showTotp ? (
-        <Step icon={Smartphone} title={title("totp", "Zwei-Faktor-Code (empfohlen)")}>
+        <Step icon={Smartphone} title={title("totp", "Zwei-Faktor-Code (Google Authenticator)")}>
           <p>
-            Mit einer Authenticator-App (z.&nbsp;B. Microsoft Authenticator, Google Authenticator, 1Password) braucht die Anmeldung zusätzlich einen
-            sechsstelligen Code. Ein erratenes Passwort reicht dann nicht mehr.
+            Die Anmeldung verlangt immer zwei Dinge: dein Passwort und den sechsstelligen Code aus Google Authenticator auf deinem Handy. Ein erratenes
+            Passwort allein reicht so nicht.
           </p>
+          <ol className="mt-2 list-decimal space-y-1 pl-5">
+            <li>Google Authenticator aus dem App Store oder Google Play installieren.</li>
+            <li>Hier den Code-Schlüssel erzeugen.</li>
+            <li>In der App auf «+» tippen, «QR-Code scannen» wählen und den QR-Code unten scannen.</li>
+            <li>Den Code, den die App jetzt zeigt, unten prüfen.</li>
+          </ol>
           <button
             type="button"
             className={cn(buttonClass("secondary", "md"), "mt-4")}
@@ -222,13 +217,13 @@ export function SetupGenerator({ password, secret: showSecret, totp: showTotp }:
             <div className="mt-4 grid gap-4 sm:grid-cols-[auto_1fr] sm:items-start">
               {qr ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={qr} alt="QR-Code für die Authenticator-App" width={220} height={220} className="rounded-md border border-line" />
+                <img src={qr} alt="QR-Code für Google Authenticator" width={220} height={220} className="rounded-md border border-line" />
               ) : null}
               <div>
-                <p id="totp-test-hint">QR-Code mit der App scannen, dann den angezeigten Code hier prüfen:</p>
+                <p id="totp-test-hint">Code aus Google Authenticator hier prüfen:</p>
                 <div className="mt-2 flex gap-2">
                   <input
-                    aria-label="Code aus der Authenticator-App"
+                    aria-label="Code aus Google Authenticator"
                     aria-describedby="totp-test-hint"
                     autoComplete="off"
                     maxLength={6}
@@ -254,7 +249,11 @@ export function SetupGenerator({ password, secret: showSecret, totp: showTotp }:
                   </button>
                 </div>
                 {testResult === true ? <p className="mt-2 text-[0.8125rem] font-medium text-emerald-700">Der Code stimmt. Die App ist richtig eingerichtet.</p> : null}
-                {testResult === false ? <p className="mt-2 text-[0.8125rem] font-medium text-red-700">Der Code stimmt nicht. Bitte nochmals scannen.</p> : null}
+                {testResult === false ? (
+                  <p className="mt-2 text-[0.8125rem] font-medium text-red-700">
+                    Der Code stimmt nicht. Prüfe, ob die Uhrzeit des Handys stimmt, und scanne den QR-Code nochmals.
+                  </p>
+                ) : null}
                 <CopyValue name="ADMIN_TOTP_SECRET" value={totp} />
               </div>
             </div>

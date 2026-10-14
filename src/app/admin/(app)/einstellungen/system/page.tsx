@@ -1,18 +1,15 @@
 import type { Metadata } from "next";
-import { CheckCircle2, CircleAlert, Database, GitCommitHorizontal } from "lucide-react";
+import { Archive, CheckCircle2, CircleAlert, Database, GitCommitHorizontal } from "lucide-react";
 import { count, sql } from "drizzle-orm";
 import type { PgTable } from "drizzle-orm/pg-core";
-import { Badge, Card, CardBody, CardHeader, DescriptionList, Mono, Table, Td, Th } from "@/components/admin/ui";
+import { Badge, Card, CardBody, CardHeader, DescriptionList, Mono, Notice, Table, Td, Th } from "@/components/admin/ui";
 import { requireAdmin } from "@/lib/admin/auth/session";
 import { getDb } from "@/lib/admin/db/client";
 import { migrations } from "@/lib/admin/db/migrations";
 import {
   activities,
+  assignments,
   auditLog,
-  candidateAccounts,
-  candidateSessions,
-  candidates,
-  changeRequests,
   companies,
   contacts,
   contracts,
@@ -21,8 +18,7 @@ import {
   mandates,
   sessions,
   settings,
-  submissions,
-  vacancyShares,
+  snippets,
 } from "@/lib/admin/db/schema";
 import { adminConfigStatus } from "@/lib/admin/env";
 import { formatDateTime } from "@/lib/admin/format";
@@ -34,32 +30,40 @@ export const instant = false;
 export const metadata: Metadata = { title: "System" };
 
 const tables: { label: string; name: string; table: PgTable }[] = [
+  { label: "Aufträge", name: "assignments", table: assignments },
+  { label: "Vakanzen", name: "mandates", table: mandates },
+  { label: "Verträge", name: "contracts", table: contracts },
+  { label: "Textbausteine", name: "snippets", table: snippets },
   { label: "Firmen", name: "companies", table: companies },
   { label: "Kontakte", name: "contacts", table: contacts },
-  { label: "Kandidaten", name: "candidates", table: candidates },
-  { label: "Mandate", name: "mandates", table: mandates },
-  { label: "Vorschläge", name: "submissions", table: submissions },
-  { label: "Verträge", name: "contracts", table: contracts },
   { label: "Dokumente", name: "documents", table: documents },
   { label: "Verlauf", name: "activities", table: activities },
-  { label: "Portal-Konten", name: "candidate_accounts", table: candidateAccounts },
-  { label: "Portal-Sitzungen", name: "candidate_sessions", table: candidateSessions },
-  { label: "Änderungsanträge", name: "change_requests", table: changeRequests },
-  { label: "Vakanz-Freigaben", name: "vacancy_shares", table: vacancyShares },
-  { label: "Audit-Log", name: "audit_log", table: auditLog },
+  { label: "Protokoll", name: "audit_log", table: auditLog },
   { label: "Admin-Sitzungen", name: "sessions", table: sessions },
   { label: "Anmeldeversuche", name: "login_attempts", table: loginAttempts },
   { label: "Einstellungen", name: "settings", table: settings },
 ];
 
+/**
+ * Data of the former candidate module. Migration 0004 keeps those tables when they held a
+ * candidate; nothing reads or writes them any more. Null when they are gone.
+ */
+async function dormantCandidates(db: Awaited<ReturnType<typeof getDb>>): Promise<number | null> {
+  const exists = await db.execute<{ present: boolean }>(sql`select to_regclass('candidates') is not null as present`);
+  if (!exists.rows[0]?.present) return null;
+  const rows = await db.execute<{ n: string }>(sql`select count(*) as n from candidates`);
+  return Number(rows.rows[0]?.n ?? 0);
+}
+
 async function systemInfo() {
   const db = await getDb();
-  const [applied, counts, version, size, stored] = await Promise.all([
+  const [applied, counts, version, size, stored, dormant] = await Promise.all([
     db.execute<{ id: string; applied_at: Date }>(sql`select id, applied_at from admin_migrations order by id`),
     Promise.all(tables.map(async (t) => ({ ...t, rows: (await db.select({ n: count() }).from(t.table))[0]?.n ?? 0 }))),
     db.execute<{ server_version: string }>(sql`show server_version`),
     db.execute<{ size: string }>(sql`select pg_size_pretty(pg_database_size(current_database())) as size`),
     db.select({ key: settings.key, updatedAt: settings.updatedAt }).from(settings).orderBy(settings.key),
+    dormantCandidates(db),
   ]);
   return {
     applied: applied.rows,
@@ -67,11 +71,14 @@ async function systemInfo() {
     postgres: version.rows[0]?.server_version.split(" ")[0] ?? "–",
     size: size.rows[0]?.size ?? "–",
     settings: stored,
+    dormant,
   };
 }
 
 const settingLabels: Record<string, string> = {
   rechner_defaults: "Eigene Werte des Lohnrechners",
+  einkommen: "Ansätze für Einkommen und Kosten",
+  admin_totp_last_step: "Zuletzt verwendeter Zwei-Faktor-Code (Schutz vor Wiederverwendung)",
 };
 
 export default async function SystemPage() {
@@ -137,6 +144,13 @@ export default async function SystemPage() {
           </ul>
         </Card>
       </div>
+
+      {info.dormant !== null ? (
+        <Notice tone="neutral" icon={Archive} title="Alte Daten des Kandidatenmoduls" className="mt-6">
+          Die Datenbank enthält noch {info.dormant === 1 ? "1 Kandidatenprofil" : `${info.dormant} Kandidatenprofile`} mit ihren Tabellen aus der früheren
+          Version. Der Admin-Bereich verwendet sie nicht mehr. Sie bleiben unverändert, bis du entscheidest, was damit geschieht.
+        </Notice>
+      ) : null}
 
       <div className="mt-6 grid items-start gap-6 lg:grid-cols-2">
         <Card>

@@ -1,4 +1,4 @@
-/** Swiss formatting for the admin area and generated documents (time zone Europe/Zurich). */
+/** Swiss formatting and date helpers for the admin area (time zone Europe/Zurich). */
 
 const TZ = "Europe/Zurich";
 
@@ -39,6 +39,14 @@ export function todayIso(now = new Date()): string {
   return parts;
 }
 
+/** Adds calendar days to a YYYY-MM-DD date (negative values go back). */
+export function addDaysIso(iso: string, days: number): string {
+  const d = new Date(`${iso}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+/** Adds calendar months to a YYYY-MM-DD date; the 31st becomes the last day of a shorter month. */
 export function addMonthsIso(iso: string, months: number): string {
   const d = new Date(`${iso}T12:00:00Z`);
   const day = d.getUTCDate();
@@ -84,12 +92,12 @@ export function formatMonthRange(from: string, to: string): string {
   return a ? `${a} – ${b}` : b;
 }
 
-/** Display numbers: K-0042 (Kandidat), M-0007 (Mandat), F-0003 (Firma), VS-0012 (Vorschlag). */
+/** Display numbers: A-0012 (Auftrag), M-0007 (Vakanz, table mandates), F-0003 (Firma), T-0004 (Textbaustein). */
 export const displayNo = {
-  candidate: (id: number) => `K-${String(id).padStart(4, "0")}`,
+  assignment: (id: number) => `A-${String(id).padStart(4, "0")}`,
   mandate: (id: number) => `M-${String(id).padStart(4, "0")}`,
   company: (id: number) => `F-${String(id).padStart(4, "0")}`,
-  submission: (id: number) => `VS-${String(id).padStart(4, "0")}`,
+  snippet: (id: number) => `T-${String(id).padStart(4, "0")}`,
 };
 
 export function fullName(p: { firstName?: string | null; lastName?: string | null }): string {

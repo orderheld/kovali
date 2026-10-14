@@ -2,14 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
-import { Briefcase, Building2, FileSignature, Search, UserRound, Users } from "lucide-react";
+import { Building2, FileSignature, Search, Telescope, UserRound } from "lucide-react";
 import { Badge, Card, EmptyState, Mono, Notice, PageHeader } from "@/components/admin/ui";
 import { SearchBox } from "../_shared/search-box";
 import { requireAdmin } from "@/lib/admin/auth/session";
 import { listHref, param } from "@/lib/admin/data/query";
 import { parseDisplayNumber, resolveJump, searchAll, SEARCH_GROUP_LIMIT } from "@/lib/admin/data/search";
 import { displayNo, fullName } from "@/lib/admin/format";
-import { candidateStatuses, companyKinds, contractStatuses, labelOf, mandateStatuses, toneOf } from "@/lib/admin/options";
+import { companyKinds, contractStatuses, labelOf, mandateStatuses, toneOf } from "@/lib/admin/options";
 
 /** Admin pages read the session and the database per request and may block. */
 export const instant = false;
@@ -83,11 +83,11 @@ export default async function SearchPage({ searchParams }: PageProps<"/admin/suc
     <>
       <PageHeader
         title="Suche"
-        description="Kandidaten, Mandate, Firmen, Kontakte und Verträge. Mit einer Nummer wie K-0042 öffnest du den Datensatz direkt."
+        description="Vakanzen, Firmen, Kontakte und Verträge. Mit einer Nummer wie M-0007 oder V-2026-0001 öffnest du den Datensatz direkt."
       />
       <Card className="mb-6">
         <div className="px-5 py-3">
-          <SearchBox action="/admin/suche" defaultValue={q} placeholder="Name, Kompetenz, Firma, Nummer …" />
+          <SearchBox action="/admin/suche" defaultValue={q} placeholder="Titel, Firma, Person, Nummer …" />
         </div>
       </Card>
 
@@ -103,14 +103,10 @@ export default async function SearchPage({ searchParams }: PageProps<"/admin/suc
           <EmptyState icon={Search} title="Wonach suchst du?">
             <ul className="mt-2 space-y-1 text-left">
               <li>
-                <strong className="font-medium text-ink">Nummern</strong>: K-0042 (Kandidat), M-0007 (Mandat), F-0003 (Firma), VS-0012 (Vorschlag), V-2026-0001
-                (Vertrag)
+                <strong className="font-medium text-ink">Nummern</strong>: M-0007 (Vakanz), F-0003 (Firma), V-2026-0001 (Vertrag)
               </li>
               <li>
                 <strong className="font-medium text-ink">Personen</strong>: Vor- und Nachname in beliebiger Reihenfolge, E-Mail oder Telefonnummer
-              </li>
-              <li>
-                <strong className="font-medium text-ink">Kompetenzen</strong>: z. B. «SAP FI», «Jira» oder «Requirements»
               </li>
             </ul>
           </EmptyState>
@@ -126,29 +122,10 @@ export default async function SearchPage({ searchParams }: PageProps<"/admin/suc
           <p className="text-sm text-slate" role="status">
             {total === 1 ? "1 Treffer" : `${total} Treffer`}
           </p>
-          {results.candidates.total ? (
-            <Group title="Kandidaten" icon={Users} total={results.candidates.total} moreHref={listHref("/admin/kandidaten", { q })}>
-              {results.candidates.rows.map((c) => (
-                <Row key={c.id} href={`/admin/kandidaten/${c.id}`}>
-                  <span className="min-w-0 flex-1 basis-60">
-                    <span className="block font-medium text-ink">{fullName(c)}</span>
-                    <span className="block text-xs text-slate">
-                      <Mono className="mr-1.5">{displayNo.candidate(c.id)}</Mono>
-                      {[c.headline, c.city].filter(Boolean).join(" · ") || "–"}
-                    </span>
-                  </span>
-                  {[...c.sapModules, ...c.skills].length ? (
-                    <span className="hidden max-w-sm truncate text-xs text-slate md:inline">{[...c.sapModules, ...c.skills].slice(0, 5).join(", ")}</span>
-                  ) : null}
-                  <Badge tone={toneOf(candidateStatuses, c.status)}>{labelOf(candidateStatuses, c.status)}</Badge>
-                </Row>
-              ))}
-            </Group>
-          ) : null}
           {results.mandates.total ? (
-            <Group title="Mandate" icon={Briefcase} total={results.mandates.total} moreHref={listHref("/admin/mandate", { q, status: "alle" })}>
+            <Group title="Vakanzen" icon={Telescope} total={results.mandates.total} moreHref={listHref("/admin/vakanzen", { q, status: "alle" })}>
               {results.mandates.rows.map((m) => (
-                <Row key={m.id} href={`/admin/mandate/${m.id}`}>
+                <Row key={m.id} href={`/admin/vakanzen/${m.id}`}>
                   <span className="min-w-0 flex-1 basis-60">
                     <span className="block font-medium text-ink">{m.title}</span>
                     <span className="block text-xs text-slate">

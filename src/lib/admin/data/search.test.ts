@@ -3,12 +3,9 @@ import { parseDisplayNumber, phoneVariants } from "./search";
 
 describe("parseDisplayNumber", () => {
   it("recognises record numbers in any spelling", () => {
-    expect(parseDisplayNumber("K-0042")).toEqual({ kind: "candidate", id: 42 });
-    expect(parseDisplayNumber("k42")).toEqual({ kind: "candidate", id: 42 });
     expect(parseDisplayNumber(" M - 7 ")).toEqual({ kind: "mandate", id: 7 });
+    expect(parseDisplayNumber("m7")).toEqual({ kind: "mandate", id: 7 });
     expect(parseDisplayNumber("f0003")).toEqual({ kind: "company", id: 3 });
-    expect(parseDisplayNumber("VS-0012")).toEqual({ kind: "submission", id: 12 });
-    expect(parseDisplayNumber("vs 12")).toEqual({ kind: "submission", id: 12 });
   });
 
   it("recognises contract numbers and pads them to four digits", () => {
@@ -20,8 +17,9 @@ describe("parseDisplayNumber", () => {
   it("leaves names, skills and zero ids alone", () => {
     expect(parseDisplayNumber("Keller")).toBeNull();
     expect(parseDisplayNumber("SAP FI")).toBeNull();
-    expect(parseDisplayNumber("K-0")).toBeNull();
-    expect(parseDisplayNumber("K-")).toBeNull();
+    expect(parseDisplayNumber("M-0")).toBeNull();
+    expect(parseDisplayNumber("M-")).toBeNull();
+    expect(parseDisplayNumber("K-0042")).toBeNull();
     expect(parseDisplayNumber("V-2026")).toBeNull();
     expect(parseDisplayNumber("X-0042")).toBeNull();
     expect(parseDisplayNumber("")).toBeNull();

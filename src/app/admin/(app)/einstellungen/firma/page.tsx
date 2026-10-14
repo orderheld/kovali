@@ -32,22 +32,21 @@ export default async function CompanySettingsPage() {
     <>
       <SettingsHeader active="firma" />
 
-      <Notice tone="blue" icon={FileCode2} title="Änderung in src/config/site.ts, z. B. beim Wechsel zur GmbH">
-        Die Firmendaten stehen bewusst im Code und nicht in der Datenbank: Website, Impressum, Datenschutzerklärung, Verträge, Dossiers, Auskünfte und das Verzeichnis
-        lesen alle dieselbe Quelle. Nach einer Änderung und dem nächsten Deployment tragen neue Dokumente die neuen Angaben; bereits erstellte Verträge bleiben
-        unverändert.
+      <Notice tone="blue" icon={FileCode2} title="Änderung in src/config/site.ts, z. B. mit der MWST-Nummer oder beim Wechsel zur GmbH">
+        Die Firmendaten stehen bewusst im Code und nicht in der Datenbank: Website, Impressum, Datenschutzerklärung und Rechner lesen dieselbe Quelle. Nach
+        einer Änderung gelten sie ab dem nächsten Deployment.
       </Notice>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <Card>
-          <CardHeader title="KOVALI als Vertragspartei" description={partyLine(p)} />
+          <CardHeader title="Deine Firma" description={partyLine(p)} />
           <CardBody>
             <DescriptionList
               items={[
                 { label: "Firma (wie im Handelsregister)", value: <Checked value={p.name} confirmed={legal.entityName.confirmed} /> },
                 { label: "Rechtsform", value: p.legalForm },
                 { label: "Inhaber", value: p.owner },
-                { label: "Unterzeichnet durch", value: `${p.signatory.name}, ${p.signatory.title}` },
+                { label: "Unterschrift", value: `${p.signatory.name}, ${p.signatory.title}` },
                 { label: "Adresse", value: `${p.street}, ${p.postalCode} ${p.city}, ${p.country}`, wide: true },
                 { label: "E-Mail", value: <Checked value={p.email} confirmed={site.contact.email.confirmed} /> },
                 { label: "UID", value: <Checked value={p.uid} confirmed={legal.uid.confirmed} empty="keine" /> },
@@ -64,21 +63,17 @@ export default async function CompanySettingsPage() {
             <ul className="space-y-2 text-sm text-ink">
               <li className="flex gap-2">
                 <Building2 aria-hidden className="mt-0.5 size-4 shrink-0 text-blue" />
-                Kopf und Unterschrift von Verträgen und Dossiers
-              </li>
-              <li className="flex gap-2">
-                <Building2 aria-hidden className="mt-0.5 size-4 shrink-0 text-blue" />
-                Auskünfte und Verzeichnis unter Datenschutz
-              </li>
-              <li className="flex gap-2">
-                <Building2 aria-hidden className="mt-0.5 size-4 shrink-0 text-blue" />
                 Impressum und Datenschutzerklärung der Website
+              </li>
+              <li className="flex gap-2">
+                <Building2 aria-hidden className="mt-0.5 size-4 shrink-0 text-blue" />
+                MWST im Rechner und in der Übersicht
               </li>
             </ul>
             <p className="mt-4 border-t border-line pt-3 text-[0.8125rem] text-slate">
               {p.vatNumber
-                ? "KOVALI ist MWST-pflichtig: Rechnungen an Auftraggeber enthalten 8.1 % MWST, die Vorsteuer auf Rechnungen von Subunternehmen ist abziehbar."
-                : `Ohne MWST-Nummer rechnet der Margenrechner die MWST von Subunternehmen als Kosten. Die Pflicht beginnt ab ${formatChf(VAT_THRESHOLD, { round: true })} Umsatz pro Jahr.`}
+                ? "KOVALI ist MWST-pflichtig: Deine Rechnungen enthalten 8.1 % MWST. Sie fliesst an die Steuerverwaltung weiter und ist kein Einkommen."
+                : `Ohne MWST-Nummer stellst du Rechnungen ohne MWST. Die Pflicht beginnt ab ${formatChf(VAT_THRESHOLD, { round: true })} Umsatz pro Jahr.`}
             </p>
           </CardBody>
         </Card>

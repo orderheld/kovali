@@ -1,7 +1,7 @@
 import "server-only";
 import { and, asc, count, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import { getDb } from "../db/client";
-import { candidates, companies, contacts, mandates, submissions } from "../db/schema";
+import { assignments, companies, contacts, contracts, mandates } from "../db/schema";
 import { openMandateStatuses } from "../options";
 import { likePattern, outerColumn, PAGE_SIZE } from "./query";
 
@@ -46,17 +46,15 @@ export async function getCompany(id: number) {
   return row ?? null;
 }
 
-/**
- * What deleting a company detaches (on delete set null): candidates working through it as their
- * own firm, and submissions whose profile was handed over through it («über Firma»).
- */
+/** What deleting a company detaches (on delete set null): its vacancies, assignments and contracts keep their data. */
 export async function companyDeleteImpact(id: number) {
   const db = await getDb();
-  const [[linked], [handedOver]] = await Promise.all([
-    db.select({ n: count() }).from(candidates).where(eq(candidates.companyId, id)),
-    db.select({ n: count() }).from(submissions).where(eq(submissions.subcontractorCompanyId, id)),
+  const [[m], [a], [c]] = await Promise.all([
+    db.select({ n: count() }).from(mandates).where(eq(mandates.companyId, id)),
+    db.select({ n: count() }).from(assignments).where(eq(assignments.companyId, id)),
+    db.select({ n: count() }).from(contracts).where(eq(contracts.companyId, id)),
   ]);
-  return { candidates: linked?.n ?? 0, submissions: handedOver?.n ?? 0 };
+  return { mandates: m?.n ?? 0, assignments: a?.n ?? 0, contracts: c?.n ?? 0 };
 }
 
 export async function getContact(companyId: number, contactId: number) {
@@ -78,7 +76,7 @@ export async function listContacts(companyId: number) {
     .orderBy(asc(sql`lower(${contacts.lastName})`), asc(contacts.id));
 }
 
-/** Choices for select fields in other modules (mandates, contracts, candidates). */
+/** Choices for select fields in other modules (vacancies, assignments, contracts, snippets). */
 export async function companyOptions(kinds?: string[]) {
   const db = await getDb();
   const rows = await db

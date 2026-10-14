@@ -7,12 +7,11 @@ import { buttonClass } from "@/components/admin/ui";
 
 /** Lists a missing record can belong to, for the second link. */
 const lists = [
-  { prefix: "/admin/mandate", label: "Zu den Mandaten" },
-  { prefix: "/admin/kandidaten", label: "Zu den Kandidaten" },
-  { prefix: "/admin/firmen", label: "Zu den Firmen" },
+  { prefix: "/admin/auftraege", label: "Zu den Aufträgen" },
+  { prefix: "/admin/vakanzen", label: "Zu den Vakanzen" },
   { prefix: "/admin/vertraege", label: "Zu den Verträgen" },
-  { prefix: "/admin/portal", label: "Zum Kandidatenportal" },
-  { prefix: "/admin/datenschutz", label: "Zum Datenschutz" },
+  { prefix: "/admin/texte", label: "Zu den Textbausteinen" },
+  { prefix: "/admin/firmen", label: "Zu den Firmen" },
   { prefix: "/admin/einstellungen", label: "Zu den Einstellungen" },
 ];
 

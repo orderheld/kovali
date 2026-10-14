@@ -66,8 +66,8 @@ export default async function CompanyPage({ params }: PageProps<"/admin/firmen/[
         }
         actions={
           <>
-            <LinkButton href={`/admin/mandate/neu?firma=${id}`} icon={Briefcase}>
-              Mandat erfassen
+            <LinkButton href={`/admin/vakanzen/neu?firma=${id}`} icon={Briefcase}>
+              Vakanz erfassen
             </LinkButton>
             <LinkButton href={`/admin/vertraege/neu?firma=${id}`} icon={FileSignature}>
               Vertrag erstellen
@@ -168,18 +168,18 @@ export default async function CompanyPage({ params }: PageProps<"/admin/firmen/[
               </ul>
             ) : (
               <EmptyState icon={UserRound} title="Noch keine Kontakte">
-                Ansprechpersonen erscheinen in Mandaten und Verträgen zur Auswahl.
+                Ansprechpersonen erscheinen in Vakanzen, Aufträgen und Verträgen zur Auswahl.
               </EmptyState>
             )}
           </Card>
 
           <Card>
-            <CardHeader title="Mandate" description="Anfragen und Ausschreibungen dieser Firma." />
+            <CardHeader title="Vakanzen" description="Ausschreibungen und Anfragen dieser Firma." />
             {companyMandates.length ? (
               <ul className="divide-y divide-line">
                 {companyMandates.map((m) => (
                   <li key={m.id} className="flex flex-wrap items-center gap-3 px-5 py-3 text-sm">
-                    <Link href={`/admin/mandate/${m.id}`} className="min-w-0 flex-1 font-medium text-ink hover:text-blue hover:underline">
+                    <Link href={`/admin/vakanzen/${m.id}`} className="min-w-0 flex-1 font-medium text-ink hover:text-blue hover:underline">
                       {m.title}
                     </Link>
                     <Mono>{m.reference ?? displayNo.mandate(m.id)}</Mono>
@@ -190,7 +190,7 @@ export default async function CompanyPage({ params }: PageProps<"/admin/firmen/[
               </ul>
             ) : (
               <CardBody>
-                <p className="text-sm text-slate">Noch keine Mandate.</p>
+                <p className="text-sm text-slate">Noch keine Vakanzen.</p>
               </CardBody>
             )}
           </Card>

@@ -2,13 +2,14 @@ import { is } from "drizzle-orm";
 import { getTableConfig, PgTable } from "drizzle-orm/pg-core";
 import { Client } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { migrations } from "@/lib/admin/db/migrations";
+import { migrations, migrationsThrough } from "@/lib/admin/db/migrations";
 import * as schema from "@/lib/admin/db/schema";
 
 /**
  * The Drizzle schema (used by the code) and the SQL migrations (used by the database) are
  * written by hand. This test applies the migrations to an empty database and checks that
- * every table and column of the schema exists there with the same type and nullability.
+ * every table and column of the schema exists there with the same type and nullability. It
+ * also runs older migrations on data written before them. Fictional sample data only.
  */
 
 const url = process.env.TEST_DATABASE_URL;
@@ -28,7 +29,7 @@ describe.skipIf(!url)("database schema", () => {
   });
 
   it("has a migration for every table and column", async () => {
-    expect(tables.length).toBeGreaterThan(15);
+    expect(tables.length).toBeGreaterThanOrEqual(12);
     const { rows } = await client.query<{ table_name: string; column_name: string; data_type: string; udt_name: string; is_nullable: string }>(
       "select table_name, column_name, data_type, udt_name, is_nullable from information_schema.columns where table_schema = 'public'",
     );
@@ -66,44 +67,97 @@ describe.skipIf(!url)("database schema", () => {
     expect(problems).toEqual([]);
   });
 
-  it("enforces consent before a profile is submitted", async () => {
-    await client.query("insert into companies (name, kind) values ('Test AG', 'auftraggeber')");
-    await client.query("insert into candidates (first_name, last_name) values ('Test', 'Person')");
-    await client.query("insert into mandates (title) values ('Business Analyst')");
-    await expect(
-      client.query("insert into submissions (mandate_id, candidate_id, submitted_at) values (1, 1, now())"),
-    ).rejects.toThrow(/submissions_consent_before_submit/);
+  it("removes the candidate module from an empty database and adds the new tables", async () => {
+    const tableNames = async () =>
+      (await client.query<{ table_name: string }>("select table_name from information_schema.tables where table_schema = 'public'")).rows.map((r) => r.table_name);
+    const names = await tableNames();
+    for (const gone of ["candidates", "submissions", "candidate_accounts", "candidate_sessions", "change_requests", "vacancy_shares"]) {
+      expect(names).not.toContain(gone);
+    }
+    expect(names).toEqual(expect.arrayContaining(["assignments", "snippets", "mandates", "contracts", "documents", "activities"]));
+    const { rows } = await client.query<{ table_name: string; column_name: string }>(
+      "select table_name, column_name from information_schema.columns where table_schema = 'public' and column_name in ('candidate_id', 'portal_visibility', 'portal_title', 'portal_rate')",
+    );
+    expect(rows).toEqual([]);
   });
 
-  it("keeps consent, withdrawal and objection columns consistent", async () => {
-    await expect(client.query("insert into submissions (mandate_id, candidate_id, consent_at, consent_method) values (1, 1, now(), 'fax')")).rejects.toThrow(
-      /submissions_consent_method_check/,
+  it("enforces the owner of documents and notes, including assignments", async () => {
+    await client.query("insert into companies (name, kind) values ('Muster Vermittlung AG', 'auftraggeber')");
+    await client.query("insert into mandates (title, company_id) values ('Business Analyst', 1)");
+    await client.query("insert into assignments (title, company_id, mandate_id, rate_amount) values ('Business Analyst', 1, 1, 120)");
+    await client.query("insert into contracts (number, title, assignment_id) values ('V-2026-0001', 'Einzelauftrag', 1)");
+    const doc = (owners: string, values: string) =>
+      client.query(`insert into documents (${owners}, kind, filename, mime_type, size_bytes, sha256, content) values (${values}, 'rapport', 'r.pdf', 'application/pdf', 1, 'x', '\\x00')`);
+    await doc("assignment_id", "1");
+    await doc("contract_id", "1");
+    // No owner, or two owners, is refused.
+    await expect(client.query("insert into documents (kind, filename, mime_type, size_bytes, sha256, content) values ('rapport', 'r.pdf', 'application/pdf', 1, 'x', '\\x00')")).rejects.toThrow(
+      /documents_owner/,
     );
-    // A form of consent without its date says nothing.
-    await expect(client.query("insert into submissions (mandate_id, candidate_id, consent_method) values (1, 1, 'email')")).rejects.toThrow(
-      /submissions_consent_method_needs_consent/,
+    await expect(doc("assignment_id, company_id", "1, 1")).rejects.toThrow(/documents_owner/);
+    await expect(doc("assignment_id", "1").then(() => client.query("update documents set kind = 'dossier' where assignment_id = 1"))).rejects.toThrow(
+      /documents_kind_check/,
     );
-    await expect(client.query("insert into submissions (mandate_id, candidate_id, withdrawal_note) values (1, 1, 'E-Mail')")).rejects.toThrow(
-      /submissions_withdrawal_note_needs_date/,
-    );
-    await expect(client.query("update candidates set objection_note = 'E-Mail' where id = 1")).rejects.toThrow(/candidates_objection_note_needs_date/);
-    // What a consent covers exists only with a consent, and only as one of the two dossiers.
-    await expect(client.query("insert into submissions (mandate_id, candidate_id, consent_at, consent_scope) values (1, 1, now(), 'alles')")).rejects.toThrow(
-      /submissions_consent_scope_check/,
-    );
-    await expect(client.query("insert into submissions (mandate_id, candidate_id, consent_scope) values (1, 1, 'anonym')")).rejects.toThrow(
-      /submissions_consent_scope_needs_consent/,
-    );
-    // A withdrawal after a hand-over keeps the consent it was based on.
+    // A note may belong to several records, but to at least one.
+    await client.query("insert into activities (assignment_id, contract_id, body) values (1, 1, 'Vertrag abgelegt')");
+    await expect(client.query("insert into activities (body) values ('Ohne Bezug')")).rejects.toThrow(/activities_owner/);
+    // New fields of assignments, snippets, vacancies and contracts with their defaults and rules.
+    const a = await client.query("select status, workload, rate_unit, billing, rate_basis, expenses_monthly from assignments where id = 1");
+    expect(a.rows[0]).toEqual({ status: "laufend", workload: 100, rate_unit: "stunde", billing: "rechnung", rate_basis: "brutto", expenses_monthly: "0.00" });
+    await expect(client.query("insert into assignments (title, billing) values ('X', 'bar')")).rejects.toThrow(/assignments_billing_check/);
+    await expect(client.query("insert into assignments (title, start_date, end_date) values ('X', '2026-10-01', '2026-09-30')")).rejects.toThrow(/assignments_period/);
+    await expect(client.query("insert into assignments (title, workload) values ('X', 0)")).rejects.toThrow(/assignments_workload_check/);
+    await client.query("insert into snippets (title, body, company_id, pinned) values ('Kurzprofil', 'Text', 1, true)");
+    await client.query("update mandates set url = 'https://example.ch/job', applied_at = '2026-10-10', application_text = 'Text' where id = 1");
+    const c = await client.query("insert into contracts (number, title, notice_period) values ('V-2026-0002', 'NDA', '1 Monat') returning template");
+    expect(c.rows[0]).toEqual({ template: "sonstiges" });
+    // Deleting the assignment takes its documents and notes along and keeps the contract.
+    await client.query("delete from assignments where id = 1");
+    expect((await client.query("select count(*)::int as n from documents where contract_id is null")).rows[0]).toEqual({ n: 0 });
+    expect((await client.query("select assignment_id from contracts where id = 1")).rows[0]).toEqual({ assignment_id: null });
+  });
+
+  it("keeps stored candidates and their data, and still adds the new tables", async () => {
+    await client.query("drop schema public cascade; create schema public;");
+    for (const m of migrationsThrough("0003_consent_scope_contract_sent")) await client.query(m.sql);
+    await client.query("insert into companies (name, kind) values ('Muster Vermittlung AG', 'auftraggeber')");
+    await client.query("insert into candidates (first_name, last_name) values ('Test', 'Person')");
+    await client.query("insert into mandates (title, company_id, portal_visibility) values ('Business Analyst', 1, 'alle')");
+    await client.query("insert into submissions (mandate_id, candidate_id, consent_at, consent_method) values (1, 1, now(), 'email')");
     await client.query(
-      "insert into companies (name, kind) values ('Muster GmbH', 'subunternehmer'); " +
-        "insert into submissions (mandate_id, candidate_id, consent_at, consent_method, submitted_at, subcontractor_company_id, withdrawn_at, withdrawal_note) " +
-        "values (1, 1, now() - interval '2 days', 'portal', now() - interval '1 day', 2, now(), 'Im Kandidatenportal zurückgezogen')",
+      "insert into documents (candidate_id, kind, filename, mime_type, size_bytes, sha256, content) values (1, 'cv', 'cv.pdf', 'application/pdf', 1, 'x', '\\x00')",
     );
-    // The firm is a snapshot: deleting it later keeps the submission.
-    await client.query("delete from companies where id = 2");
-    const { rows } = await client.query("select consent_method, subcontractor_company_id, withdrawal_note from submissions where mandate_id = 1");
-    expect(rows).toEqual([{ consent_method: "portal", subcontractor_company_id: null, withdrawal_note: "Im Kandidatenportal zurückgezogen" }]);
+    await client.query("insert into login_attempts (scope, ip_hash, success) values ('portal', 'ip-1', false), ('admin', 'ip-2', false)");
+    const last = migrations[migrations.length - 1];
+    expect(last.id).toBe("0004_personal_admin");
+    await client.query(last.sql);
+
+    // The candidate data stays untouched.
+    expect((await client.query("select first_name, last_name from candidates")).rows).toEqual([{ first_name: "Test", last_name: "Person" }]);
+    expect((await client.query("select mandate_id, candidate_id, consent_method from submissions")).rows).toEqual([
+      { mandate_id: "1", candidate_id: "1", consent_method: "email" },
+    ]);
+    expect((await client.query("select candidate_id, filename from documents")).rows).toEqual([{ candidate_id: "1", filename: "cv.pdf" }]);
+    expect((await client.query("select scope from login_attempts order by scope")).rows).toEqual([{ scope: "admin" }, { scope: "portal" }]);
+    // The portal columns of vacancies go in any case; the new fields are there.
+    const cols = await client.query<{ column_name: string }>("select column_name from information_schema.columns where table_schema = 'public' and table_name = 'mandates'");
+    expect(cols.rows.map((r) => r.column_name)).toEqual(expect.arrayContaining(["url", "applied_at", "application_text"]));
+    expect(cols.rows.map((r) => r.column_name)).not.toContain("portal_visibility");
+
+    // New records work next to the old ones.
+    await client.query("insert into assignments (title, company_id) values ('Business Analyst', 1)");
+    await client.query("insert into snippets (title, body) values ('Kurzprofil', 'Text')");
+    await client.query(
+      "insert into documents (assignment_id, kind, filename, mime_type, size_bytes, sha256, content) values (1, 'rapport', 'r.pdf', 'application/pdf', 1, 'x', '\\x00')",
+    );
+    await client.query("insert into activities (assignment_id, body) values (1, 'Auftrag erfasst')");
+    // The owner rule counts candidates too: one owner per document.
+    await expect(
+      client.query(
+        "insert into documents (assignment_id, candidate_id, kind, filename, mime_type, size_bytes, sha256, content) values (1, 1, 'rapport', 'r.pdf', 'application/pdf', 1, 'x', '\\x00')",
+      ),
+    ).rejects.toThrow(/documents_owner/);
+    await expect(client.query("insert into activities (body) values ('Ohne Bezug')")).rejects.toThrow(/activities_owner/);
   });
 
   it("moves consent and withdrawals written as text into the new columns", async () => {

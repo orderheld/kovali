@@ -22,7 +22,6 @@ function deriveKey(label: string): Buffer {
 
 let fileKey: Buffer | null = null;
 let ipKey: Buffer | null = null;
-let loginKey: Buffer | null = null;
 
 function filesKeyV1(): Buffer {
   fileKey ??= deriveKey("kovali-admin/files/v1");
@@ -47,28 +46,10 @@ export function decryptBlob(blob: Buffer): Buffer {
   return Buffer.concat([decipher.update(blob.subarray(1 + IV_BYTES + TAG_BYTES)), decipher.final()]);
 }
 
-/** Encrypts a UTF-8 string (e.g. text extracted from a CV). */
-export function encryptText(text: string): Buffer {
-  return encryptBlob(Buffer.from(text, "utf8"));
-}
-
-export function decryptText(blob: Buffer): string {
-  return decryptBlob(blob).toString("utf8");
-}
-
 /** Pseudonymous, keyed hash of an IP address. Not reversible without ADMIN_SECRET. */
 export function hashIpAddress(ip: string): string {
   ipKey ??= deriveKey("kovali-admin/ip/v1");
   return createHmac("sha256", ipKey).update(ip).digest("base64url").slice(0, 22);
-}
-
-/**
- * Pseudonymous, keyed hash of a login name (e-mail, trimmed and in lower case) for the
- * per-account login throttle. Not reversible without ADMIN_SECRET; the address is never stored.
- */
-export function hashLoginName(name: string): string {
-  loginKey ??= deriveKey("kovali-admin/login-name/v1");
-  return createHmac("sha256", loginKey).update(name.trim().toLowerCase()).digest("base64url").slice(0, 22);
 }
 
 export function sha256(data: Buffer | string): string {

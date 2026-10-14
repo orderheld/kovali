@@ -3,50 +3,51 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState, useTransition } from "react";
+import type { LucideIcon } from "lucide-react";
 import {
   Briefcase,
   Building2,
   Calculator,
   FileSignature,
-  Inbox,
   LayoutDashboard,
   LogOut,
   Menu,
   Plus,
   Search,
   Settings,
-  ShieldCheck,
-  Users,
+  Telescope,
+  TextQuote,
   X,
 } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { cn } from "@/lib/utils";
 
-/** Navigation of the admin area. Counts come from the layout (open items needing attention). */
+/** Navigation of the admin area. Counts come from the layout. */
 
 export interface NavCounts {
-  portal: number;
-  privacy: number;
-  mandates: number;
+  /** Assignments with status "laufend". */
+  assignments: number;
+  /** Vacancies still in progress (openMandateStatuses). */
+  vacancies: number;
 }
 
-const nav = [
+const nav: { href: string; label: string; icon: LucideIcon; exact?: boolean; count?: keyof NavCounts; countLabel?: string }[] = [
   { href: "/admin", label: "Übersicht", icon: LayoutDashboard, exact: true },
-  { href: "/admin/mandate", label: "Mandate & Vakanzen", icon: Briefcase, count: "mandates" as const },
-  { href: "/admin/kandidaten", label: "Kandidaten", icon: Users },
-  { href: "/admin/firmen", label: "Firmen & Kontakte", icon: Building2 },
+  { href: "/admin/auftraege", label: "Aufträge", icon: Briefcase, count: "assignments", countLabel: "laufend" },
+  { href: "/admin/vakanzen", label: "Vakanzen", icon: Telescope, count: "vacancies", countLabel: "offen" },
   { href: "/admin/vertraege", label: "Verträge", icon: FileSignature },
-  { href: "/admin/portal", label: "Kandidatenportal", icon: Inbox, count: "portal" as const, alert: true },
+  { href: "/admin/texte", label: "Textbausteine", icon: TextQuote },
+  { href: "/admin/firmen", label: "Firmen & Kontakte", icon: Building2 },
   { href: "/admin/rechner", label: "Rechner", icon: Calculator },
-  { href: "/admin/datenschutz", label: "Datenschutz", icon: ShieldCheck, count: "privacy" as const, alert: true },
   { href: "/admin/einstellungen", label: "Einstellungen", icon: Settings },
 ];
 
 const quickCreate = [
-  { href: "/admin/mandate/neu", label: "Mandat / Vakanz" },
-  { href: "/admin/kandidaten/neu", label: "Kandidat" },
-  { href: "/admin/firmen/neu", label: "Firma" },
+  { href: "/admin/auftraege/neu", label: "Auftrag" },
+  { href: "/admin/vakanzen/neu", label: "Vakanz" },
   { href: "/admin/vertraege/neu", label: "Vertrag" },
+  { href: "/admin/texte/neu", label: "Textbaustein" },
+  { href: "/admin/firmen/neu", label: "Firma" },
 ];
 
 function isActive(pathname: string, href: string, exact?: boolean) {
@@ -74,14 +75,9 @@ function NavList({ counts, onNavigate }: { counts: NavCounts; onNavigate?: () =>
               <item.icon aria-hidden className={cn("size-4 shrink-0", active ? "text-electric" : "text-sky/60")} />
               <span className="flex-1">{item.label}</span>
               {count > 0 ? (
-                <span
-                  className={cn(
-                    "min-w-5 rounded-full px-1.5 text-center text-xs tabular-nums",
-                    item.alert ? "bg-amber-400 text-navy" : "bg-white/10 text-sky",
-                  )}
-                >
+                <span className="min-w-5 rounded-full bg-white/10 px-1.5 text-center text-xs text-sky tabular-nums">
                   {count}
-                  <span className="sr-only"> offen</span>
+                  <span className="sr-only"> {item.countLabel}</span>
                 </span>
               ) : null}
             </Link>
@@ -102,7 +98,7 @@ function Sidebar({ counts, onNavigate }: { counts: NavCounts; onNavigate?: () =>
       <nav aria-label="Admin-Navigation" className="flex-1 overflow-y-auto">
         <NavList counts={counts} onNavigate={onNavigate} />
       </nav>
-      <p className="mt-4 px-3 text-[0.6875rem] leading-relaxed text-sky/50">Vertrauliche Daten. Zugriffe werden protokolliert.</p>
+      <p className="mt-4 px-3 text-[0.6875rem] leading-relaxed text-sky/50">Nur für dich. Zugriffe werden protokolliert.</p>
     </div>
   );
 }
@@ -118,8 +114,8 @@ function focusMenuItem(menu: HTMLElement | null, index: number) {
 }
 
 /**
- * "Neu" button with the forms to create records. Follows the ARIA menu button pattern (as the
- * dossier menu): arrow keys move between entries, Escape closes and returns focus to the button.
+ * "Neu" button with the forms to create records. Follows the ARIA menu button pattern: arrow
+ * keys move between entries, Escape closes and returns focus to the button.
  */
 function QuickCreate() {
   // Remembers on which page the menu was opened, so it closes by itself after navigating.
@@ -351,7 +347,7 @@ export function AdminShell({
             <label htmlFor="admin-search" className="sr-only">
               Suchen
             </label>
-            {/* Short placeholder on phones, the long one would be cut off («Kandidaten, Mandate, Fir…»). */}
+            {/* Short placeholder on phones, the long one would be cut off («Aufträge, Vakanzen, Fir…»). */}
             <input
               id="admin-search"
               name="q"
@@ -360,7 +356,7 @@ export function AdminShell({
               className="peer h-9 w-full rounded-md border border-line bg-mist/60 pr-3 pl-9 text-sm text-ink placeholder:text-slate/60 focus:border-blue focus:bg-white focus:ring-2 focus:ring-blue/20 focus:outline-none sm:placeholder:text-transparent"
             />
             <span aria-hidden className="pointer-events-none absolute inset-y-0 right-3 left-9 hidden items-center text-sm text-slate/60 sm:peer-placeholder-shown:flex">
-              <span className="truncate">Kandidaten, Mandate, Firmen, Verträge suchen …</span>
+              <span className="truncate">Aufträge, Vakanzen, Firmen, Verträge suchen …</span>
             </span>
           </form>
           <div className="ml-auto flex items-center gap-2">
