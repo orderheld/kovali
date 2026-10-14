@@ -1,14 +1,14 @@
 import Link from "next/link";
-import { AlertTriangle, Building2, FileDown, Send, ShieldAlert, ShieldCheck, Users } from "lucide-react";
+import { AlertTriangle, Building2, FileDown, FileSignature, Send, ShieldAlert, ShieldCheck, Users } from "lucide-react";
 import { ActionButton } from "@/components/admin/form";
 import { Badge, Card, CardHeader, EmptyState, LinkButton, Mono, Notice } from "@/components/admin/ui";
-import { consentState, consentSummary, hasValidConsent, objectionSummary, withdrawalSummary } from "@/lib/admin/consent";
+import { consentCovers, consentScopeText, consentState, consentSummary, hasValidConsent, objectionSummary, withdrawalSummary } from "@/lib/admin/consent";
 import { firmOf, subcontractorCheck, type CandidateConsentBlock, type MandateSubmission } from "@/lib/admin/data/submissions";
 import { displayNo, formatDate, formatDateTime, fullName } from "@/lib/admin/format";
 import { labelOf, profileVariants, submissionStatuses, toneOf } from "@/lib/admin/options";
 import { cn } from "@/lib/utils";
 import { clearConsent, markSubmitted, recordConsent, recordWithdrawal, removeSubmission, setSubmissionStatus, updateSubmissionTerms } from "../actions";
-import { formatRate, marginInfo } from "../rules";
+import { formatRate, marginInfo, type MarginVat } from "../rules";
 import { StatusControl } from "./status-control";
 import { ConsentForm, TermsForm, WithdrawalForm } from "./submission-forms";
 
@@ -27,6 +27,24 @@ function ObjectionNotice({ s }: { s: MandateSubmission }) {
         ihn beim Kandidaten mit Begründung auf.
       </p>
     </Notice>
+  );
+}
+
+/**
+ * Written consent form for this submission: opens the Einwilligung with candidate and mandate
+ * set, so recipient (the mandate's company) and dossier variant are prefilled from it.
+ */
+function ConsentContractLink({ s }: { s: MandateSubmission }) {
+  return (
+    <p className="mt-2 text-xs">
+      <Link
+        href={`/admin/vertraege/neu?vorlage=einwilligung&mandat=${s.mandateId}&kandidat=${s.candidateId}`}
+        className="inline-flex items-center gap-1 font-medium text-blue hover:underline"
+      >
+        <FileSignature aria-hidden className="size-3.5" />
+        Einwilligungsformular zum Unterschreiben erstellen
+      </Link>
+    </p>
   );
 }
 
@@ -56,7 +74,7 @@ function ConsentBlock({
           <details className={cn(detailsClass, "mt-3 text-ink")}>
             <summary className={summaryClass}>Erneute Einwilligung erfassen</summary>
             <div className="p-3">
-              <ConsentForm action={recordConsent.bind(null, s.id)} today={today} submitLabel="Erneute Einwilligung erfassen" />
+              <ConsentForm action={recordConsent.bind(null, s.id)} today={today} defaultScope={s.profileVariant} submitLabel="Erneute Einwilligung erfassen" />
             </div>
           </details>
         </Notice>
@@ -64,6 +82,7 @@ function ConsentBlock({
     );
   }
   if (state === "erteilt") {
+    const scope = consentScopeText(s.consentScope);
     return (
       <div className="space-y-2">
         <ObjectionNotice s={s} />
@@ -71,7 +90,10 @@ function ConsentBlock({
         <div className="flex items-start gap-2 text-sm text-emerald-800">
           <ShieldCheck aria-hidden className="mt-0.5 size-4 shrink-0" />
           <div className="flex min-w-0 flex-wrap items-center gap-x-2">
-            <span>Einwilligung für dieses Mandat am {consentSummary(s)}</span>
+            <span>
+              Einwilligung für dieses Mandat am {consentSummary(s)}
+              {scope ? `, gilt ${scope}` : ""}
+            </span>
             {s.submittedAt ? null : (
               <ActionButton
                 action={clearConsent.bind(null, s.id)}
@@ -84,6 +106,25 @@ function ConsentBlock({
             )}
           </div>
         </div>
+        {consentCovers(s, s.profileVariant) ? null : (
+          <Notice tone="amber" icon={AlertTriangle} title="Einwilligung gilt nur für das anonymisierte Dossier">
+            <p>
+              {s.submittedAt
+                ? `Das Profil wurde mit Namen vorgeschlagen, ${name} hat aber nur der anonymisierten Weitergabe zugestimmt. Hol die Einwilligung mit Namen nach und erfasse sie hier.`
+                : `Das Dossier ist mit Namen gewählt. Frag ${name}, ob du das Profil mit Namen an ${recipient} weitergeben darfst, oder wähle das anonymisierte Dossier. Bis dahin ist das Dossier mit Namen ein Entwurf «Nicht weitergeben».`}
+            </p>
+            <div className="mt-3 rounded-md border border-amber-200 bg-white p-3 text-ink">
+              <ConsentForm
+                action={recordConsent.bind(null, s.id)}
+                today={today}
+                defaultScope="namentlich"
+                fixedScope="namentlich"
+                submitLabel="Einwilligung mit Namen erfassen"
+              />
+            </div>
+            <ConsentContractLink s={s} />
+          </Notice>
+        )}
         <details className={detailsClass}>
           <summary className={summaryClass}>Widerruf oder Widerspruch erfassen</summary>
           <div className="p-3">
@@ -106,8 +147,9 @@ function ConsentBlock({
           </p>
         ) : null}
         <div className="mt-3 rounded-md border border-amber-200 bg-white p-3 text-ink">
-          <ConsentForm action={recordConsent.bind(null, s.id)} today={today} />
+          <ConsentForm action={recordConsent.bind(null, s.id)} today={today} defaultScope={s.profileVariant} />
         </div>
+        <ConsentContractLink s={s} />
         <details className={cn(detailsClass, "mt-2 text-ink")}>
           <summary className={summaryClass}>Widerspruch erfassen (möchte nicht vorgeschlagen werden)</summary>
           <div className="p-3">
@@ -124,22 +166,26 @@ function SubmissionItem({
   mandate,
   block,
   today,
+  vat,
 }: {
   s: MandateSubmission;
   mandate: { id: number; companyId: number | null; companyName: string | null };
   block: CandidateConsentBlock | undefined;
   today: string;
+  vat: MarginVat;
 }) {
   const name = fullName({ firstName: s.candidateFirstName, lastName: s.candidateLastName });
   const firm = subcontractorCheck(firmOf(s));
   const recipient = mandate.companyName ?? "den Auftraggeber";
-  const margin = marginInfo(s.rateSell, s.rateBuy, s.rateUnit);
+  const margin = marginInfo(s.rateSell, s.rateBuy, s.rateUnit, s.rateUnit, vat);
   const dossier = (format: "pdf" | "docx") =>
     `/admin/api/kandidaten/${s.candidateId}/dossier?format=${format}&variante=${s.profileVariant}&mandat=${mandate.id}`;
   const closed = s.status === "absage" || s.status === "zurueckgezogen";
   // After a withdrawal or an objection the hand-over button is not offered at all; the action refuses it as well.
   const blocked = Boolean(s.withdrawnAt || s.objectionAt);
-  const canSubmit = !s.submittedAt && !blocked;
+  // The consent covers only the anonymised dossier (e.g. from the portal) while the named one is chosen.
+  const anonymousOnly = hasValidConsent(s) && s.consentScope !== "namentlich";
+  const canSubmit = !s.submittedAt && !blocked && (!anonymousOnly || s.profileVariant !== "namentlich");
 
   return (
     <li id={`vorschlag-${s.id}`} className={cn("scroll-mt-24 space-y-3 px-5 py-4", closed && "bg-mist/40")}>
@@ -241,6 +287,8 @@ function SubmissionItem({
           <TermsForm
             action={updateSubmissionTerms.bind(null, s.id)}
             variantLocked={Boolean(s.submittedAt)}
+            consentAnonymousOnly={anonymousOnly}
+            vat={vat}
             terms={{ profileVariant: s.profileVariant, rateBuy: s.rateBuy, rateSell: s.rateSell, rateUnit: s.rateUnit, feedback: s.feedback, notes: s.notes }}
           />
         </div>
@@ -289,12 +337,16 @@ export function SubmissionsCard({
   mandate,
   withdrawals,
   today,
+  kovaliVatRegistered,
 }: {
   submissions: MandateSubmission[];
   mandate: { id: number; companyId: number | null; companyName: string | null };
   withdrawals: Map<number, CandidateConsentBlock>;
   today: string;
+  /** KOVALI has a VAT number: the subcontractor's VAT is reclaimable, not a cost. */
+  kovaliVatRegistered: boolean;
 }) {
+  const vat: MarginVat = { kovaliVatRegistered };
   const proposed = submissions.filter((s) => s.submittedAt).length;
   return (
     <Card>
@@ -316,7 +368,7 @@ export function SubmissionsCard({
       {submissions.length ? (
         <ul className="divide-y divide-line">
           {submissions.map((s) => (
-            <SubmissionItem key={s.id} s={s} mandate={mandate} block={withdrawals.get(s.candidateId)} today={today} />
+            <SubmissionItem key={s.id} s={s} mandate={mandate} block={withdrawals.get(s.candidateId)} today={today} vat={vat} />
           ))}
         </ul>
       ) : (

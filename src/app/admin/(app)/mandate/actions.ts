@@ -8,7 +8,7 @@ import { logActivity } from "@/lib/admin/activities";
 import { audit } from "@/lib/admin/audit";
 import { requireAdmin } from "@/lib/admin/auth/session";
 import { companyExists, contactCompanyId, getMandate, matchCandidateRow } from "@/lib/admin/data/mandates";
-import { consentSummary, objectionSummary, withdrawalNoteText } from "@/lib/admin/consent";
+import { consentScopeText, consentSummary, hasValidConsent, objectionSummary, withdrawalNoteText } from "@/lib/admin/consent";
 import {
   firmOf,
   getShareContext,
@@ -236,7 +236,7 @@ async function changeSubmissionStatus(submissionId: number, status: string, { on
       subcontractorCompanyId: firstSubmission && firm.ok ? firm.firm.id : undefined,
       toClient: (submittedStatuses as readonly string[]).includes(next.data),
     });
-    if (!saved) return fail("Die Fachperson hat inzwischen widerrufen oder widersprochen. Bitte lade die Seite neu.");
+    if (!saved) return fail("Die Einwilligung hat sich inzwischen geändert (Widerruf, Widerspruch oder Dossier). Bitte lade die Seite neu.");
   } catch (error) {
     // The consent may have been removed in the meantime; the database rule has the last word.
     if (violates(error, "submissions_consent_before_submit")) return fail(CONSENT_MISSING);
@@ -250,7 +250,7 @@ async function changeSubmissionStatus(submissionId: number, status: string, { on
     firstSubmission
       ? `Profil vorgeschlagen an ${recipient}: ${label}, über ${firm.ok ? firmLabel(firm.firm) : "–"}. ` +
           `Dossier ${labelOf(profileVariants, current.profileVariant).toLowerCase()}, ${formatDateTime(now)}. ` +
-          `Einwilligung ${consentSummary(current)}.`
+          `Einwilligung ${consentSummary(current)}${current.consentScope ? `, gilt ${consentScopeText(current.consentScope)}` : ""}.`
       : `Vorschlag ${label}: ${labelOf(submissionStatuses, current.status)} → ${labelOf(submissionStatuses, next.data)}`,
   );
   await audit("update", {
@@ -289,13 +289,20 @@ export async function recordConsent(submissionId: number, _prev: ActionState, fo
   // A renewed consent must not predate the withdrawal of this submission or the candidate's objection.
   const tooEarly = renewedConsentError(parsed.data.consentDate, current);
   if (tooEarly) return fail("Bitte prüfe die markierten Felder.", { consentDate: tooEarly });
-  const consent = { at, method: parsed.data.consentMethod, note: parsed.data.consentNote };
+  const consent = { at, method: parsed.data.consentMethod, note: parsed.data.consentNote, scope: parsed.data.consentScope };
+  // A named consent on top of a valid anonymous one (e.g. from the portal) widens it.
+  const widened = hasValidConsent(current) && current.consentScope !== "namentlich" && consent.scope === "namentlich";
   const result = await giveSubmissionConsent(sid, consent);
   if (!result) return fail("Diesen Vorschlag gibt es nicht mehr.");
   const owners = [mandateOwner(current.mandateId), candidateOwner(current.candidateId)];
   const summary = consentSummary({ consentAt: at, consentMethod: consent.method, consentNote: consent.note });
-  await logActivity(owners, `${result.withdrawalLifted ? "Erneute Einwilligung" : "Einwilligung"} erfasst: ${submissionLabel(current)}, ${summary}`);
-  await audit("consent", { entity: "submission", entityId: sid, summary: `${submissionSummary(current)}: Einwilligung erfasst (${consent.method})` });
+  const what = result.withdrawalLifted ? "Erneute Einwilligung" : widened ? "Einwilligung mit Namen" : "Einwilligung";
+  await logActivity(owners, `${what} erfasst: ${submissionLabel(current)}, ${summary}, gilt ${consentScopeText(consent.scope)}`);
+  await audit("consent", {
+    entity: "submission",
+    entityId: sid,
+    summary: `${submissionSummary(current)}: Einwilligung erfasst (${consent.method}, ${consent.scope})`,
+  });
   if (result.objectionLifted) {
     // The objection is a fact on the candidate: its end is recorded there as well.
     await logActivity(
@@ -309,7 +316,7 @@ export async function recordConsent(submissionId: number, _prev: ActionState, fo
     });
   }
   refresh();
-  return ok(result.objectionLifted ? "Einwilligung erfasst. Der Widerspruch ist damit aufgehoben." : "Einwilligung erfasst.");
+  return ok(result.objectionLifted ? "Einwilligung erfasst. Der Widerspruch ist damit aufgehoben." : `${what} erfasst.`);
 }
 
 /**
@@ -369,7 +376,10 @@ export async function clearConsent(submissionId: number): Promise<ActionState> {
   if (isWithdrawn(current)) return fail("Ein Widerruf bleibt dokumentiert. Erfasse bei Bedarf eine neue Einwilligung.");
   const db = await getDb();
   try {
-    await db.update(submissions).set({ consentAt: null, consentMethod: null, consentNote: null, updatedAt: new Date() }).where(eq(submissions.id, sid));
+    await db
+      .update(submissions)
+      .set({ consentAt: null, consentMethod: null, consentNote: null, consentScope: null, updatedAt: new Date() })
+      .where(eq(submissions.id, sid));
   } catch (error) {
     if (violates(error, "submissions_consent_before_submit")) return fail(locked);
     throw error;

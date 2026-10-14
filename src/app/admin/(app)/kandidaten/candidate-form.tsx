@@ -125,7 +125,7 @@ export function CandidateForm({
           options={workPermits}
           emptyLabel="–"
           defaultValue={c?.workPermit}
-          hint="Nur im Dossier mit Namen sichtbar."
+          hint="Nur intern, erscheint nicht im Dossier."
         />
       </FormSection>
 

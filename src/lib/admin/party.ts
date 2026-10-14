@@ -38,6 +38,14 @@ export function kovaliParty(): Party {
   };
 }
 
+/**
+ * KOVALI is VAT-registered once it has a VAT number. Until then it cannot reclaim the VAT a
+ * subcontractor charges, so margins count that VAT as cost (payroll.ts b2bMargin).
+ */
+export function kovaliVatRegistered(): boolean {
+  return Boolean(kovaliParty().vatNumber);
+}
+
 /** One line for document headers and party blocks, e.g. "Webnova Solutions F. Demir (KOVALI), Bettlachstrasse 45, 2540 Grenchen". */
 export function partyLine(p: Party = kovaliParty()): string {
   return `${p.name} (${site.brand}), ${p.street}, ${p.postalCode} ${p.city}`;

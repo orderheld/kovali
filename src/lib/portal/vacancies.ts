@@ -5,6 +5,7 @@ import { getDb, type AdminDb } from "@/lib/admin/db/client";
 import { candidates, mandates, submissions, vacancyShares } from "@/lib/admin/db/schema";
 import { formatDateTime } from "@/lib/admin/format";
 import { openMandateStatuses } from "@/lib/admin/options";
+import { defaultSubmissionRates } from "@/lib/admin/rates";
 import { seesAllVacancies } from "./vacancy-rules";
 
 /**
@@ -93,6 +94,21 @@ async function findVisible(db: Db, candidateId: number, mandateId: number) {
   return row ?? null;
 }
 
+/**
+ * Rates of a submission created from the portal, the same as when Ferhat shortlists the
+ * candidate (defaultSubmissionRates): the published portal rate as buying rate. Server-side
+ * only; the selling rate never reaches the candidate.
+ */
+async function startingRates(db: Db, mandateId: number, candidateId: number) {
+  const [mandate] = await db
+    .select({ rateSell: mandates.rateSell, rateUnit: mandates.rateUnit, portalRate: mandates.portalRate, portalRateUnit: mandates.portalRateUnit })
+    .from(mandates)
+    .where(eq(mandates.id, mandateId))
+    .limit(1);
+  const [candidate] = await db.select({ rateAmount: candidates.rateAmount, rateUnit: candidates.rateUnit }).from(candidates).where(eq(candidates.id, candidateId)).limit(1);
+  return mandate && candidate ? defaultSubmissionRates(mandate, candidate) : {};
+}
+
 async function hasObjection(db: Db, candidateId: number): Promise<boolean> {
   const [row] = await db.select({ at: candidates.objectionAt }).from(candidates).where(eq(candidates.id, candidateId)).limit(1);
   return Boolean(row?.at);
@@ -172,8 +188,9 @@ export const PORTAL_WITHDRAWAL_NOTE = "Im Kandidatenportal zurückgezogen";
  * Stores the candidate's answer.
  *
  * "Interessiert" requires the consent checkbox and records it on the submission for exactly
- * this mandate (consent_method "portal"; created as "vorgemerkt" when none exists; an existing
- * valid consent is kept as it was). An earlier withdrawal is lifted only while the profile has
+ * this mandate (consent_method "portal", consent_scope "anonym": the portal promises to ask
+ * again before the name is passed on; created as "vorgemerkt" with the starting rates when none
+ * exists; an existing valid consent is kept as it was, also a named one). An earlier withdrawal is lifted only while the profile has
  * not been sent: for a profile already with the client, Ferhat decides and records a renewed
  * consent himself. An objection recorded by KOVALI blocks the answer altogether.
  *
@@ -202,13 +219,20 @@ export async function answerVacancy(candidateId: number, mandateId: number, answ
     let existing = await current();
 
     const result = { submissionCreated: false, consentRecorded: false, withdrawalLifted: false, withdrawalKept: false, withdrawn: false, alreadySubmitted: Boolean(existing?.submittedAt) };
-    const consent = { consentAt: now, consentMethod: "portal", consentNote: `Im Kandidatenportal bestätigt am ${formatDateTime(now)}` };
+    // The portal promises to ask again before the profile goes out with the name: this consent
+    // covers the anonymised dossier only.
+    const consent = {
+      consentAt: now,
+      consentMethod: "portal",
+      consentNote: `Im Kandidatenportal bestätigt am ${formatDateTime(now)}`,
+      consentScope: "anonym",
+    } as const;
 
     if (interested) {
       if (!existing) {
         const inserted = await tx
           .insert(submissions)
-          .values({ mandateId, candidateId, status: "vorgemerkt", ...consent })
+          .values({ mandateId, candidateId, status: "vorgemerkt", ...consent, ...(await startingRates(tx, mandateId, candidateId)) })
           .onConflictDoNothing()
           .returning({ id: submissions.id });
         result.submissionCreated = inserted.length > 0;
@@ -229,7 +253,7 @@ export async function answerVacancy(candidateId: number, mandateId: number, answ
       result.withdrawn = true;
       await tx
         .update(submissions)
-        .set({ withdrawnAt: now, withdrawalNote: PORTAL_WITHDRAWAL_NOTE, status: statusAfterWithdrawal(existing), updatedAt: now })
+        .set({ withdrawnAt: now, withdrawalNote: PORTAL_WITHDRAWAL_NOTE, consentScope: null, status: statusAfterWithdrawal(existing), updatedAt: now })
         .where(eq(submissions.id, existing.id));
     }
 

@@ -1,3 +1,5 @@
+import { kovaliVatRegistered } from "./party";
+import { VAT_RATE_PERCENT } from "./payroll";
 import { normalizeSkill } from "./skills";
 import { toHourly } from "./rates";
 
@@ -58,7 +60,15 @@ function daysBetween(a: string, b: string): number {
   return Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86_400_000);
 }
 
-export function matchCandidate(c: MatchCandidate, m: MatchMandate, today: string): MatchResult {
+export interface MatchOptions {
+  /**
+   * KOVALI has a VAT number (kovaliVatRegistered()). Without one it cannot reclaim the VAT the
+   * candidate's firm charges, so the margin counts that VAT as cost (as the Rechner does).
+   */
+  kovaliVatRegistered?: boolean;
+}
+
+export function matchCandidate(c: MatchCandidate, m: MatchMandate, today: string, opts: MatchOptions = {}): MatchResult {
   const profile = new Map<string, string>();
   for (const s of [...c.skills, ...c.sapModules]) profile.set(key(s), normalizeSkill(s));
   const cv = new Map<string, string>();
@@ -155,15 +165,20 @@ export function matchCandidate(c: MatchCandidate, m: MatchMandate, today: string
 
   const sell = toHourly(m.rateSell, m.rateUnit);
   const buy = toHourly(c.rateAmount, c.rateUnit);
-  if (sell === null || buy === null) {
+  const vatIsCost = !(opts.kovaliVatRegistered ?? kovaliVatRegistered());
+  // The firm's VAT KOVALI cannot reclaim is part of the cost.
+  const cost = buy === null ? null : vatIsCost ? buy * (1 + VAT_RATE_PERCENT / 100) : buy;
+  if (sell === null || buy === null || cost === null) {
     score += 2.5;
-  } else if (buy < sell) {
-    score += 5;
-    const marginPct = Math.round(((sell - buy) / sell) * 100);
-    reasons.push(`Marge rund ${marginPct} %`);
-    if (marginPct < 10) warnings.push("Marge unter 10 %");
-  } else {
+  } else if (buy >= sell) {
     warnings.push("Satzvorstellung über dem Budget");
+  } else if (cost >= sell) {
+    warnings.push("Keine Marge nach nicht abziehbarer MWST des Subunternehmens");
+  } else {
+    score += 5;
+    const marginPct = Math.round(((sell - cost) / sell) * 100);
+    reasons.push(`Marge rund ${marginPct} %${vatIsCost ? " (inkl. nicht abziehbarer MWST des Subunternehmens)" : ""}`);
+    if (marginPct < 10) warnings.push("Marge unter 10 %");
   }
 
   if (c.status === "nicht_verfuegbar" || c.status === "im_einsatz") warnings.push("Derzeit nicht verfügbar");
@@ -186,9 +201,11 @@ export function rankCandidates<C extends MatchCandidate>(
   candidates: C[],
   mandate: MatchMandate,
   today: string,
+  opts: MatchOptions = {},
 ): { candidate: C; match: MatchResult }[] {
+  const options = { kovaliVatRegistered: opts.kovaliVatRegistered ?? kovaliVatRegistered() };
   return candidates
     .filter((c) => c.status !== "archiviert")
-    .map((candidate) => ({ candidate, match: matchCandidate(candidate, mandate, today) }))
+    .map((candidate) => ({ candidate, match: matchCandidate(candidate, mandate, today, options) }))
     .sort((a, b) => b.match.score - a.match.score || a.candidate.id - b.candidate.id);
 }

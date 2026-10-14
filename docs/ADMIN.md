@@ -29,8 +29,9 @@ Lokal: `.env.local` mit denselben Variablen (eine lokale Postgres-Datenbank gen�
 - Dokumente und extrahierter Lebenslauf-Text sind mit AES-256-GCM verschlüsselt, bevor sie in die Datenbank gehen.
 - Jede Anmeldung, Änderung, jeder Dokumentabruf und Export landet im Audit-Log, ohne Personendaten (nur Nummern wie `K-0042`).
 - Antworten unter `/admin` und `/portal`: `Cache-Control: private, no-store`, `X-Robots-Tag: noindex`.
-- Weitergabe eines Profils an eine Firma nur mit erfasster Einwilligung für genau dieses Mandat (Datenbank-Regel `submissions_consent_before_submit`).
+- Weitergabe eines Profils an eine Firma nur mit erfasster Einwilligung für genau dieses Mandat (Datenbank-Regel `submissions_consent_before_submit`). Das Dossier mit Namen nur, wenn die Einwilligung auch dafür gilt (`submissions.consent_scope`); eine Einwilligung im Kandidatenportal gilt nur für das anonymisierte Dossier. Ein unterschriebenes Einwilligungsformular wird nur übernommen, wenn Empfängerin und Profilvariante zum Vorschlag passen.
 - Einwilligung, Widerruf und Widerspruch stehen in eigenen Spalten: `submissions.consent_method`, `withdrawn_at` und `withdrawal_note` je Mandat, `candidates.objection_at` und `objection_note` für einen Widerspruch gegen jede Weitergabe (sperrt Vormerken, Einwilligung und Vorschlag bei allen Mandaten). Gemeinsame Logik in `src/lib/admin/consent.ts`.
+- Ein einmal versendeter Vertrag (`contracts.sent_at`) kann nicht mehr gelöscht, nur storniert werden; so wird keine Vertragsnummer ein zweites Mal vergeben.
 
 ## Für Entwickler: Aufbau
 

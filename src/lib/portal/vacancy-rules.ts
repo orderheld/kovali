@@ -62,15 +62,12 @@ export function rateExample(rate: number | null | undefined, unit: string | null
   const ex = monthlyExample(rate, u, workload ?? 100);
   if (!ex) return null;
   const days = formatNumber(ex.days, 1);
-  let amount: number;
-  let calc: string;
-  if (u === "tag") {
-    amount = Math.round(rate * ex.days * 100) / 100;
-    calc = `${days} Arbeitstage × ${formatChf(rate)} = ${formatChf(amount)}`;
-  } else {
-    amount = ex.amount;
-    calc = `${days} Arbeitstage × ${formatNumber(HOURS_PER_DAY, 1)} h = ${formatNumber(ex.hours, 1)} h × ${formatChf(ex.hourly)} = ${formatChf(amount)}`;
-  }
+  // The same amount as the admin preview (monthlyExample): rate × days or rate × hours.
+  const amount = ex.amount;
+  const calc =
+    u === "tag"
+      ? `${days} Arbeitstage × ${formatChf(rate)} = ${formatChf(amount)}`
+      : `${days} Arbeitstage × ${formatNumber(HOURS_PER_DAY, 1)} h = ${formatNumber(ex.hours, 1)} h × ${formatChf(ex.hourly)} = ${formatChf(amount)}`;
   return {
     workload: ex.workload,
     days: ex.days,

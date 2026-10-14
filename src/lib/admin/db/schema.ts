@@ -227,6 +227,11 @@ export const submissions = pgTable(
     consentMethod: text("consent_method"),
     /** Free text, e.g. when and how a verbal consent was given. */
     consentNote: text("consent_note"),
+    /**
+     * What the consent covers (profileVariants): "anonym" only the anonymised dossier (always so
+     * for a portal consent), "namentlich" also the dossier with the name. Cleared on withdrawal.
+     */
+    consentScope: text("consent_scope"),
     /** Consent withdrawn (or the candidate declined this mandate): no further hand-over. */
     withdrawnAt: timestamp("withdrawn_at", { withTimezone: true }),
     /** Who, how and why, without sensitive data. */
@@ -268,6 +273,8 @@ export const contracts = pgTable(
     validFrom: date("valid_from", { mode: "string" }),
     validUntil: date("valid_until", { mode: "string" }),
     signedAt: date("signed_at", { mode: "string" }),
+    /** First marked as sent; stays when the contract is reopened, so it can no longer be deleted. */
+    sentAt: timestamp("sent_at", { withTimezone: true }),
     notes: text("notes"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),

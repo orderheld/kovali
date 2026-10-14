@@ -1,12 +1,13 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { logActivity } from "@/lib/admin/activities";
 import { audit } from "@/lib/admin/audit";
 import { requireAdmin } from "@/lib/admin/auth/session";
+import { consentScopeText } from "@/lib/admin/consent";
 import { applySignedConsent } from "@/lib/admin/contracts/consent";
 import { getContract, linkLookup } from "@/lib/admin/contracts/data";
 import { insertContractWithNumber } from "@/lib/admin/contracts/numbering";
@@ -113,6 +114,16 @@ async function checkForm(template: TemplateDefinition, formData: FormData): Prom
     errors.companyId ??= "Die Fachperson ist einer anderen Firma zugeordnet. Bitte deren Firma wählen oder die Zuordnung beim Kandidaten ändern.";
   }
   if (v.mandateId !== null && !mandate) errors.mandateId = "Dieses Mandat gibt es nicht mehr.";
+  // A consent for a mandate names its client as recipient: the profile goes to that company.
+  if (template.id === "einwilligung" && mandate) {
+    if (!mandate.companyId) {
+      errors.mandateId = "Ordne dem Mandat zuerst eine Firma zu: Sie ist die Empfängerin des Profils.";
+    } else if (v.companyId === null) {
+      v.companyId = mandate.companyId;
+    } else if (v.companyId !== mandate.companyId) {
+      errors.companyId = "Die Empfängerin muss die Auftraggeberin des Mandats sein.";
+    }
+  }
   for (const group of template.oneOf) {
     if (group.every((key) => v[fieldOf[key]] === null)) {
       errors[fieldOf[group[0]]] ??= `Bitte ${group.map(label).join(" oder ")} wählen.`;
@@ -191,9 +202,11 @@ export async function markContract(id: number, status: string): Promise<ActionSt
   if (!rule.from.includes(current.status)) return fail("Dieser Statuswechsel ist nicht möglich.");
   if (target === "entwurf" && current.signedAt) return fail("Ein unterzeichneter Vertrag kann nicht wieder Entwurf werden.");
   const db = await getDb();
+  const now = new Date();
   const [row] = await db
     .update(contracts)
-    .set({ status: target, updatedAt: new Date() })
+    // The first dispatch stays on record, also when the contract is reopened as a draft.
+    .set({ status: target, ...(target === "versendet" && !current.sentAt ? { sentAt: now } : {}), updatedAt: now })
     .where(and(eq(contracts.id, contractId), eq(contracts.status, current.status)))
     .returning({ id: contracts.id });
   if (!row) return fail("Der Status wurde inzwischen geändert. Bitte Seite neu laden.");
@@ -235,7 +248,14 @@ export async function signContract(id: number, _prev: ActionState, formData: For
   // A signed consent for a mandate is the consent of the matching submission (if none is recorded yet).
   let note: string | null = null;
   if (template?.id === "einwilligung" && current.candidateId && current.mandateId) {
-    note = await takeOverSignedConsent(db, contractId, { number: current.number, candidateId: current.candidateId, mandateId: current.mandateId, signedOn: date });
+    note = await takeOverSignedConsent(db, contractId, {
+      number: current.number,
+      candidateId: current.candidateId,
+      mandateId: current.mandateId,
+      signedOn: date,
+      companyId: current.companyId,
+      variant: String((current.data as Record<string, unknown>).variant ?? template.defaults.variant),
+    });
   }
   refresh();
   return ok(note ? `Als unterzeichnet erfasst. ${note}` : "Als unterzeichnet erfasst.");
@@ -244,12 +264,14 @@ export async function signContract(id: number, _prev: ActionState, formData: For
 /**
  * Applies a signed consent form to the submission of its mandate and logs what happened. A
  * withdrawal or objection is only lifted by a form signed after it; otherwise it stays and
- * the history says why. Returns a note for Ferhat when the consent was not taken over.
+ * the history says why. A form that does not cover the submission (other recipient, or
+ * anonymised only for a dossier with the name) is not taken over. Returns a note for Ferhat
+ * when the consent was not taken over.
  */
 async function takeOverSignedConsent(
   db: AdminDb,
   contractId: number,
-  contract: { number: string; candidateId: number; mandateId: number; signedOn: string },
+  contract: { number: string; candidateId: number; mandateId: number; signedOn: string; companyId: number | null; variant: string },
 ): Promise<string | null> {
   const outcome = await applySignedConsent(db, contract);
   const owners: OwnerRef[] = [
@@ -263,13 +285,29 @@ async function takeOverSignedConsent(
       outcome.withdrawalLifted ? `Widerruf vom ${formatDate(outcome.withdrawalLifted.at)} aufgehoben` : null,
       outcome.objectionLifted ? `Widerspruch vom ${formatDate(outcome.objectionLifted.at)} aufgehoben` : null,
     ].filter(Boolean);
-    await logActivity(owners, `${source} für den Vorschlag ${displayNo.submission(outcome.submissionId)} übernommen${lifted.length ? `; ${lifted.join(", ")}` : ""}.`);
+    await logActivity(
+      owners,
+      `${source} für den Vorschlag ${displayNo.submission(outcome.submissionId)} übernommen, gilt ${consentScopeText(outcome.scope)}` +
+        `${outcome.widened ? " (ersetzt die Einwilligung nur für das anonymisierte Dossier)" : ""}${lifted.length ? `; ${lifted.join(", ")}` : ""}.`,
+    );
     await audit("consent", {
       entity: "submission",
       entityId: outcome.submissionId,
-      summary: `Einwilligung aus Vertrag ${contract.number}${outcome.withdrawalLifted ? ", Widerruf aufgehoben" : ""}${outcome.objectionLifted ? ", Widerspruch aufgehoben" : ""}`,
+      summary:
+        `Einwilligung aus Vertrag ${contract.number} (${outcome.scope})${outcome.widened ? ", erweitert" : ""}` +
+        `${outcome.withdrawalLifted ? ", Widerruf aufgehoben" : ""}${outcome.objectionLifted ? ", Widerspruch aufgehoben" : ""}`,
     });
     return null;
+  }
+  if (outcome.reason === "scope_mismatch") {
+    const gaps = [
+      outcome.recipient ? "sie nennt nicht die Auftraggeberin des Mandats als Empfängerin" : null,
+      outcome.variant ? "sie gilt nur für das anonymisierte Dossier, der Vorschlag ist mit Namen" : null,
+    ].filter(Boolean);
+    const reason = `Die Einwilligung deckt den Vorschlag ${displayNo.submission(outcome.submissionId)} nicht ab: ${gaps.join("; ")}.`;
+    await logActivity(owners, `${source} nicht übernommen. ${reason} Erfasse eine passende Einwilligung im Mandat, wenn die Fachperson sie gibt.`);
+    await audit("consent", { entity: "submission", entityId: outcome.submissionId, summary: `Einwilligung aus Vertrag ${contract.number} nicht übernommen (scope_mismatch)` });
+    return `${reason} Sie wurde nicht beim Vorschlag übernommen.`;
   }
   if (outcome.reason === "withdrawn_later" || outcome.reason === "objection_later") {
     const blocker = outcome.reason === "withdrawn_later" ? `Der Widerruf vom ${formatDate(outcome.withdrawnAt)}` : `Der Widerspruch vom ${formatDate(outcome.objectionAt)}`;
@@ -341,12 +379,17 @@ export async function deleteContract(id: number): Promise<ActionState> {
   await requireAdmin();
   const contractId = idSchema.parse(id);
   const db = await getDb();
-  // Only drafts: a sent or signed contract stays on record (cancel it instead).
+  // Only drafts that never left KOVALI: a sent or signed contract stays on record with its
+  // number, also when it was reopened as a draft (cancel it instead).
   const [row] = await db
     .delete(contracts)
-    .where(and(eq(contracts.id, contractId), eq(contracts.status, "entwurf")))
+    .where(and(eq(contracts.id, contractId), eq(contracts.status, "entwurf"), isNull(contracts.sentAt)))
     .returning({ number: contracts.number });
-  if (!row) return fail("Nur Entwürfe können gelöscht werden.");
+  if (!row) {
+    const current = await getContract(contractId);
+    if (current?.sentAt) return fail("Ein bereits versendeter Vertrag kann nicht gelöscht werden. Storniere ihn stattdessen.");
+    return fail("Nur Entwürfe können gelöscht werden.");
+  }
   await audit("delete", { entity: "contract", entityId: contractId, summary: `Vertrag ${row.number}` });
   redirect("/admin/vertraege");
 }

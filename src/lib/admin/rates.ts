@@ -30,9 +30,12 @@ export interface MonthlyExample {
   workload: number;
 }
 
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
 /**
- * Example for one month: rate × 8.4 hours × 21 days × workload. Used in the portal so a
- * candidate sees what a rate means per month.
+ * Example for one month at a workload: 21 days × workload, then rate × hours (8.4 per day) for
+ * an hourly rate, rate × days for a daily rate, so every factor of the shown calculation
+ * multiplies out exactly. The one calculation behind the admin preview and the portal.
  */
 export function monthlyExample(amount: number | null | undefined, unit: string | null | undefined, workloadPercent = 100): MonthlyExample | null {
   const hourly = toHourly(amount, unit);
@@ -40,26 +43,22 @@ export function monthlyExample(amount: number | null | undefined, unit: string |
   const workload = Math.min(Math.max(workloadPercent, 10), 100);
   const days = Math.round(WORKDAYS_PER_MONTH * (workload / 100) * 10) / 10;
   const hours = Math.round(days * HOURS_PER_DAY * 10) / 10;
-  return { hourly, daily: hourly * HOURS_PER_DAY, hours, days, amount: Math.round(hourly * hours * 100) / 100, workload };
+  const total = unit === "tag" ? round2(amount! * days) : round2(hourly * hours);
+  return { hourly, daily: hourly * HOURS_PER_DAY, hours, days, amount: total, workload };
 }
 
-export interface Margin {
-  /** Per hour, in CHF. */
-  amount: number;
-  /** Share of the selling rate, 0–100. */
-  percent: number;
-}
-
-/** Margin between selling rate (client pays) and buying rate (subcontractor gets), per hour. */
-export function margin(
-  sell: number | null | undefined,
-  buy: number | null | undefined,
-  sellUnit: string | null | undefined,
-  buyUnit: string | null | undefined = sellUnit,
-): Margin | null {
-  const s = toHourly(sell, sellUnit);
-  const b = toHourly(buy, buyUnit);
-  if (s === null || b === null || s <= 0) return null;
-  const amount = Math.round((s - b) * 100) / 100;
-  return { amount, percent: Math.round(((s - b) / s) * 10000) / 100 };
+/**
+ * Starting rates of a new submission: the mandate's selling rate and, as buying rate, the rate
+ * published to candidates in the portal (what the candidate accepted when answering there) or
+ * else the candidate's own rate, converted to the mandate's unit (hour or day).
+ */
+export function defaultSubmissionRates(
+  mandate: { rateSell: number | null; rateUnit: string | null; portalRate?: number | null; portalRateUnit?: string | null },
+  candidate: { rateAmount: number | null; rateUnit: string | null },
+): { rateSell: number | null; rateBuy: number | null; rateUnit: RateUnit } {
+  const published = mandate.portalRate !== null && mandate.portalRate !== undefined;
+  const [amount, from] = published ? [mandate.portalRate, mandate.portalRateUnit ?? mandate.rateUnit] : [candidate.rateAmount, candidate.rateUnit];
+  const unit: RateUnit = mandate.rateUnit === "tag" || (!mandate.rateUnit && from === "tag") ? "tag" : "stunde";
+  const buy = unit === "tag" ? toDaily(amount, from) : toHourly(amount, from);
+  return { rateSell: mandate.rateSell ?? null, rateBuy: buy === null ? null : round2(buy), rateUnit: unit };
 }

@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { withdrawalNoteText } from "@/lib/admin/consent";
 import { monthlyExample } from "@/lib/admin/rates";
+import { rateExample } from "@/lib/portal/vacancy-rules";
 import {
   confidentialMentions,
   consentTimestamp,
+  CONSENT_ANONYMOUS_ONLY,
   CONSENT_MISSING,
   CONSENT_WITHDRAWN,
   deadlineUrgency,
@@ -12,6 +14,7 @@ import {
   groupCounts,
   groupStatuses,
   isWithdrawn,
+  MARGIN_VAT_NOTE,
   marginInfo,
   monthlyExampleText,
   nextClosedAt,
@@ -160,6 +163,19 @@ describe("submission status changes", () => {
     expect(submissionStatusChange({ consentAt: consent, objectionAt, submittedAt: null }, "absage", now).ok).toBe(true);
   });
 
+  it("hands over the dossier with the name only on a consent that covers the name", () => {
+    const portal = { consentAt: consent, consentScope: "anonym", profileVariant: "namentlich", submittedAt: null };
+    expect(submissionStatusChange(portal, "vorgeschlagen", now)).toEqual({ ok: false, error: CONSENT_ANONYMOUS_ONLY });
+    // A consent recorded before scopes existed covers the anonymised dossier only.
+    expect(submissionStatusChange({ ...portal, consentScope: null }, "vorgeschlagen", now).ok).toBe(false);
+    expect(submissionStatusChange({ ...portal, consentScope: "namentlich" }, "vorgeschlagen", now)).toEqual({ ok: true, submittedAt: now });
+    expect(submissionStatusChange({ ...portal, profileVariant: "anonym" }, "vorgeschlagen", now)).toEqual({ ok: true, submittedAt: now });
+    // Later steps of a hand-over already made are not blocked by it.
+    const first = new Date("2026-10-11T09:00:00Z");
+    expect(submissionStatusChange({ ...portal, submittedAt: first }, "interview", now)).toEqual({ ok: true, submittedAt: first });
+    expect(CONSENT_ANONYMOUS_ONLY).not.toContain("ß");
+  });
+
   it("notes how a withdrawal was communicated", () => {
     expect(withdrawalNoteText("email", "")).toBe("E-Mail");
     expect(withdrawalNoteText("email", null)).toBe("E-Mail");
@@ -207,6 +223,44 @@ describe("rates and margins", () => {
     expect(defaultSubmissionRates({ rateSell: 140, rateUnit: "stunde" }, { rateAmount: 1000, rateUnit: "tag" }).rateBuy).toBe(119.05);
   });
 
+  it("prefers the rate published in the portal as buying rate", () => {
+    const candidate = { rateAmount: 130, rateUnit: "stunde" };
+    expect(defaultSubmissionRates({ rateSell: 150, rateUnit: "stunde", portalRate: 115, portalRateUnit: "stunde" }, candidate)).toEqual({
+      rateSell: 150,
+      rateBuy: 115,
+      rateUnit: "stunde",
+    });
+    expect(defaultSubmissionRates({ rateSell: 1200, rateUnit: "tag", portalRate: 110, portalRateUnit: "stunde" }, candidate)).toEqual({
+      rateSell: 1200,
+      rateBuy: 924,
+      rateUnit: "tag",
+    });
+    // Without its own unit the published rate is in the mandate's unit.
+    expect(defaultSubmissionRates({ rateSell: 1200, rateUnit: "tag", portalRate: 950, portalRateUnit: null }, candidate).rateBuy).toBe(950);
+    // Nothing published: the candidate's own rate.
+    expect(defaultSubmissionRates({ rateSell: 150, rateUnit: "stunde", portalRate: null, portalRateUnit: null }, candidate).rateBuy).toBe(130);
+    expect(defaultSubmissionRates({ rateSell: null, rateUnit: null, portalRate: 900, portalRateUnit: "tag" }, candidate)).toEqual({
+      rateSell: null,
+      rateBuy: 900,
+      rateUnit: "tag",
+    });
+  });
+
+  it("counts the subcontractor's VAT as cost while KOVALI has no VAT number", () => {
+    const unregistered = { kovaliVatRegistered: false };
+    const m = marginInfo(120, 112, "stunde", "stunde", unregistered);
+    // 112 × 1.081 = 121.07: the deal loses money although the net rates leave CHF 8.
+    expect(m).toMatchObject({ amount: -1.07, percent: -0.89, tone: "red", includesVat: true });
+    expect(m?.text).toContain(MARGIN_VAT_NOTE);
+    expect(marginInfo(150, 120, "stunde", "stunde", unregistered)).toMatchObject({ amount: 20.28, percent: 13.52, tone: "green", includesVat: true });
+    // Registered for VAT, or a subcontractor without VAT: the net margin.
+    expect(marginInfo(120, 112, "stunde", "stunde", { kovaliVatRegistered: true })).toMatchObject({ amount: 8, tone: "amber", includesVat: false });
+    expect(marginInfo(120, 112, "stunde", "stunde", { kovaliVatRegistered: false, subcontractorCharges: false })).toMatchObject({ amount: 8, includesVat: false });
+    expect(marginInfo(120, 112, "stunde", "stunde", { kovaliVatRegistered: true })?.text).not.toContain(MARGIN_VAT_NOTE);
+    // Daily selling rate against an hourly buying rate.
+    expect(marginInfo(1260, 120, "tag", "stunde", unregistered)).toMatchObject({ amount: 20.28, includesVat: true });
+  });
+
   it("shows the margin per hour with a warning colour", () => {
     expect(marginInfo(150, 120, "stunde")).toMatchObject({ amount: 30, percent: 20, tone: "green" });
     expect(marginInfo(150, 120, "stunde")?.text).toBe("CHF 30.00 pro Stunde · 20 %");
@@ -235,6 +289,21 @@ describe("rates and margins", () => {
     expect(monthlyExampleText(monthlyExample(100, "stunde", 80)!, "stunde")).toBe(
       "Beispiel 80 %: 16.8 Tage × 8.4 h = 141.1 h × CHF 100.00 = CHF 14’110.00 pro Monat",
     );
+    // A daily rate multiplies by days, so the shown calculation adds up.
+    expect(monthlyExampleText(monthlyExample(1200, "tag", 80)!, "tag")).toBe("Beispiel 80 %: 16.8 Tage × CHF 1’200.00 = CHF 20’160.00 pro Monat");
+  });
+
+  it("shows the same monthly amount as the portal", () => {
+    for (const [rate, unit, workload] of [
+      [1200, "tag", 80],
+      [1000, "tag", 100],
+      [924, "tag", 60],
+      [120, "stunde", 80],
+      [110, "stunde", 100],
+    ] as const) {
+      expect(rateExample(rate, unit, workload)?.amount, `${rate} ${unit} ${workload}`).toBe(monthlyExample(rate, unit, workload)?.amount);
+    }
+    expect(rateExample(1200, "tag", 80)?.amount).toBe(20160);
   });
 
   it("reads amounts as typed in Switzerland", () => {

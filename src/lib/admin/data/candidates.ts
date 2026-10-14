@@ -151,6 +151,7 @@ export async function getSubmissionFor(mandateId: number, candidateId: number) {
       status: submissions.status,
       consentAt: submissions.consentAt,
       withdrawnAt: submissions.withdrawnAt,
+      consentScope: submissions.consentScope,
       profileVariant: submissions.profileVariant,
       rateSell: submissions.rateSell,
       rateUnit: submissions.rateUnit,

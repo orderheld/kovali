@@ -43,7 +43,9 @@ const schema = z.object({
   expenses: f.enum(expenseValues),
   nonSolicitMonths: reqInt(0, 24),
   penaltyAmount: reqAmount(1_000_000),
-  includeHiring: f.checkbox(),
+  // No "includeHiring" any more: a penalty for hiring a presented specialist works as a
+  // placement fee (Arbeitsvermittlung, AVG). Stored contracts may still carry the key; the
+  // schema strips it, so they render without it.
   liabilityCapAmount: f.optAmount(),
   insuranceAmount: f.optAmount(),
   noticeMonths: reqInt(1, 12),
@@ -58,7 +60,6 @@ const defaults = {
   expenses: "ausserhalb",
   nonSolicitMonths: 12,
   penaltyAmount: 20000,
-  includeHiring: true,
   liabilityCapAmount: null,
   insuranceAmount: null,
   noticeMonths: 3,
@@ -108,17 +109,10 @@ export const rahmenvertrag = defineTemplate({
     },
     {
       title: "Abwerbe- und Direktbeauftragungsverbot",
-      description: "Ohne Vermittlungsgebühr: nur eine Konventionalstrafe bei Verletzung.",
-      columns: 3,
+      description: "Keine Direktbeauftragung während der Frist, ohne Vermittlungsgebühr; eine Anstellung der Fachperson ist nicht erfasst.",
       fields: [
         { kind: "int", name: "nonSolicitMonths", label: "Dauer nach Einsatzende", min: 0, max: 24, suffix: "Monate", required: true },
         { kind: "amount", name: "penaltyAmount", label: "Konventionalstrafe (CHF)", required: true },
-        {
-          kind: "checkbox",
-          name: "includeHiring",
-          label: "Auch Anstellung durch die Auftraggeberin erfassen",
-          hint: "Vor dem ersten Einsatz anwaltlich prüfen lassen.",
-        },
       ],
     },
     {
@@ -225,11 +219,9 @@ export const rahmenvertrag = defineTemplate({
 
     c.section("Abwerbe- und Direktbeauftragungsverbot");
     c.clauses(
-      `Die Auftraggeberin verpflichtet sich, Fachpersonen, die KOVALI ihr vorgestellt oder bei ihr eingesetzt hat, sowie deren Gesellschaften während der Dauer des betreffenden Einzelauftrags und während ${countWord(months, "Monat", "Monaten")} nach dessen Beendigung weder direkt noch über Dritte zu beauftragen${bool(d.includeHiring) ? " oder anzustellen" : ""}, ohne dass KOVALI daran beteiligt ist. Kommt kein Einzelauftrag zustande, beginnt die Frist mit der Vorstellung. Als vorgestellt gilt eine Fachperson, deren Profil KOVALI der Auftraggeberin übermittelt hat.`,
+      `Die Auftraggeberin verpflichtet sich, Fachpersonen, die KOVALI ihr vorgestellt oder bei ihr eingesetzt hat, sowie deren Gesellschaften während der Dauer des betreffenden Einzelauftrags und während ${countWord(months, "Monat", "Monaten")} nach dessen Beendigung weder direkt noch über Dritte mit Dienstleistungen zu beauftragen, ohne dass KOVALI daran beteiligt ist. Kommt kein Einzelauftrag zustande, beginnt die Frist mit der Vorstellung. Als vorgestellt gilt eine Fachperson, deren Profil KOVALI der Auftraggeberin übermittelt hat.`,
       "Die Auftraggeberin unterlässt es, Fachpersonen zur Beendigung ihrer Zusammenarbeit mit KOVALI zu veranlassen.",
-      bool(d.includeHiring)
-        ? "Nicht als Verletzung gilt die Anstellung einer Fachperson, die sich ohne Zutun der Auftraggeberin auf eine öffentliche Stellenausschreibung beworben hat."
-        : null,
+      "Eine Anstellung der Fachperson durch die Auftraggeberin oder eine Endkundin fällt nicht unter dieses Verbot.",
       penaltyClause("Verletzt die Auftraggeberin eine Pflicht nach dieser Ziffer", "schuldet sie KOVALI", num(d.penaltyAmount) ?? 20000),
       "Die Konventionalstrafe sichert die Einhaltung dieser Ziffer. Sie ist kein Entgelt für die Vorstellung einer Fachperson oder für deren Wechsel zur Auftraggeberin; ein solches Entgelt ist weder vereinbart noch geschuldet.",
     );

@@ -11,6 +11,7 @@ import { candidateWithdrawals, firmOf, listMandateShares, listMandateSubmissions
 import { parseId } from "@/lib/admin/forms";
 import { displayNo, formatDate, formatDateTime, todayIso } from "@/lib/admin/format";
 import { matchCandidate, rankCandidates } from "@/lib/admin/matching";
+import { kovaliVatRegistered } from "@/lib/admin/party";
 import {
   disciplines,
   labelOf,
@@ -65,6 +66,8 @@ export default async function MandatePage({ params, searchParams }: PageProps<"/
   const highlightId = parseId(param(sp.kandidat));
   const showAll = param(sp.ohneFirma) === "1";
   const today = todayIso();
+  // Without its own VAT number KOVALI cannot reclaim the subcontractor's VAT: margins count it as cost.
+  const vatRegistered = kovaliVatRegistered();
 
   const [pool, submissions, shares, people, highlightRow] = await Promise.all([
     matchPool(),
@@ -76,7 +79,7 @@ export default async function MandatePage({ params, searchParams }: PageProps<"/
 
   // Matching: profiles only go through the candidate's own firm, so by default only those count.
   const hasFirm = new Map(pool.map((c) => [c.id, subcontractorCheck(firmOf(c)).ok]));
-  const rankedAll = rankCandidates(pool, mandate, today);
+  const rankedAll = rankCandidates(pool, mandate, today, { kovaliVatRegistered: vatRegistered });
   const ranked = showAll ? rankedAll : rankedAll.filter((r) => hasFirm.get(r.candidate.id));
   const top = topMatches(ranked, MATCH_LIMIT, highlightId);
   let items: MatchItem[] = top.items;
@@ -84,7 +87,7 @@ export default async function MandatePage({ params, searchParams }: PageProps<"/
     // Not in the filtered ranking (no own firm, or archived): computed separately, shown on top.
     const extra =
       rankedAll.find((r) => r.candidate.id === highlightId) ??
-      (highlightRow ? { candidate: highlightRow, match: matchCandidate(highlightRow, mandate, today) } : null);
+      (highlightRow ? { candidate: highlightRow, match: matchCandidate(highlightRow, mandate, today, { kovaliVatRegistered: vatRegistered }) } : null);
     if (extra) items = [extra, ...items.slice(0, MATCH_LIMIT - 1)];
   }
   const withdrawals = await candidateWithdrawals([...new Set([...items.map((i) => i.candidate.id), ...submissions.map((s) => s.candidateId)])]);
@@ -276,11 +279,12 @@ export default async function MandatePage({ params, searchParams }: PageProps<"/
               mandate={{ id, companyId: mandate.companyId, companyName: mandate.companyName }}
               withdrawals={withdrawals}
               today={today}
+              kovaliVatRegistered={vatRegistered}
             />
           </div>
 
           <div id="portal" className="scroll-mt-20">
-            <PortalCard mandate={mandate} shares={shares} submissions={submissions} choices={choices} />
+            <PortalCard mandate={mandate} shares={shares} submissions={submissions} choices={choices} kovaliVatRegistered={vatRegistered} />
           </div>
         </div>
 

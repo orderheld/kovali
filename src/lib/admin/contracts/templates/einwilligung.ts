@@ -36,7 +36,6 @@ const schema = z.object({
   recipients: f.optText(1000),
   endClient: f.optText(200),
   variant: f.enum(["anonym", "namentlich"] as const),
-  incAvailability: f.checkbox(),
   incCertificates: f.checkbox(),
   retentionMonths: reqInt(1, 36),
   abroadCountries: f.optText(300),
@@ -48,7 +47,6 @@ const defaults = {
   recipients: null,
   endClient: null,
   variant: "anonym",
-  incAvailability: true,
   incCertificates: false,
   retentionMonths: 24,
   abroadCountries: null,
@@ -78,7 +76,7 @@ export const einwilligung = defineTemplate({
   labels: { candidate: "Fachperson", mandate: "Mandat", company: "Empfängerin (Firma)" },
   hints: {
     mandate: "Eine Einwilligung pro Mandat und Empfängerin.",
-    company: "Firma, die das Profil erhält, z. B. der Auftraggeber des Mandats.",
+    company: "Firma, die das Profil erhält. Mit Mandat dessen Auftraggeberin.",
   },
   dates: { validFrom: null, validUntil: null },
   defaults,
@@ -96,7 +94,6 @@ export const einwilligung = defineTemplate({
       title: "Weitergegebene Daten",
       fields: [
         { kind: "select", name: "variant", label: "Profilvariante", options: profileVariants },
-        { kind: "checkbox", name: "incAvailability", label: "Verfügbarkeit und Pensum" },
         { kind: "checkbox", name: "incCertificates", label: "Kopien von Zeugnissen, Diplomen und Zertifikaten" },
       ],
     },
@@ -146,8 +143,12 @@ export const einwilligung = defineTemplate({
       "Kompetenzen",
       "Zertifizierungen",
       "Sprachkenntnisse",
-      ...(bool(d.incAvailability) ? ["Verfügbarkeit und mögliches Pensum"] : []),
+      // The dossier always shows them (dossier.ts), so the consent always names them.
+      "Verfügbarkeit",
+      "mögliches Pensum",
+      "bevorzugter Einsatzort",
     ];
+    const named = d.variant === "namentlich";
     const c = new Clauses();
 
     c.section("Gegenstand");
@@ -167,10 +168,10 @@ export const einwilligung = defineTemplate({
     c.section("Weitergegebene Daten");
     c.clauses(
       `Weitergegeben wird das Profil der betroffenen Person mit Angaben zu ${joinAnd(data)}${bool(d.incCertificates) ? " sowie Kopien von Arbeitszeugnissen, Diplomen und Zertifikaten" : ""}.`,
-      d.variant === "namentlich"
-        ? "Das Profil wird mit Vor- und Nachnamen der betroffenen Person weitergegeben."
-        : "Das Profil wird anonymisiert weitergegeben, ohne Namen und ohne Angaben, die einen direkten Rückschluss auf die betroffene Person erlauben. Den Namen gibt KOVALI erst bekannt, wenn die betroffene Person dem im Einzelfall zustimmt.",
-      "Nicht weitergegeben werden Adresse, E-Mail-Adresse, Telefonnummer und Geburtsdatum; die Kontaktaufnahme erfolgt über KOVALI. Besonders schützenswerte Personendaten, etwa Angaben zur Gesundheit, zur Religion oder zu Strafverfahren, gibt KOVALI nicht weiter und entfernt sie aus den Unterlagen.",
+      named
+        ? "Das Profil wird mit Vor- und Nachnamen und Wohnort der betroffenen Person sowie dem Namen der Firma weitergegeben, über welche sie tätig ist."
+        : "Das Profil wird anonymisiert weitergegeben, ohne Namen, ohne den Namen der Firma, über welche die betroffene Person tätig ist, und ohne Angaben, die einen direkten Rückschluss auf die betroffene Person erlauben. Den Namen gibt KOVALI erst bekannt, wenn die betroffene Person dem im Einzelfall zustimmt.",
+      `Nicht weitergegeben werden ${named ? "Strasse und Hausnummer" : "Adresse"}, E-Mail-Adresse, Telefonnummer, Geburtsdatum, Nationalität und Arbeitsbewilligung; die Kontaktaufnahme erfolgt über KOVALI. Besonders schützenswerte Personendaten, etwa Angaben zur Gesundheit, zur Religion oder zu Strafverfahren, gibt KOVALI nicht weiter und entfernt sie aus den Unterlagen.`,
     );
 
     c.section("Zweck und Verwendung durch die Empfängerinnen");
@@ -184,7 +185,7 @@ export const einwilligung = defineTemplate({
 
     c.section("Aufbewahrung");
     c.clause(
-      `KOVALI bewahrt die für dieses Mandat zusammengestellten Unterlagen bis zum Widerruf dieser Einwilligung auf, längstens aber ${count(months, "Monat", "Monate")} nach ihrer Erteilung. Danach werden sie gelöscht oder anonymisiert. Kommt ein Einsatz zustande, gelten für Vertrags- und Buchhaltungsunterlagen die gesetzlichen Aufbewahrungspflichten.`,
+      `KOVALI bewahrt die für dieses Mandat zusammengestellten Unterlagen bis zum Widerruf dieser Einwilligung auf, längstens aber ${count(months, "Monat", "Monate")} nach ihrer Erteilung. Danach werden sie gelöscht oder anonymisiert. ${electronic ? "Die Bestätigung dieser Einwilligung" : "Das unterzeichnete Formular"} bewahrt KOVALI nur als Nachweis der Einwilligung auf, bis allfällige Ansprüche aus der Weitergabe verjährt sind, längstens 10 Jahre. Kommt ein Einsatz zustande, gelten für die Vertrags- und Buchhaltungsunterlagen dieses Einsatzes die gesetzlichen Aufbewahrungspflichten.`,
     );
 
     c.section("Freiwilligkeit und Widerruf");

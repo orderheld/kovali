@@ -5,6 +5,7 @@ import {
   CONDITIONS_ON_REQUEST,
   DRAFT_NOTICE,
   DRAFT_REASON_OBJECTION,
+  DRAFT_REASON_SCOPE,
   dossierFileName,
   dossierHref,
   dossierPeriod,
@@ -21,7 +22,7 @@ import { renderPdf } from "./render/pdf";
 const TODAY = "2026-10-13";
 
 /** Fictional sample candidate with every personal field filled. */
-const anna: DossierCandidate & { notes: string; rating: number; salaryExpectation: number; rateAmount: number; rateUnit: string } = {
+const anna: DossierCandidate & { nationality: string; workPermit: string; notes: string; rating: number; salaryExpectation: number; rateAmount: number; rateUnit: string } = {
   id: 42,
   firstName: "Anna",
   lastName: "Beispiel",
@@ -31,6 +32,7 @@ const anna: DossierCandidate & { notes: string; rating: number; salaryExpectatio
   street: "Musterweg 12",
   postalCode: "3000",
   city: "Bern",
+  // Stored for KOVALI only: no dossier shows them (the consent does not list them).
   nationality: "Deutschland",
   workPermit: "c",
   headline: "Senior Business Analyst Zahlungsverkehr",
@@ -109,6 +111,10 @@ const forbiddenEverywhere = [
   "Musterweg",
   "1986-04-09",
   "09.04.1986",
+  "Deutschland",
+  "Niederlassung",
+  "Nationalität",
+  "Arbeitsbewilligung",
   // internal fields
   "Vertraulich: will mehr Lohn",
   "145",
@@ -165,8 +171,10 @@ describe("anonymised dossier", () => {
     expect(text).not.toContain("CHF");
   });
 
-  it("ends with the confidentiality footer", () => {
-    expect(doc.footer).toBe(`Vertraulich. Vorgestellt durch KOVALI (${kovaliParty().name}). Weitergabe an Dritte nur mit Zustimmung von KOVALI.`);
+  it("ends with the confidentiality footer that ties onward disclosure to the consent", () => {
+    expect(doc.footer).toBe(`Vertraulich. Vorgestellt durch KOVALI (${kovaliParty().name}). Weitergabe an Dritte nur mit Einwilligung der Fachperson.`);
+    expect(doc.footer).not.toContain("Zustimmung von KOVALI");
+    expect(doc.footer).not.toContain("ß");
   });
 
   it("has no draft notice without a mandate", () => {
@@ -188,19 +196,48 @@ describe("own firm", () => {
   it("leaves the line out without a firm", () => {
     expect(factsOf(buildDossier(anna, { variant: "anonym", today: TODAY }))).not.toHaveProperty("Einsatz über");
   });
+
+  it("removes the own firm and its UID from the free texts when anonymised", () => {
+    const own = { name: "Muster Analytics", legalName: "Muster Analytics GmbH", uid: "CHE-123.456.789" };
+    const withFirm = {
+      ...anna,
+      summary: "Seit 2019 mit der Muster Analytics GmbH (CHE-123.456.789 MWST) selbständig. Muster Analytics’ Kunden: Banken.",
+      experience: [
+        ...anna.experience,
+        { role: "Inhaberin", client: "Muster Analytics GmbH", industry: "Beratung", from: "2019-01", to: "", description: "Aufbau von Muster Analytics, UID 123 456 789.", technologies: [] },
+      ],
+    };
+    const anon = docText(buildDossier(withFirm, { variant: "anonym", company: own, today: TODAY }));
+    expect(anon).not.toContain("Muster Analytics");
+    expect(anon).not.toContain("123.456.789");
+    expect(anon).not.toContain("123 456 789");
+    expect(anon).toContain("Seit 2019 mit der eigene Firma ([entfernt]) selbständig.");
+    expect(anon).toContain("eigene Firma · Beratung");
+    // Unrelated words survive: the education at "Hochschule Muster" is no firm name.
+    expect(anon).toContain("Hochschule Muster");
+    const named = docText(buildDossier(withFirm, { variant: "namentlich", company: own, today: TODAY }));
+    expect(named).toContain("Muster Analytics GmbH (CHE-123.456.789 MWST)");
+  });
+
+  it("finds the firm without a UID and with only its display name", () => {
+    const scrub = makeScrubber(anna, "anonym", { name: "Beispiel Data Solutions AG" });
+    expect(scrub("Projekte der Beispiel Data Solutions AG und von Beispiel Data Solutions")).toBe("Projekte der eigene Firma und von eigene Firma");
+  });
 });
 
 describe("named dossier", () => {
   const doc = buildDossier(anna, { variant: "namentlich", today: TODAY });
   const text = docText(doc);
 
-  it("shows name, city, work permit and nationality", () => {
+  it("shows name and city, but neither work permit nor nationality", () => {
     expect(doc.blocks.find((b) => b.type === "title")).toMatchObject({ text: "Anna Beispiel" });
-    expect(factsOf(doc)).toMatchObject({ Wohnort: "Bern", Arbeitsbewilligung: "Niederlassung C", Nationalität: "Deutschland" });
+    expect(factsOf(doc)).toMatchObject({ Wohnort: "Bern" });
+    expect(Object.keys(factsOf(doc))).not.toContain("Arbeitsbewilligung");
+    expect(Object.keys(factsOf(doc))).not.toContain("Nationalität");
     expect(doc.title).toBe("Kandidatenprofil Anna Beispiel (K-0042)");
   });
 
-  it("never shows e-mail, phone, street, birth date or internal fields", () => {
+  it("never shows e-mail, phone, street, birth date, nationality, work permit or internal fields", () => {
     for (const s of forbiddenEverywhere) expect(text, s).not.toContain(s);
     expect(text).toContain("[entfernt]");
   });
@@ -264,14 +301,30 @@ describe("dossier for a mandate", () => {
     const objecting = buildDossier(anna, {
       variant: "namentlich",
       mandate,
-      submission: { consentAt, rateSell: 135, rateUnit: "stunde" },
+      submission: { consentAt, consentScope: "namentlich", rateSell: 135, rateUnit: "stunde" },
       company: firm,
       objection: true,
       today: TODAY,
     }).blocks[0];
     expect(objecting.type === "box" && inlineText(objecting.text)).toBe("Entwurf: Die Kandidatin/der Kandidat hat jeder Weitergabe widersprochen. Nicht weitergeben.");
-    expect(mandateDraftReasons({ submission: { consentAt, rateSell: null, rateUnit: null }, company: firm })).toEqual([]);
-    expect(mandateDraftReasons({ submission: { consentAt, rateSell: null, rateUnit: null }, company: firm, objection: true })).toEqual([DRAFT_REASON_OBJECTION]);
+    expect(mandateDraftReasons({ variant: "anonym", submission: { consentAt, rateSell: null, rateUnit: null }, company: firm })).toEqual([]);
+    expect(mandateDraftReasons({ variant: "anonym", submission: { consentAt, rateSell: null, rateUnit: null }, company: firm, objection: true })).toEqual([
+      DRAFT_REASON_OBJECTION,
+    ]);
+  });
+
+  it("stays a draft with the name while the consent covers only the anonymised dossier", () => {
+    const consentAt = new Date("2026-10-10T08:00:00Z");
+    const portal = { consentAt, consentScope: "anonym", rateSell: 135, rateUnit: "stunde" };
+    const named = buildDossier(anna, { variant: "namentlich", mandate, submission: portal, company: firm, today: TODAY });
+    const first = named.blocks[0];
+    expect(first.type === "box" && inlineText(first.text)).toBe(`Entwurf: ${DRAFT_REASON_SCOPE} Nicht weitergeben.`);
+    expect(named.reference).toBe("K-0042 · M-0007 · Entwurf");
+    // The anonymised dossier is covered, and so is the named one after a consent with the name.
+    expect(mandateDraftReasons({ variant: "anonym", submission: portal, company: firm })).toEqual([]);
+    expect(mandateDraftReasons({ variant: "namentlich", submission: { ...portal, consentScope: "namentlich" }, company: firm })).toEqual([]);
+    // A legacy consent without scope covers only the anonymised dossier.
+    expect(mandateDraftReasons({ variant: "namentlich", submission: { consentAt, rateSell: null, rateUnit: null }, company: firm })).toEqual([DRAFT_REASON_SCOPE]);
   });
 
   it("keeps conditions on request when the proposal has no selling rate", () => {
@@ -289,6 +342,16 @@ describe("dossier helpers", () => {
     expect(anon("Annahme und Beispielrechnung")).toBe("Annahme und Beispielrechnung");
     const named = makeScrubber(anna, "namentlich");
     expect(named("Anna Beispiel, geboren am 9.4.1986")).toBe("Anna Beispiel, geboren am [entfernt]");
+  });
+
+  it("catches transliterated spellings of the name when anonymised", () => {
+    const jurg = { ...anna, firstName: "Jürg", lastName: "Müller-Schär" };
+    const anon = makeScrubber(jurg, "anonym");
+    expect(anon("Juerg Mueller-Schaer, Jürg Müller-Schär und Jurg Muller-Schar")).toBe("K-0042, K-0042 und K-0042");
+    expect(anon("Mueller-Schaers Team")).toBe("K-0042 Team");
+    const rene = makeScrubber({ ...anna, firstName: "René", lastName: "Strauß" }, "anonym");
+    expect(rene("Rene Strauss und René Strauß")).toBe("K-0042 und K-0042");
+    expect(makeScrubber(jurg, "namentlich")("Juerg Mueller")).toBe("Juerg Mueller");
   });
 
   it("formats workload and availability", () => {
