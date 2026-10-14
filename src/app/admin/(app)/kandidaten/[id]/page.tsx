@@ -447,7 +447,7 @@ export default async function CandidatePage({ params }: PageProps<"/admin/kandid
                   { label: "Einsatzform", value: labelOf(engagements, c.engagement) },
                   { label: "Satzvorstellung", value: formatRate(c.rateAmount, c.rateUnit) ?? "–" },
                   { label: "Lohnvorstellung", value: c.salaryExpectation ? `${formatChf(c.salaryExpectation, { round: true })} pro Jahr` : "–" },
-                  { label: "Arbeitsort", value: labelOf(remoteOptions, c.remote) },
+                  { label: "Arbeitsmodell", value: labelOf(remoteOptions, c.remote) },
                   { label: "Kündigungsfrist", value: c.noticePeriod ?? "–" },
                   { label: "Regionen", value: c.regions ?? "–", wide: true },
                 ]}

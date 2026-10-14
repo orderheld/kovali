@@ -129,9 +129,16 @@ export default async function CandidatesPage({ searchParams }: PageProps<"/admin
             </select>
             <span className="flex w-full items-center gap-2 sm:w-auto">
               <label htmlFor="filter-verfuegbar" className="shrink-0 text-sm text-slate">
-                Verfügbar bis
+                Verfügbar ab spätestens
               </label>
-              <input id="filter-verfuegbar" name="verfuegbar" type="date" defaultValue={filter.availableBy} className={`${filterControl} flex-1 sm:flex-none`} />
+              <input
+                id="filter-verfuegbar"
+                name="verfuegbar"
+                type="date"
+                defaultValue={filter.availableBy}
+                title="Kandidaten, die spätestens an diesem Datum starten können (ohne erfasstes Datum: immer enthalten)"
+                className={`${filterControl} flex-1 sm:flex-none`}
+              />
             </span>
           </SearchBox>
           {filtered ? (

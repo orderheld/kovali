@@ -198,7 +198,7 @@ export function MandateForm({
         <SelectField name="seniority" label="Seniorität" options={seniorities} emptyLabel="–" defaultValue={mandate?.seniority} />
         <TextField name="workload" label="Pensum" inputMode="numeric" suffix="%" defaultValue={mandate?.workload} placeholder="100" />
         <TextField name="location" label="Einsatzort" defaultValue={mandate?.location} placeholder="Zürich, Bern …" />
-        <SelectField name="remote" label="Remote" options={remoteOptions} emptyLabel="–" defaultValue={mandate?.remote} />
+        <SelectField name="remote" label="Arbeitsmodell" options={remoteOptions} emptyLabel="–" defaultValue={mandate?.remote} />
       </FormSection>
 
       <FormSection title="Zeitraum und Konditionen" columns={3}>

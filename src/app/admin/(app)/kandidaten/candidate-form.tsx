@@ -302,7 +302,7 @@ export function CandidateForm({
           defaultValue={c?.salaryExpectation}
           hint="Bei Anstellung, brutto."
         />
-        <SelectField name="remote" label="Arbeitsort" options={remoteOptions} emptyLabel="–" defaultValue={c?.remote} />
+        <SelectField name="remote" label="Arbeitsmodell" options={remoteOptions} emptyLabel="–" defaultValue={c?.remote} />
         <TextField name="regions" label="Regionen" defaultValue={c?.regions} placeholder="Zürich, Bern, Basel" hint="Erscheint im Dossier." className="sm:col-span-1 lg:col-span-2" />
       </FormSection>
 

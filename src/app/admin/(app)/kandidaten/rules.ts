@@ -53,17 +53,8 @@ export function privacyFlag(c: { consentAt: Date | null; retentionUntil: string 
   return null;
 }
 
-/**
- * Whether a firm is a capital company (GmbH or AG, also in French and Italian). A sole
- * proprietorship as subcontractor carries a higher risk of bogus self-employment. Swiss law
- * requires the legal form in the name of a GmbH or AG, so the name is a reliable fallback
- * when the legal form field is empty.
- */
-export function isCapitalCompany(company: { legalForm?: string | null; legalName?: string | null; name?: string | null }): boolean {
-  const pattern = /(?<![\p{L}\p{N}])(gmbh|ag|sa|s[àa]rl|sagl|aktiengesellschaft|gesellschaft mit beschränkter haftung)(?![\p{L}\p{N}])/iu;
-  const source = company.legalForm?.trim() || [company.legalName, company.name].filter(Boolean).join(" ");
-  return pattern.test(source);
-}
+/** GmbH or AG: the same check as the submission rules of the mandate module. */
+export { isCapitalCompany } from "@/lib/admin/legal-form";
 
 /** Age in full years on a given day. */
 export function ageOn(dateOfBirth: string, today: string): number {

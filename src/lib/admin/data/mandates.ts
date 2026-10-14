@@ -13,22 +13,31 @@ export interface MandateFilter {
   priority?: string;
 }
 
-function filterWhere({ q, companyId, priority }: MandateFilter): SQL | undefined {
+/**
+ * Search text condition for mandates. The mandate list and the global search (/admin/suche)
+ * both use it, so "Alle anzeigen" in the search leads to the same hits. The query must
+ * left-join companies on mandates.company_id.
+ */
+export function mandateSearchWhere(q: string | null | undefined): SQL | undefined {
   const pattern = likePattern(q);
+  if (!pattern) return undefined;
   // "M-0007" or "m7" finds the mandate by its display number.
-  const number = q ? /^m-?0*(\d{1,9})$/i.exec(q.trim()) : null;
+  const number = /^m-?0*(\d{1,9})$/i.exec(q?.trim() ?? "");
+  return or(
+    ilike(mandates.title, pattern),
+    ilike(mandates.reference, pattern),
+    ilike(mandates.endClient, pattern),
+    ilike(mandates.description, pattern),
+    ilike(companies.name, pattern),
+    number ? eq(mandates.id, Number(number[1])) : undefined,
+  );
+}
+
+function filterWhere({ q, companyId, priority }: MandateFilter): SQL | undefined {
   return and(
     companyId ? eq(mandates.companyId, companyId) : undefined,
     priority ? eq(mandates.priority, priority) : undefined,
-    pattern
-      ? or(
-          ilike(mandates.title, pattern),
-          ilike(mandates.reference, pattern),
-          ilike(mandates.endClient, pattern),
-          ilike(companies.name, pattern),
-          number ? eq(mandates.id, Number(number[1])) : undefined,
-        )
-      : undefined,
+    mandateSearchWhere(q),
   );
 }
 
@@ -185,6 +194,7 @@ const matchColumns = {
   firmName: companies.name,
   firmKind: companies.kind,
   firmLegalForm: companies.legalForm,
+  firmLegalName: companies.legalName,
 };
 
 export type MatchPoolCandidate = Awaited<ReturnType<typeof matchPool>>[number];
