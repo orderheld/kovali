@@ -261,15 +261,58 @@ export function parseSection<S extends EditableSection>(section: S, raw: unknown
   return { ok: false, message: "Bitte prüfen Sie die markierten Angaben.", errors };
 }
 
-/** The confirmed values of a section, normalised like a payload (raw when old data does not fit the schema). */
+const firmFieldNames = Object.keys(firmSchema.shape).map((key) => `firm.${key}`);
+
+/** Input names of a card's form (firm fields are named firm.name, firm.uid, …). */
+export function cardFieldNames(card: PortalCard): readonly string[] {
+  return card === "firma" ? firmFieldNames : sectionFields[cardSection(card)];
+}
+
+/**
+ * Errors of a card's save, keyed for its form. An error on a field the card does not show
+ * (the firm and the availability card share one request) goes to the form-level error
+ * ("_form") and into the message, so it is never a bare "markierte Angaben" without a mark.
+ */
+export function cardErrors(card: PortalCard, failure: { message: string; errors: Record<string, string> }): { message: string; errors: Record<string, string> } {
+  const shown = new Set(cardFieldNames(card));
+  const errors: Record<string, string> = {};
+  let hidden: string | null = null;
+  for (const [key, message] of Object.entries(failure.errors)) {
+    if (shown.has(key)) errors[key] = message;
+    else hidden ??= key.startsWith("firm.") ? `${cardTitles.firma}: ${message}` : message;
+  }
+  if (hidden === null) return { message: failure.message, errors };
+  errors._form = hidden;
+  return { message: Object.keys(errors).length > 1 ? failure.message : hidden, errors };
+}
+
+/** The linked company as a valid firm, or null when there is none or it is incomplete. */
+export function validFirm(source: FirmSource | null): FirmValues | null {
+  const parsed = source ? firmSchema.safeParse(firmFromSource(source)) : null;
+  return parsed?.success ? parsed.data : null;
+}
+
+/**
+ * The linked company when it does not pass the firm form yet (e.g. created in the admin
+ * without UID or address, or as a sole proprietorship): shown and pre-filled in the firm card
+ * with the request to complete it. Null when there is no company or it is valid.
+ */
+export function firmDraft(candidate: Pick<ProfileSource, "firm">): FirmValues | FirmSource | null {
+  return candidate.firm && !validFirm(candidate.firm) ? firmFromSource(candidate.firm) : null;
+}
+
+/**
+ * The confirmed values of a section, normalised like a payload (raw when old data does not fit
+ * the schema). The firm part holds only a valid firm: an incomplete company record counts as
+ * "no firm yet", so it never blocks saving the availability card that shares the request.
+ */
 export function currentValues<S extends EditableSection>(section: S, candidate: ProfileSource): SectionValues[S] {
   const raw: Record<string, unknown> = Object.fromEntries(sectionFields[section].map((key) => [key, candidate[key]]));
   if (section === "verfuegbarkeit") {
     // The firm is checked on its own, so an incomplete company record does not spoil the
     // normalisation of the availability fields.
-    const firm = firmFromSource(candidate.firm);
     const parsed = sectionSchemas.verfuegbarkeit.safeParse({ ...raw, firm: null });
-    return { ...(parsed.success ? parsed.data : raw), firm } as SectionValues[S];
+    return { ...(parsed.success ? parsed.data : raw), firm: validFirm(candidate.firm) } as SectionValues[S];
   }
   const parsed = sectionSchemas[section].safeParse(raw);
   return (parsed.success ? parsed.data : raw) as SectionValues[S];

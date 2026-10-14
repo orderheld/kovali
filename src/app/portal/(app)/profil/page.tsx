@@ -36,7 +36,7 @@ function ProfileCard({ state }: { state: CardState }) {
           {descriptions[card] ? <p className="mt-0.5 text-sm text-slate">{descriptions[card]}</p> : null}
         </div>
         <LinkButton href={`/portal/profil/${card}`} size="sm" icon={Pencil}>
-          {missingFirm ? "Erfassen" : "Bearbeiten"}
+          {missingFirm ? (state.draft ? "Ergänzen" : "Erfassen") : "Bearbeiten"}
         </LinkButton>
       </div>
       <div className="space-y-4 px-4 py-4 sm:px-5">
@@ -81,7 +81,15 @@ function ProfileCard({ state }: { state: CardState }) {
                 {state.rejected.note ?? "Bitte wenden Sie sich bei Fragen an KOVALI."}
               </Notice>
             ) : null}
-            {missingFirm ? (
+            {missingFirm && state.draft ? (
+              <>
+                <Notice tone="amber" icon={Building2} title="Bitte ergänzen Sie die Angaben Ihrer Firma">
+                  Bevor KOVALI Ihr Profil für eine Vakanz vorschlagen kann, braucht es die vollständigen Angaben Ihrer Firma: GmbH oder AG, UID und Adresse. Bisher
+                  erfasst:
+                </Notice>
+                <CardValuesView card={card} values={state.draft} />
+              </>
+            ) : missingFirm ? (
               <Notice tone="amber" icon={Building2} title="Firma noch nicht erfasst">
                 Bevor KOVALI Ihr Profil für eine Vakanz vorschlagen kann, braucht es Ihre Firma (GmbH oder AG).
               </Notice>

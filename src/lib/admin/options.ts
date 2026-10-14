@@ -245,9 +245,9 @@ export const activityKinds = options([
 
 export const changeSections = options([
   { value: "profil", label: "Profil und Kurzbeschreibung" },
-  { value: "kompetenzen", label: "Kompetenzen" },
+  { value: "kompetenzen", label: "Kompetenzen und Zertifikate" },
   { value: "werdegang", label: "Werdegang und Projekte" },
-  { value: "ausbildung", label: "Ausbildung und Zertifikate" },
+  { value: "ausbildung", label: "Ausbildung" },
   { value: "sprachen", label: "Sprachen" },
   { value: "verfuegbarkeit", label: "Verfügbarkeit und Konditionen" },
   { value: "stammdaten", label: "Stammdaten (Änderungswunsch)" },

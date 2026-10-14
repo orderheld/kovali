@@ -14,8 +14,9 @@ import { candidates, companies } from "@/lib/admin/db/schema";
 import { displayNo, formatDate, todayIso } from "@/lib/admin/format";
 import { f, fail, ok, parseForm, type ActionState } from "@/lib/admin/forms";
 import { candidateStatuses, labelOf } from "@/lib/admin/options";
+import { deleteCandidateRecord } from "@/lib/admin/privacy";
 import { normalizeSkills, skillGroups } from "@/lib/admin/skills";
-import { defaultRetentionUntil } from "./rules";
+import { defaultRetentionUntil, retentionInputError, retentionWithoutConsent } from "./rules";
 import { adoptSkillsSchema, liftObjectionSchema, objectionSchema, parseCandidateForm, type CandidateInput } from "./schema";
 
 const idSchema = z.number().int().positive();
@@ -60,6 +61,8 @@ export async function createCandidate(_prev: ActionState, formData: FormData): P
   if (!parsed.ok) return parsed.state;
   const firmProblem = await ownFirmProblem(parsed.data.companyId);
   if (firmProblem) return fail("Bitte prüfe die markierten Felder.", { companyId: firmProblem });
+  const retentionError = retentionInputError(parsed.data.retentionUntil, null, Boolean(parsed.data.consentAt), todayIso());
+  if (retentionError) return fail("Bitte prüfe die markierten Felder.", { retentionUntil: retentionError });
   const db = await getDb();
   const values = toRow(parsed.data);
   const [row] = await db.insert(candidates).values(values).returning({ id: candidates.id });
@@ -79,12 +82,25 @@ export async function updateCandidate(id: number, _prev: ActionState, formData: 
   if (firmProblem) return fail("Bitte prüfe die markierten Felder.", { companyId: firmProblem });
   const db = await getDb();
   const [existing] = await db
-    .select({ status: candidates.status, consentAt: candidates.consentAt, privacyInfoAt: candidates.privacyInfoAt, companyId: candidates.companyId })
+    .select({
+      status: candidates.status,
+      consentAt: candidates.consentAt,
+      privacyInfoAt: candidates.privacyInfoAt,
+      companyId: candidates.companyId,
+      retentionUntil: candidates.retentionUntil,
+      createdAt: candidates.createdAt,
+    })
     .from(candidates)
     .where(eq(candidates.id, candidateId))
     .limit(1);
   if (!existing) return fail("Diesen Kandidaten gibt es nicht mehr.");
   const values = toRow(parsed.data, existing);
+  // Only a new or changed date is checked: one set through the Datenschutz extension stays.
+  const retentionError = retentionInputError(parsed.data.retentionUntil, existing.retentionUntil, Boolean(values.consentAt), todayIso());
+  if (retentionError) return fail("Bitte prüfe die markierten Felder.", { retentionUntil: retentionError });
+  // Without consent (any more), at most six months from the creation of the profile.
+  const consentRemoved = Boolean(existing.consentAt) && !values.consentAt;
+  if (consentRemoved) values.retentionUntil = retentionWithoutConsent(values.retentionUntil, todayIso(existing.createdAt));
   await db
     .update(candidates)
     .set({ ...values, updatedAt: new Date() })
@@ -102,7 +118,8 @@ export async function updateCandidate(id: number, _prev: ActionState, formData: 
       await logActivity(owner, `Einwilligung zur Speicherung erfasst (${formatDate(values.consentAt)}${values.consentNote ? `, ${values.consentNote}` : ""}).`);
       await audit("consent", { entity: "candidate", entityId: candidateId, summary: `Einwilligung Kandidat ${no} erfasst` });
     } else {
-      await logActivity(owner, `Einwilligung zur Speicherung entfernt${values.consentNote ? ` (${values.consentNote})` : ""}.`);
+      const retention = values.retentionUntil !== existing.retentionUntil ? ` Aufbewahren bis ${formatDate(values.retentionUntil)}.` : "";
+      await logActivity(owner, `Einwilligung zur Speicherung entfernt${values.consentNote ? ` (${values.consentNote})` : ""}.${retention}`);
       await audit("consent", { entity: "candidate", entityId: candidateId, summary: `Einwilligung Kandidat ${no} entfernt` });
     }
   }
@@ -168,11 +185,9 @@ export async function unlinkOwnFirm(id: number): Promise<ActionState> {
 export async function deleteCandidate(id: number): Promise<ActionState> {
   await requireAdmin();
   const candidateId = idSchema.parse(id);
-  const db = await getDb();
   // Documents, notes, proposals, portal shares and the portal account go with it (on delete
-  // cascade); contracts keep their data and lose the link.
-  const [row] = await db.delete(candidates).where(eq(candidates.id, candidateId)).returning({ id: candidates.id });
-  if (!row) return fail("Diesen Kandidaten gibt es nicht mehr.");
+  // cascade); contracts keep their data, lose the link and keep only the number in the title.
+  if (!(await deleteCandidateRecord(candidateId))) return fail("Diesen Kandidaten gibt es nicht mehr.");
   await audit("delete", { entity: "candidate", entityId: candidateId, summary: `Kandidat ${displayNo.candidate(candidateId)} mit allen Dokumenten` });
   redirect("/admin/kandidaten");
 }

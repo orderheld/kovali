@@ -1,7 +1,7 @@
 import "server-only";
 import { and, asc, count, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import { getDb } from "../db/client";
-import { companies, contacts, mandates } from "../db/schema";
+import { candidates, companies, contacts, mandates, submissions } from "../db/schema";
 import { openMandateStatuses } from "../options";
 import { likePattern, outerColumn, PAGE_SIZE } from "./query";
 
@@ -44,6 +44,19 @@ export async function getCompany(id: number) {
   const db = await getDb();
   const [row] = await db.select().from(companies).where(eq(companies.id, id)).limit(1);
   return row ?? null;
+}
+
+/**
+ * What deleting a company detaches (on delete set null): candidates working through it as their
+ * own firm, and submissions whose profile was handed over through it («über Firma»).
+ */
+export async function companyDeleteImpact(id: number) {
+  const db = await getDb();
+  const [[linked], [handedOver]] = await Promise.all([
+    db.select({ n: count() }).from(candidates).where(eq(candidates.companyId, id)),
+    db.select({ n: count() }).from(submissions).where(eq(submissions.subcontractorCompanyId, id)),
+  ]);
+  return { candidates: linked?.n ?? 0, submissions: handedOver?.n ?? 0 };
 }
 
 export async function getContact(companyId: number, contactId: number) {

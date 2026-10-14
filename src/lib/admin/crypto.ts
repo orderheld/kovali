@@ -22,6 +22,7 @@ function deriveKey(label: string): Buffer {
 
 let fileKey: Buffer | null = null;
 let ipKey: Buffer | null = null;
+let loginKey: Buffer | null = null;
 
 function filesKeyV1(): Buffer {
   fileKey ??= deriveKey("kovali-admin/files/v1");
@@ -59,6 +60,15 @@ export function decryptText(blob: Buffer): string {
 export function hashIpAddress(ip: string): string {
   ipKey ??= deriveKey("kovali-admin/ip/v1");
   return createHmac("sha256", ipKey).update(ip).digest("base64url").slice(0, 22);
+}
+
+/**
+ * Pseudonymous, keyed hash of a login name (e-mail, trimmed and in lower case) for the
+ * per-account login throttle. Not reversible without ADMIN_SECRET; the address is never stored.
+ */
+export function hashLoginName(name: string): string {
+  loginKey ??= deriveKey("kovali-admin/login-name/v1");
+  return createHmac("sha256", loginKey).update(name.trim().toLowerCase()).digest("base64url").slice(0, 22);
 }
 
 export function sha256(data: Buffer | string): string {

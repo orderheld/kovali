@@ -1,11 +1,12 @@
 import { connection } from "next/server";
-import { and, count, eq, inArray, isNotNull, isNull, lte } from "drizzle-orm";
+import { and, count, eq, inArray, isNotNull, isNull, lt, not } from "drizzle-orm";
 import { AdminShell, type NavCounts } from "@/components/admin/shell";
 import { requireAdmin } from "@/lib/admin/auth/session";
 import { getDb } from "@/lib/admin/db/client";
 import { candidates, changeRequests, documents, mandates, vacancyShares } from "@/lib/admin/db/schema";
 import { todayIso } from "@/lib/admin/format";
 import { openMandateStatuses } from "@/lib/admin/options";
+import { isAnonymisedSql } from "@/lib/admin/privacy";
 import { logout } from "../actions";
 
 async function navCounts(): Promise<NavCounts> {
@@ -15,7 +16,8 @@ async function navCounts(): Promise<NavCounts> {
     db.select({ n: count() }).from(changeRequests).where(eq(changeRequests.status, "offen")),
     db.select({ n: count() }).from(documents).where(and(eq(documents.uploadedBy, "kandidat"), isNull(documents.confirmedAt))),
     db.select({ n: count() }).from(vacancyShares).where(and(eq(vacancyShares.response, "interessiert"), isNull(vacancyShares.reviewedAt))),
-    db.select({ n: count() }).from(candidates).where(and(isNotNull(candidates.retentionUntil), lte(candidates.retentionUntil, today))),
+    // Same rule as privacyCounts().overdue: overdue from the day after «Aufbewahren bis».
+    db.select({ n: count() }).from(candidates).where(and(isNotNull(candidates.retentionUntil), lt(candidates.retentionUntil, today), not(isAnonymisedSql))),
     db.select({ n: count() }).from(mandates).where(inArray(mandates.status, [...openMandateStatuses])),
   ]);
   return {

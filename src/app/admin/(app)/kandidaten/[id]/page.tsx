@@ -504,10 +504,14 @@ export default async function CandidatePage({ params }: PageProps<"/admin/kandid
             <CardBody className="space-y-4">
               {retention.state === "overdue" ? (
                 <Notice tone="red" icon={ShieldAlert} title="Aufbewahrungsfrist abgelaufen">
-                  {retention.days === 0 ? "Heute erreicht." : `Seit ${formatDate(c.retentionUntil)}.`} Profil löschen oder Einwilligung erneuern und Frist verlängern.
+                  Aufbewahren bis {formatDate(c.retentionUntil)}. Profil löschen oder Einwilligung erneuern und Frist verlängern.
                 </Notice>
               ) : retention.state === "due" ? (
-                <Notice tone="amber" icon={ShieldAlert} title={`Frist endet in ${retention.days === 1 ? "1 Tag" : `${retention.days} Tagen`}`}>
+                <Notice
+                  tone="amber"
+                  icon={ShieldAlert}
+                  title={retention.days === 0 ? "Frist endet heute" : `Frist endet in ${retention.days === 1 ? "1 Tag" : `${retention.days} Tagen`}`}
+                >
                   Einwilligung einholen und Frist verlängern, sonst das Profil löschen.
                 </Notice>
               ) : null}

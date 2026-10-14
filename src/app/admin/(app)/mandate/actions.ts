@@ -476,9 +476,15 @@ export async function shareWithCandidates(mandateId: number, _prev: ActionState,
   const opened = mandate.visibility === "keine" && shared.length > 0;
   if (opened) await db.update(mandates).set({ portalVisibility: "ausgewaehlt", updatedAt: new Date() }).where(eq(mandates.id, mid));
   if (shared.length) {
-    const names = shared.map((p) => `${fullName(p)} (${displayNo.candidate(p.id)})`).join(", ");
-    await logActivity(mandateOwner(mid), `Im Kandidatenportal geteilt mit: ${names}`);
-    for (const p of shared) await logActivity(candidateOwner(p.id), `Vakanz im Kandidatenportal geteilt: «${mandate.title}» (${displayNo.mandate(mid)})`);
+    // One entry per person with both owners: it shows on the mandate and on the candidate and
+    // goes with the candidate when the profile is anonymised or deleted. A mandate-only entry
+    // would keep the names.
+    for (const p of shared) {
+      await logActivity(
+        [mandateOwner(mid), candidateOwner(p.id)],
+        `Vakanz im Kandidatenportal geteilt: «${mandate.title}» (${displayNo.mandate(mid)}) mit ${fullName(p)} (${displayNo.candidate(p.id)})`,
+      );
+    }
     await audit("share", {
       entity: "mandate",
       entityId: mid,

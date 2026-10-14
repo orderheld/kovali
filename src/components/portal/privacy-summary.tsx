@@ -1,9 +1,12 @@
 import { ShieldCheck } from "lucide-react";
 import { legalEntityName, site } from "@/config/site";
+import { RETENTION_MONTHS_WITH_CONSENT, RETENTION_MONTHS_WITHOUT_CONSENT, RETENTION_YEARS_BUSINESS_RECORDS } from "@/lib/admin/privacy";
 
 /**
  * Short privacy notice (Art. 19 DSG) shown when the invitation is accepted and on the account
- * page. The full statement is on /datenschutz.
+ * page. The full statement is on /datenschutz. Retention periods come from the admin privacy
+ * module, so this notice, the record of processing activities and the access report agree.
+ * Rendered by server pages only (the privacy module is server-only).
  */
 export function PrivacySummary({ compact = false }: { compact?: boolean }) {
   const { contact } = site;
@@ -29,11 +32,15 @@ export function PrivacySummary({ compact = false }: { compact?: boolean }) {
     ],
     [
       "Speicherung",
-      "In einer Datenbank in Frankfurt (EU). Dokumente werden verschlüsselt gespeichert, jeder Zugriff wird protokolliert.",
+      "In einer Datenbank in Frankfurt (Deutschland). Dokumente werden verschlüsselt gespeichert, jeder Zugriff wird protokolliert.",
+    ],
+    [
+      "Bekanntgabe ins Ausland",
+      "KOVALI setzt Vercel (Hosting), Neon (Datenbank) und Resend (E-Mail-Versand) ein. Diese US-Unternehmen können Daten auch in den USA bearbeiten; die Bekanntgabe stützt sich auf das Swiss-U.S. Data Privacy Framework oder auf vom EDÖB anerkannte Standardvertragsklauseln.",
     ],
     [
       "Dauer",
-      "Solange Ihr Zugang besteht und eine Zusammenarbeit in Frage kommt. Auf Wunsch löscht KOVALI Ihre Daten jederzeit, soweit keine gesetzliche Aufbewahrungspflicht besteht (zum Beispiel für Verträge und Buchhaltung).",
+      `Ohne Einwilligung in den Talent-Pool höchstens ${RETENTION_MONTHS_WITHOUT_CONSENT} Monate, mit Einwilligung bis ${RETENTION_MONTHS_WITH_CONSENT} Monate (verlängerbar nur mit erneuter Einwilligung). Danach werden Ihre Daten und Ihr Zugang gelöscht oder anonymisiert. Verträge und Buchhaltung: ${RETENTION_YEARS_BUSINESS_RECORDS} Jahre. Auf Wunsch löscht KOVALI Ihre Daten jederzeit früher, soweit keine gesetzliche Aufbewahrungspflicht besteht.`,
     ],
     ["Ihre Rechte", "Auskunft, Berichtigung, Löschung und Herausgabe Ihrer Daten. Eine Beschwerde beim EDÖB ist möglich."],
   ];

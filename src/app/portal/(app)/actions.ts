@@ -18,7 +18,7 @@ import { changePassword } from "@/lib/portal/accounts";
 import { saveSectionRequest, saveStammdatenRequest, sectionState, withdrawCard, withdrawRequest } from "@/lib/portal/change-requests";
 import { candidateDocumentKinds, deleteOwnUpload, hasConfirmedFirm } from "@/lib/portal/data";
 import { PASSWORD_MAX, passwordPairSchema } from "@/lib/portal/password";
-import { cardSection, cardTitles, mergeCard, parseSection, portalCards } from "@/lib/portal/profile";
+import { cardErrors, cardSection, cardTitles, mergeCard, parseSection, portalCards } from "@/lib/portal/profile";
 import { destroyCandidateSession, endAccountSessions, requireCandidate, type CandidateSession } from "@/lib/portal/session";
 import { answerVacancy } from "@/lib/portal/vacancies";
 
@@ -120,7 +120,10 @@ export async function saveCard(card: string, _prev: ActionState, formData: FormD
   const input = c === "firma" ? firmInput(raw) : raw;
   const base = (state.pending ?? state.current) as Record<string, unknown>;
   const parsed = parseSection(section, mergeCard(c, base, input));
-  if (!parsed.ok) return fail(parsed.message, parsed.errors);
+  if (!parsed.ok) {
+    const shown = cardErrors(c, parsed);
+    return fail(shown.message, shown.errors);
+  }
 
   const result = await saveSectionRequest(session.candidateId, section, parsed.data, message.data);
   if (result.status === "unchanged") {

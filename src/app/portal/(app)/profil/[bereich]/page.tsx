@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Clock, ShieldAlert } from "lucide-react";
+import { Building2, Clock, ShieldAlert } from "lucide-react";
 import { Notice } from "@/components/admin/ui";
 import { SENSITIVE_DATA_HINT } from "@/components/portal/constants";
 import { CardForm } from "@/components/portal/profile-forms";
@@ -38,8 +38,11 @@ export default async function EditCardPage({ params }: PageProps<"/portal/profil
   if (!isPortalCard(bereich)) notFound();
   const state = await sectionState(session.candidateId, cardSection(bereich));
   if (!state) notFound();
-  const values = cardValues(bereich, (state.pending ?? state.current) as Record<string, unknown>);
   const pending = state.openId !== null && state.pending !== null;
+  const shown = cardValues(bereich, (state.pending ?? state.current) as Record<string, unknown>);
+  // An incomplete company record is pre-filled, so the person only adds what is missing.
+  const incomplete = bereich === "firma" && !shown.firm && state.firmDraft !== null;
+  const values = incomplete ? { firm: state.firmDraft } : shown;
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -48,6 +51,10 @@ export default async function EditCardPage({ params }: PageProps<"/portal/profil
         {pending ? (
           <Notice tone="amber" icon={Clock}>
             Sie bearbeiten Ihre noch nicht bestätigte Änderung. Beim Senden ersetzt sie den bisherigen Vorschlag.
+          </Notice>
+        ) : incomplete ? (
+          <Notice tone="amber" icon={Building2} title="Bitte ergänzen Sie die Angaben Ihrer Firma">
+            KOVALI hat Ihre Firma bereits erfasst, es fehlen aber Angaben. Bitte prüfen und ergänzen Sie Rechtsform (GmbH oder AG), UID und Adresse.
           </Notice>
         ) : null}
         {bereich !== "firma" && bereich !== "sprachen" ? (

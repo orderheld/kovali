@@ -291,6 +291,86 @@ describe.skipIf(!url)("candidate portal (database)", () => {
     expect((await sql("select 1 from companies"))).toHaveLength(1);
   });
 
+  it("never overwrites another firm's record when a firm is confirmed", async () => {
+    const { parseSection } = await import("./profile");
+    type CompanyRow = { name: string; uid: string | null; city: string | null; kind: string };
+    const company = async (id: number) => (await sql<CompanyRow>("select name, uid, city, kind from companies where id = $1", [id]))[0];
+    const companyOf = async (candidateId: number) => Number((await sql<{ company_id: string }>("select company_id from candidates where id = $1", [candidateId]))[0].company_id);
+    const propose = async (candidateId: number, firm: Record<string, string>) => {
+      const base = (await m.cr.sectionState(candidateId, "verfuegbarkeit"))!.current;
+      const parsed = parseSection("verfuegbarkeit", { ...base, firm });
+      if (!parsed.ok) throw new Error(JSON.stringify(parsed.errors));
+      const saved = await m.cr.saveSectionRequest(candidateId, "verfuegbarkeit", parsed.data, null);
+      if (saved.status !== "saved") throw new Error("not saved");
+      return saved.id;
+    };
+    const annaFirm = await companyOf(ids.anna);
+    const before = await company(annaFirm);
+    expect(before).toMatchObject({ name: "Beispiel Consulting GmbH", uid: "CHE-123.456.789", city: "Grenchen" });
+
+    // Beat proposes a firm with the (public) UID of Anna's firm: linked only, Anna's record stays.
+    const other = { name: "Fremde Consulting GmbH", legalForm: "GmbH", uid: "CHE-123.456.789", street: "Andere Strasse 9", postalCode: "4000", city: "Basel", country: "" };
+    const beatRequest = await propose(ids.beat, other);
+    const review = (await m.admin.openChangeReviews()).find((r) => r.id === beatRequest);
+    expect(review?.firmPlan).toEqual({ action: "link", target: { id: annaFirm, name: "Beispiel Consulting GmbH" }, others: 1, previous: null });
+    expect(await m.cr.confirmRequest(beatRequest)).toMatchObject({ ok: true, firm: { companyId: annaFirm, created: false, reused: true, others: 1 } });
+    expect(await company(annaFirm)).toEqual(before);
+    expect(await companyOf(ids.beat)).toBe(annaFirm);
+
+    // Anna corrects the address of her firm, which is now shared with Beat: not applied in place.
+    const moved = await propose(ids.anna, { ...other, name: "Beispiel Consulting GmbH", city: "Olten" });
+    expect((await m.cr.confirmRequest(moved)).ok).toBe(true);
+    expect(await company(annaFirm)).toEqual(before);
+
+    // Anna proposes a different firm (another UID): the old record stays, a new one is created and linked.
+    const newFirm = { name: "Neue Beispiel GmbH", legalForm: "GmbH", uid: "CHE-987.654.321", street: "Neuweg 2", postalCode: "4500", city: "Solothurn", country: "" };
+    const changed = await propose(ids.anna, newFirm);
+    expect((await m.admin.openChangeReviews()).find((r) => r.id === changed)?.firmPlan).toEqual({
+      action: "create",
+      target: null,
+      others: 0,
+      previous: { id: annaFirm, name: "Beispiel Consulting GmbH" },
+    });
+    const created = await m.cr.confirmRequest(changed);
+    expect(created).toMatchObject({ ok: true, firm: { created: true, reused: false, name: "Neue Beispiel GmbH" } });
+    expect(await company(annaFirm)).toEqual(before);
+    const annaNow = await companyOf(ids.anna);
+    expect(annaNow).not.toBe(annaFirm);
+    expect(await company(annaNow)).toEqual({ name: "Neue Beispiel GmbH", uid: "CHE-987.654.321", city: "Solothurn", kind: "subunternehmer" });
+    expect(await companyOf(ids.beat)).toBe(annaFirm);
+
+    // A candidate wrongly linked to a client: the client's record is never touched.
+    const [client] = await sql<{ id: string }>("insert into companies (name, kind) values ('Kundin AG', 'auftraggeber') returning id");
+    await sql("update candidates set company_id = $1 where id = $2", [client.id, ids.carla]);
+    const carla = await propose(ids.carla, { ...newFirm, name: "Carla Test GmbH", uid: "CHE-555.444.333" });
+    expect(await m.cr.confirmRequest(carla)).toMatchObject({ ok: true, firm: { created: true } });
+    expect(await company(Number(client.id))).toEqual({ name: "Kundin AG", uid: null, city: null, kind: "auftraggeber" });
+    expect(await companyOf(ids.carla)).not.toBe(Number(client.id));
+  });
+
+  it("lets the availability card save when the linked firm is incomplete", async () => {
+    const [firm] = await sql<{ id: string }>("insert into companies (name, kind, legal_form) values ('Unvollständig Einzelfirma', 'subunternehmer', 'Einzelfirma') returning id");
+    const [person] = await sql<{ id: string }>("insert into candidates (first_name, last_name, status, company_id, workload_min) values ('Dora', 'Beispiel', 'aktiv', $1, 60) returning id", [firm.id]);
+    const id = Number(person.id);
+    const { mergeCard, parseSection } = await import("./profile");
+    const state = await m.cr.sectionState(id, "verfuegbarkeit");
+    expect(state?.current.firm).toBeNull();
+    expect(state?.firmDraft).toMatchObject({ name: "Unvollständig Einzelfirma", legalForm: "Einzelfirma" });
+    const parsed = parseSection("verfuegbarkeit", mergeCard("verfuegbarkeit", state!.current as Record<string, unknown>, { availableFrom: "2026-12-01", workloadMin: "60" }));
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.data.firm).toBeNull();
+    const saved = await m.cr.saveSectionRequest(id, "verfuegbarkeit", parsed.data, null);
+    expect(saved.status).toBe("saved");
+    const cards = await m.cr.profileCards(id);
+    expect(cards?.cards.firma.draft).toMatchObject({ firm: { name: "Unvollständig Einzelfirma" } });
+    expect(cards?.cards.verfuegbarkeit.pending).toMatchObject({ availableFrom: "2026-12-01" });
+    // Confirming the availability leaves the company alone.
+    if (saved.status !== "saved") return;
+    expect(await m.cr.confirmRequest(saved.id)).toMatchObject({ ok: true, firm: undefined });
+    expect((await sql<{ name: string }>("select name from companies where id = $1", [firm.id]))[0].name).toBe("Unvollständig Einzelfirma");
+  });
+
   it("shows the rejection note on the card", async () => {
     const saved = await m.cr.saveSectionRequest(ids.beat, "ausbildung", { education: [{ title: "Dr. Unbekannt", institution: "", year: "" }] }, null);
     if (saved.status !== "saved") throw new Error("not saved");

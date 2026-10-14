@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   applyValues,
+  cardErrors,
   cardSection,
   cardValues,
   currentValues,
   diffSection,
+  firmDraft,
   firmFromSource,
   mergeCard,
   normalizeMonth,
@@ -97,6 +99,32 @@ describe("change request payloads", () => {
       expect(bad.errors["firm.uid"]).toMatch(/CHE-123/);
     }
     expect(firmFromSource({ name: "X AG", legalForm: "Aktiengesellschaft", uid: "CHE-111.222.333", street: "A 1", postalCode: "3000", city: "Bern", country: "Schweiz" })).toMatchObject({ legalForm: "AG" });
+  });
+
+  it("treats an incomplete company record as no firm yet, but keeps it for display", () => {
+    const incomplete = { ...source, firm: { name: "Muster Beratung", legalForm: "Einzelunternehmen", uid: null, street: null, postalCode: "3000", city: "Bern", country: "Schweiz" } };
+    const current = currentValues("verfuegbarkeit", incomplete);
+    expect(current.firm).toBeNull();
+    expect(firmDraft(incomplete)).toMatchObject({ name: "Muster Beratung", legalForm: "Einzelunternehmen" });
+    // The availability card merges onto a valid base and saves.
+    const merged = mergeCard("verfuegbarkeit", current as Record<string, unknown>, { ...cardValues("verfuegbarkeit", current as Record<string, unknown>), workloadMin: "60" });
+    expect(parseSection("verfuegbarkeit", merged).ok).toBe(true);
+    const complete = { name: "Muster Beratung GmbH", legalForm: "GmbH", uid: "CHE-123.456.789", street: "Weg 1", postalCode: "3000", city: "Bern", country: "Schweiz" };
+    expect(currentValues("verfuegbarkeit", { ...source, firm: complete }).firm).toEqual(complete);
+    expect(firmDraft({ firm: complete })).toBeNull();
+    expect(firmDraft({ firm: null })).toBeNull();
+  });
+
+  it("never reports an error on a field the card does not show as a bare message", () => {
+    const failure = { message: "Bitte prüfen Sie die markierten Angaben.", errors: { "firm.uid": "Bitte die UID im Format CHE-123.456.789 angeben." } };
+    expect(cardErrors("verfuegbarkeit", failure)).toEqual({
+      message: "Meine Firma: Bitte die UID im Format CHE-123.456.789 angeben.",
+      errors: { _form: "Meine Firma: Bitte die UID im Format CHE-123.456.789 angeben." },
+    });
+    expect(cardErrors("firma", failure)).toEqual(failure);
+    const mixed = cardErrors("verfuegbarkeit", { ...failure, errors: { ...failure.errors, workloadMax: "Das maximale Pensum ist kleiner als das minimale." } });
+    expect(mixed.message).toBe(failure.message);
+    expect(mixed.errors).toEqual({ workloadMax: "Das maximale Pensum ist kleiner als das minimale.", _form: "Meine Firma: Bitte die UID im Format CHE-123.456.789 angeben." });
   });
 
   it("recognises a proposal equal to the confirmed values", () => {

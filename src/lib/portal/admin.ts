@@ -2,8 +2,8 @@ import "server-only";
 import { and, asc, count, desc, eq, gt, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import { getDb } from "@/lib/admin/db/client";
 import { candidateAccounts, candidateSessions, candidates, changeRequests, documents, mandates, submissions, vacancyShares } from "@/lib/admin/db/schema";
-import { loadProfileSource } from "./change-requests";
-import { currentValues, diffSection, isEditableSection, parseSection, type DiffItem, type ProfileSource } from "./profile";
+import { loadProfileSource, planFirm, type FirmPlan } from "./change-requests";
+import { currentValues, diffSection, firmDraft, isEditableSection, parseSection, type DiffItem, type ProfileSource, type SectionValues } from "./profile";
 import { SESSION_IDLE_MS } from "./session";
 
 /**
@@ -35,6 +35,8 @@ export type ChangeReview = {
   /** Set when the stored payload no longer passes validation. */
   invalid: string | null;
   firmProposed: boolean;
+  /** What confirming does with the companies table, when a firm is proposed. */
+  firmPlan: FirmPlan | null;
   master: { email: string | null; phone: string | null; address: string } | null;
 };
 
@@ -69,7 +71,8 @@ export async function openChangeReviews(): Promise<ChangeReview[]> {
     sources.set(id, await loadProfileSource(db, id));
   }
 
-  return rows.map((r) => {
+  const reviews: ChangeReview[] = [];
+  for (const r of rows) {
     const base = {
       id: r.id,
       candidateId: r.candidateId,
@@ -80,24 +83,33 @@ export async function openChangeReviews(): Promise<ChangeReview[]> {
       updatedAt: r.updatedAt,
     };
     if (!isEditableSection(r.section)) {
-      return {
+      reviews.push({
         ...base,
         diff: null,
         invalid: null,
         firmProposed: false,
+        firmPlan: null,
         master: { email: r.email, phone: r.phone, address: [r.street, [r.postalCode, r.city].filter(Boolean).join(" ")].filter(Boolean).join(", ") },
-      };
+      });
+      continue;
     }
     const source = sources.get(r.candidateId);
     const parsed = parseSection(r.section, r.payload);
     if (!source || !parsed.ok) {
-      return { ...base, diff: [], invalid: parsed.ok ? "Kandidat nicht gefunden." : (Object.values(parsed.errors)[0] ?? "Ungültige Angaben."), firmProposed: false, master: null };
+      const invalid = parsed.ok ? "Kandidat nicht gefunden." : (Object.values(parsed.errors)[0] ?? "Ungültige Angaben.");
+      reviews.push({ ...base, diff: [], invalid, firmProposed: false, firmPlan: null, master: null });
+      continue;
     }
     const current = currentValues(r.section, source);
-    const diff = diffSection(r.section, current, parsed.data);
+    const proposedFirm = r.section === "verfuegbarkeit" ? (parsed.data as SectionValues["verfuegbarkeit"]).firm : null;
+    // An incomplete company record counts as "no firm yet"; the diff still shows what it holds.
+    const before = proposedFirm && !(current as SectionValues["verfuegbarkeit"]).firm ? { ...current, firm: firmDraft(source) } : current;
+    const diff = diffSection(r.section, before as typeof current, parsed.data);
     const firmProposed = r.section === "verfuegbarkeit" && diff.some((d) => d.type === "field" && ["Firma", "Rechtsform", "UID", "Adresse der Firma"].includes(d.label));
-    return { ...base, diff, invalid: null, firmProposed, master: null };
-  });
+    const firmPlan = firmProposed && proposedFirm ? await planFirm(db, r.candidateId, proposedFirm.uid) : null;
+    reviews.push({ ...base, diff, invalid: null, firmProposed, firmPlan, master: null });
+  }
+  return reviews;
 }
 
 /** Unconfirmed uploads from the portal, oldest first. */
