@@ -552,6 +552,39 @@ alter table login_attempts
 create index login_attempts_kind_at_idx on login_attempts (scope, kind, at);
 `,
   },
+  {
+    // Copies of the website's contact requests (src/lib/contact/store.ts, which runs these
+    // migrations before its first query). The table used to come from a SQL file run by hand;
+    // "if not exists" keeps a database where that already happened.
+    id: "0006_contact_requests",
+    sql: /* sql */ `
+create table if not exists contact_requests (
+  id                  bigint generated always as identity primary key,
+  reference           text        not null unique,
+  created_at          timestamptz not null default now(),
+  name                text        not null,
+  company             text,
+  email               text        not null,
+  phone               text,
+  request_type        text        not null,
+  service             text,
+  project_description text        not null,
+  desired_start       text,
+  work_mode           text,
+  location            text,
+  message             text,
+  consent_at          timestamptz not null,
+  -- Salted SHA-256 of the sender's IP address, only used for rate limiting.
+  ip_hash             text        not null,
+  -- 'sent' or 'failed': delivery stays traceable even if one of the two steps fails.
+  email_status        text        not null check (email_status in ('sent', 'failed')),
+  email_id            text,
+  email_error         text
+);
+create index if not exists contact_requests_ip_hash_created_at_idx on contact_requests (ip_hash, created_at);
+create index if not exists contact_requests_created_at_idx on contact_requests (created_at);
+`,
+  },
 ];
 
 /** The migrations up to and including `id`, in order (for tests of a database at that state). */

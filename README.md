@@ -52,7 +52,6 @@ src/
   content/                Alle Texte: Leistungen, Branchen, Unternehmen, Insights
   lib/                    SEO und strukturierte Daten, Kontaktformular, Hilfsfunktionen
 brand/                    Logo-Generator und alle drei Logo-Richtungen als SVG
-db/schema.sql             Tabelle für die optionale Speicherung in Neon
 docs/                     Go-live-Anleitung, Redaktionsplan
 ```
 

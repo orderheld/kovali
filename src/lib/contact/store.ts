@@ -1,12 +1,18 @@
 import "server-only";
 import { neon } from "@neondatabase/serverless";
+import { getDb } from "@/lib/admin/db/client";
 import { serverEnv } from "@/lib/env";
 import type { EmailResult } from "./email";
 import type { ContactInput } from "./schema";
 
-/** Optional storage in Neon Postgres. All functions are no-ops without DATABASE_URL. */
-function db() {
-  return serverEnv.databaseUrl ? neon(serverEnv.databaseUrl) : null;
+/**
+ * Optional storage in Neon Postgres. All functions are no-ops without DATABASE_URL. The table
+ * comes from the admin migrations (0006_contact_requests), which run once per server instance.
+ */
+async function db() {
+  if (!serverEnv.databaseUrl) return null;
+  await getDb();
+  return neon(serverEnv.databaseUrl);
 }
 
 /**
@@ -19,7 +25,7 @@ export function isStorageConfigured(): boolean {
 
 /** Requests from this IP hash in the last hour, across all server instances. */
 export async function recentRequestCount(ipHash: string): Promise<number> {
-  const sql = db();
+  const sql = await db();
   if (!sql) return 0;
   const rows = await sql`
     select count(*)::int as count from contact_requests
@@ -33,7 +39,7 @@ export async function storeContactRequest(
   ipHash: string,
   email: EmailResult,
 ): Promise<void> {
-  const sql = db();
+  const sql = await db();
   if (!sql) return;
   await sql`
     insert into contact_requests (
@@ -51,7 +57,7 @@ export async function storeContactRequest(
 
 /** Deletes stored requests older than the retention period. Returns the number of rows removed. */
 export async function deleteExpiredRequests(days: number): Promise<number> {
-  const sql = db();
+  const sql = await db();
   if (!sql) return 0;
   const rows = await sql`
     delete from contact_requests

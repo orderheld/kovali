@@ -96,7 +96,7 @@ export const contactSchema = contactFormSchema.transform((input) => {
 export type ContactInput = z.output<typeof contactSchema>;
 
 /**
- * contact_requests (db/schema.sql, read by store.ts) has a single `service` column and no
+ * contact_requests (migration 0006_contact_requests, read by store.ts) has a single `service` column and no
  * columns for duration, workload and requirements. The stored copy puts them at the top of
  * `message`, so a request kept while the e-mail failed is still complete. The e-mail lists
  * every field on its own.
