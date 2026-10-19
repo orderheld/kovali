@@ -81,6 +81,21 @@ describe.skipIf(!url)("database schema", () => {
     expect(rows).toEqual([]);
   });
 
+  it("creates the contact form's table, also where it was already created by hand", async () => {
+    const sql = migrations.find((m) => m.id === "0006_contact_requests")!.sql;
+    await client.query(sql);
+    const { rows } = await client.query<{ column_name: string }>(
+      "select column_name from information_schema.columns where table_schema = 'public' and table_name = 'contact_requests'",
+    );
+    // Every column store.ts writes, plus id and created_at.
+    expect(rows.map((r) => r.column_name).sort()).toEqual(
+      [
+        "id", "reference", "created_at", "name", "company", "email", "phone", "request_type", "service", "project_description",
+        "desired_start", "work_mode", "location", "message", "consent_at", "ip_hash", "email_status", "email_id", "email_error",
+      ].sort(),
+    );
+  });
+
   it("enforces the owner of documents and notes, including assignments", async () => {
     await client.query("insert into companies (name, kind) values ('Muster Vermittlung AG', 'auftraggeber')");
     await client.query("insert into mandates (title, company_id) values ('Business Analyst', 1)");

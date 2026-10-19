@@ -106,11 +106,10 @@ Das Formular sendet jede Anfrage über [Resend](https://resend.com) an `info@kov
 
 1. Auf [neon.tech](https://neon.tech) ein Projekt anlegen, Region **AWS Europe Central 1 (Frankfurt)**.
    Alternativ in Vercel über *Storage → Neon* (Marketplace), dann wird `DATABASE_URL` automatisch gesetzt.
-2. Im SQL Editor von Neon den Inhalt von `db/schema.sql` ausführen.
-3. Den Connection String (Pooled) als `DATABASE_URL` in Vercel (Production) eintragen.
-4. `CRON_SECRET` setzen. Der tägliche Cron-Job (`vercel.json`, 03:00 UTC) löscht Anfragen, die älter als `CONTACT_RETENTION_DAYS` sind. Das entspricht der Angabe in der Datenschutzerklärung (zwölf Monate).
+2. Den Connection String (Pooled) als `DATABASE_URL` in Vercel (Production) eintragen.
+3. `CRON_SECRET` setzen. Der tägliche Cron-Job (`vercel.json`, 03:00 UTC) löscht Anfragen, die älter als `CONTACT_RETENTION_DAYS` sind. Das entspricht der Angabe in der Datenschutzerklärung (zwölf Monate).
    Gespeichert wird erst, wenn `DATABASE_URL`, `CRON_SECRET` und `CONTACT_IP_SALT` gesetzt sind. So gelten die Löschfrist und die nicht umkehrbare IP-Kennung aus der Datenschutzerklärung.
-5. Neu deployen und eine Testanfrage senden. In Neon prüfen: `select reference, created_at, email_status from contact_requests order by created_at desc;`
+4. Neu deployen und eine Testanfrage senden. Die Tabelle `contact_requests` legt die Website dabei selbst an. In Neon prüfen: `select reference, created_at, email_status from contact_requests order by created_at desc;`
 
 ## 6. Google Search Console
 
