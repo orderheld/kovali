@@ -29,7 +29,14 @@ export type ContactValues = Partial<Record<ContactTextField, string>> & { servic
 export type ContactState =
   | { status: "idle" }
   | { status: "invalid"; errors: Partial<Record<ContactErrorField, string>>; values: ContactValues }
-  | { status: "error"; message: string; reference?: string; values: ContactValues }
+  | {
+      status: "error";
+      message: string;
+      reference?: string;
+      values: ContactValues;
+      /** The spam token was missing, invalid or expired: the form fetches a new one. */
+      newToken?: true;
+    }
   | { status: "success"; reference: string };
 
 export const initialContactState: ContactState = { status: "idle" };

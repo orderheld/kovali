@@ -17,6 +17,11 @@ export const serverEnv = {
   /** Secret salt for hashing IP addresses (rate limiting). */
   ipSalt: process.env.CONTACT_IP_SALT,
   /**
+   * Optional key for the contact form's spam token (form-token.ts). Without it the token is
+   * signed with a key derived from CONTACT_IP_SALT or RESEND_API_KEY.
+   */
+  formSecret: process.env.CONTACT_FORM_SECRET,
+  /**
    * Log instead of sending (local tests, preview deployments). Previews without Resend run in
    * this test mode automatically, so the forms can be tried before e-mail delivery is set up.
    * Never on the production deployment: a CONTACT_DRY_RUN=true copied to Production would drop

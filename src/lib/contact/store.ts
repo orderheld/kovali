@@ -33,6 +33,16 @@ export async function recentRequestCount(ipHash: string): Promise<number> {
   return (rows[0]?.count as number | undefined) ?? 0;
 }
 
+/** Stored requests from all senders in the last hour, for the overall limit (rate-limit.ts). */
+export async function recentTotalCount(): Promise<number> {
+  const sql = await db();
+  if (!sql) return 0;
+  const rows = await sql`
+    select count(*)::int as count from contact_requests
+    where created_at > now() - interval '1 hour'`;
+  return (rows[0]?.count as number | undefined) ?? 0;
+}
+
 export async function storeContactRequest(
   input: ContactInput,
   reference: string,
