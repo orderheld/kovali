@@ -78,16 +78,19 @@ docs/                     Go-live-Anleitung, Redaktionsplan
 
 Ablauf in `src/app/(site)/kontakt/actions.ts`:
 
-1. Honeypot und Mindest-Ausfüllzeit gegen Bots
+1. Spamschutz ohne Captcha und ohne Cookies: verstecktes Feld (Honeypot) und ein signiertes Formular-Token (`src/lib/contact/form-token.ts`). Das Formular holt das Token beim ersten Klick oder Tastendruck (`requestFormToken`); der Server misst damit die Ausfüllzeit selbst (mindestens 3 Sekunden, höchstens 24 Stunden). Ohne gültiges Token wird nichts gesendet; dieselbe Anfrage zweimal gesendet ergibt keine zweite E-Mail.
 2. Validierung aller Felder auf dem Server (Zod, `src/lib/contact/schema.ts`) und des optionalen Anforderungsprofils (PDF oder Word bis 4 MB, geprüft am Dateiinhalt, `src/lib/uploads.ts`)
-3. Rate Limit pro Absender (gesalzener IP-Hash, im Speicher und optional in Neon)
-4. Referenznummer erzeugen, E-Mail über Resend senden (Reply-To an die Absenderin oder den Absender)
-5. Optional in Neon speichern, mit Versandstatus `sent` oder `failed` (nur die Textfelder; ein hochgeladenes Anforderungsprofil geht nur als E-Mail-Anhang mit). Die Tabelle hat eine Spalte `service`: die gewählte Leistung, `mehrere` oder `offen`. Laufzeit, Pensum, Voraussetzungen und bei mehreren Leistungen deren Liste stehen am Anfang von `message`.
-6. Erfolgs- oder Fehlermeldung mit Referenz; bei Fehlern mit Hinweis auf `info@kovali.ch`
+3. Inhaltsprüfung (`src/lib/contact/spam.ts`): viele Links, Link-Markup, kyrillische oder asiatische Schrift, typische Werbe- und SEO-Texte. Trifft sie zu, wird nichts gesendet und die Person gebeten, direkt an `info@kovali.ch` zu schreiben. So geht auch bei einem Fehlalarm keine Anfrage verloren.
+4. Rate Limit pro Absender (gesalzener IP-Hash, im Speicher und optional in Neon) und für eine Welle von vielen Adressen (höchstens 15 verschiedene Absender pro Stunde je Server-Instanz, 20 in Neon; gezählt werden nur zugestellte Anfragen)
+5. Referenznummer erzeugen, E-Mail über Resend senden (Reply-To an die Absenderin oder den Absender)
+6. Optional in Neon speichern, mit Versandstatus `sent` oder `failed` (nur die Textfelder; ein hochgeladenes Anforderungsprofil geht nur als E-Mail-Anhang mit). Die Tabelle hat eine Spalte `service`: die gewählte Leistung, `mehrere` oder `offen`. Laufzeit, Pensum, Voraussetzungen und bei mehreren Leistungen deren Liste stehen am Anfang von `message`.
+7. Erfolgs- oder Fehlermeldung mit Referenz; bei Fehlern mit Hinweis auf `info@kovali.ch`
 
 Das Formular richtet sich an Unternehmen: Pflicht sind Art der Anfrage, Beschreibung, Unternehmen, Name, E-Mail und die Einwilligung. Freiwillig sind Leistungen (Mehrfachauswahl), Beginn, Laufzeit, Pensum, Arbeitsmodell, Einsatzort, Voraussetzungen, Telefon, Nachricht und das Anforderungsprofil.
 
-API-Schlüssel werden nur auf dem Server gelesen (`src/lib/env.ts`, `server-only`). Das Formular funktioniert auch ohne JavaScript.
+API-Schlüssel werden nur auf dem Server gelesen (`src/lib/env.ts`, `server-only`). Das Formular braucht JavaScript für das Spamschutz-Token; ohne JavaScript zeigt es einen Hinweis auf `info@kovali.ch`.
+
+Abgewiesene Anfragen stehen im Vercel-Log als `contact.spam` mit dem Grund (`honeypot`, `token_missing`, `token_invalid`, `token_expired`, `token_too_fast`, `content` mit den Signalen), ohne Inhalt der Anfrage.
 Ohne Resend-Variablen zeigt die Produktion statt des Formulars die E-Mail-Adresse. Preview-Deployments ohne Resend laufen automatisch im Testmodus (`CONTACT_DRY_RUN`): Das Formular ist sichtbar, prüft alles und versendet nichts.
 Vorauswahl per Link: `/kontakt?leistung=business-analysis` oder `/kontakt?anfrage=contracting`.
 

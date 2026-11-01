@@ -28,6 +28,7 @@ import {
   workModes,
 } from "@/lib/contact/options";
 import {
+  MIN_FILL_MS,
   initialContactState,
   type ContactErrorField,
   type ContactState,
@@ -35,7 +36,7 @@ import {
   type ContactValues,
 } from "@/lib/contact/state";
 import { cn } from "@/lib/utils";
-import { submitContact } from "./actions";
+import { requestFormToken, submitContact } from "./actions";
 
 export interface ContactDefaults {
   requestType?: string;
@@ -91,6 +92,45 @@ async function submitSafely(prev: ContactState, data: FormData): Promise<Contact
   }
 }
 
+/** A spam token on its way, with the time it arrived (performance.now()). */
+type TokenRequest = { promise: Promise<string | undefined>; receivedAt: number };
+type TokenRef = React.RefObject<TokenRequest | null>;
+
+/**
+ * The spam token (lib/contact/form-token.ts), requested once at the first click or key press in
+ * the form. The server measures the fill time from it. A failed request is tried again at the
+ * next interaction; sending without a token gets an error with the e-mail address.
+ */
+function ensureToken(token: TokenRef): TokenRequest {
+  if (!token.current) {
+    const request: TokenRequest = { promise: Promise.resolve(undefined), receivedAt: 0 };
+    request.promise = requestFormToken().then(
+      (value) => {
+        request.receivedAt = performance.now();
+        return value;
+      },
+      () => {
+        // Only forget this request; a newer one may already be on its way.
+        if (token.current === request) token.current = null;
+        return undefined;
+      },
+    );
+    token.current = request;
+  }
+  return token.current;
+}
+
+/**
+ * Waits until the server accepts the token: it counts the fill time from when it issued the
+ * token, so a token fetched only at "senden" or after an error needs a short pause.
+ */
+async function readyToken(request: TokenRequest): Promise<string | undefined> {
+  const value = await request.promise;
+  const wait = request.receivedAt + MIN_FILL_MS + 250 - performance.now();
+  if (value && wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
+  return value;
+}
+
 /** Quick check in the browser, so an unsuitable file fails before it is uploaded. */
 function attachmentProblem(file: File | undefined): string | undefined {
   if (!file) return undefined;
@@ -116,15 +156,21 @@ export function ContactForm({
   const [sentState, send, pending] = useActionState(submitSafely, initialContactState);
   const state = sentState === initialContactState ? postedState : sentState;
   const [fileError, setFileError] = useState<string>();
-  const mountedAt = useRef(0);
+  // Between the click on "senden" and the request, while the spam token is still on its way.
+  const [preparing, setPreparing] = useState(false);
+  const token: TokenRef = useRef(null);
   const summaryRef = useRef<HTMLDivElement>(null);
   const successRef = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
-    // Only the first time: when the visitor comes back to the page, for example from the privacy
-    // policy, the form keeps its values and the effect runs again, but the fill time goes on.
-    if (mountedAt.current === 0) mountedAt.current = performance.now();
-  }, []);
+    // The server refused the token (missing, invalid or expired): fetch a new one right away,
+    // so the next attempt goes through. Before the focus below, whose onFocus would otherwise
+    // keep the refused token.
+    if (state.status === "error" && state.newToken) {
+      token.current = null;
+      ensureToken(token);
+    }
+  }, [state]);
 
   useEffect(() => {
     if (state.status === "invalid" || state.status === "error") summaryRef.current?.focus();
@@ -150,9 +196,14 @@ export function ContactForm({
     .map((field): [string, string, string] => [field, FIELD_LABELS[field], errors[field] as string]);
   const v = (field: ContactTextField, fallback = "") => values[field] ?? fallback;
 
+  function startToken() {
+    ensureToken(token);
+  }
+
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     // Dispatch manually so the browser keeps all entered values and the chosen file.
     event.preventDefault();
+    if (preparing || pending) return;
     const data = new FormData(event.currentTarget);
     const file = data.get("attachment");
     const problem = attachmentProblem(file instanceof File && file.size > 0 ? file : undefined);
@@ -161,13 +212,24 @@ export function ContactForm({
       document.getElementById("attachment")?.focus();
       return;
     }
-    // Fill time on the visitor's own clock, so a wrong system time cannot block the request.
-    if (mountedAt.current > 0) data.set("elapsedMs", String(Math.round(performance.now() - mountedAt.current)));
-    startTransition(() => send(data));
+    setPreparing(true);
+    void readyToken(ensureToken(token)).then((value) => {
+      if (value) data.set("formToken", value);
+      setPreparing(false);
+      startTransition(() => send(data));
+    });
   }
 
   return (
-    <form action={formAction} onSubmit={handleSubmit} noValidate className="space-y-10" aria-describedby="form-hint">
+    <form
+      action={formAction}
+      onSubmit={handleSubmit}
+      onFocus={startToken}
+      onPointerDown={startToken}
+      noValidate
+      className="space-y-10"
+      aria-describedby="form-hint"
+    >
       <div className="space-y-4">
         {testMode ? <TestModeNotice /> : null}
         {errorEntries.length > 0 ? <ErrorSummary ref={summaryRef} errors={errorEntries} /> : null}
@@ -178,6 +240,15 @@ export function ContactForm({
           Pflichtfelder sind mit <span aria-hidden className="text-blue">*</span>
           <span className="sr-only">Stern</span> markiert. Alles Weitere ist freiwillig.
         </p>
+        <noscript>
+          <p className="text-sm text-slate">
+            Das Formular braucht JavaScript. Ohne JavaScript erreichen Sie uns per E-Mail an{" "}
+            <a href={`mailto:${fallbackEmail}`} className="text-blue underline underline-offset-[3px]">
+              {fallbackEmail}
+            </a>
+            .
+          </p>
+        </noscript>
       </div>
 
       <FormStep number={1} title="Worum geht es?">
@@ -303,7 +374,7 @@ export function ContactForm({
           defaultChecked={v("consent") === "on"}
           error={errors.consent}
         />
-        <SubmitRow pending={pending} label="Anfrage senden" pendingLabel="Anfrage wird gesendet" />
+        <SubmitRow pending={pending || preparing} label="Anfrage senden" pendingLabel="Anfrage wird gesendet" />
       </div>
     </form>
   );

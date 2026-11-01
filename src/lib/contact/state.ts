@@ -1,5 +1,11 @@
 /** Form state shared by the Server Action and the client form (no runtime dependencies). */
 
+/**
+ * Minimum time between issuing the spam token (lib/contact/form-token.ts) and sending. People
+ * need longer; the form also waits for it itself, so a quick click never fails.
+ */
+export const MIN_FILL_MS = 3000;
+
 export type ContactField =
   | "name"
   | "company"
@@ -29,7 +35,14 @@ export type ContactValues = Partial<Record<ContactTextField, string>> & { servic
 export type ContactState =
   | { status: "idle" }
   | { status: "invalid"; errors: Partial<Record<ContactErrorField, string>>; values: ContactValues }
-  | { status: "error"; message: string; reference?: string; values: ContactValues }
+  | {
+      status: "error";
+      message: string;
+      reference?: string;
+      values: ContactValues;
+      /** The spam token was missing, invalid or expired: the form fetches a new one. */
+      newToken?: true;
+    }
   | { status: "success"; reference: string };
 
 export const initialContactState: ContactState = { status: "idle" };

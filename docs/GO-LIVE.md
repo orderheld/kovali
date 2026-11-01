@@ -98,7 +98,7 @@ Das Formular sendet jede Anfrage über [Resend](https://resend.com) an `info@kov
 
 **Fehlersuche:** Im Vercel-Log (*Logs*) nach `contact.received` suchen. Das Feld `emailError` enthält die Meldung von Resend. Meldet Resend, die Domain sei nicht verifiziert, zuerst die Nameserver prüfen: `dig kovali.ch NS` muss `ns1.cyon.ch` und `ns2.cyon.ch` zeigen, und `dig resend._domainkey.kovali.ch TXT` muss den DKIM-Schlüssel liefern.
 
-**Schutz vor Missbrauch:** verstecktes Honeypot-Feld, Mindestzeit beim Ausfüllen, Begrenzung auf fünf Anfragen pro 15 Minuten und Absender (zusätzlich über die Datenbank, falls Neon aktiv ist), serverseitige Validierung aller Felder.
+**Schutz vor Missbrauch:** verstecktes Honeypot-Feld, signiertes Formular-Token mit Ausfüllzeit, die der Server misst (mindestens 3 Sekunden), Inhaltsprüfung auf Spam-Merkmale (viele Links, Werbetexte, fremde Schriften), Begrenzung auf fünf Anfragen pro 15 Minuten und Absender sowie höchstens 15 verschiedene Absender pro Stunde (zusätzlich über die Datenbank, falls Neon aktiv ist), serverseitige Validierung aller Felder. Abgewiesene Anfragen stehen im Vercel-Log als `contact.spam`. Kein Captcha, keine Cookies, kein Drittanbieter.
 
 ## 5. Neon (optional)
 

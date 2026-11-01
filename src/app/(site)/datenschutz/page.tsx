@@ -21,7 +21,7 @@ export default function DatenschutzPage() {
   const email = contact.email.value;
   const section = sectionCounter();
   return (
-    <LegalPage title="Datenschutzerklärung" path="/datenschutz" updated="Oktober 2026">
+    <LegalPage title="Datenschutzerklärung" path="/datenschutz" updated="November 2026">
       <p>
         Diese Datenschutzerklärung informiert darüber, welche Personendaten beim Besuch dieser Website, bei einer
         Kontaktaufnahme und in der Zusammenarbeit mit Kunden und Partnern bearbeitet werden. Sie richtet sich nach dem
@@ -79,6 +79,11 @@ export default function DatenschutzPage() {
         <li>
           Zum Schutz vor Missbrauch wird aus Ihrer IP-Adresse ein nicht umkehrbarer Hashwert gebildet, mit dem die
           Anzahl Anfragen pro Absender begrenzt wird. Die IP-Adresse selbst wird dabei nicht gespeichert.
+        </li>
+        <li>
+          Zum Schutz vor Spam prüft die Website jede Anfrage automatisch: wie lange das Ausfüllen gedauert hat und ob
+          die Angaben typische Spam-Merkmale enthalten, zum Beispiel viele Links. Dafür werden keine Cookies gesetzt
+          und keine Daten an Dritte weitergegeben.
         </li>
       </ul>
       <p>
