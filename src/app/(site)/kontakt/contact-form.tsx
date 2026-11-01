@@ -28,6 +28,7 @@ import {
   workModes,
 } from "@/lib/contact/options";
 import {
+  MIN_FILL_MS,
   initialContactState,
   type ContactErrorField,
   type ContactState,
@@ -91,19 +92,43 @@ async function submitSafely(prev: ContactState, data: FormData): Promise<Contact
   }
 }
 
-type TokenRef = React.RefObject<Promise<string | undefined> | null>;
+/** A spam token on its way, with the time it arrived (performance.now()). */
+type TokenRequest = { promise: Promise<string | undefined>; receivedAt: number };
+type TokenRef = React.RefObject<TokenRequest | null>;
 
 /**
  * The spam token (lib/contact/form-token.ts), requested once at the first click or key press in
  * the form. The server measures the fill time from it. A failed request is tried again at the
  * next interaction; sending without a token gets an error with the e-mail address.
  */
-function ensureToken(token: TokenRef): Promise<string | undefined> {
-  token.current ??= requestFormToken().catch(() => {
-    token.current = null;
-    return undefined;
-  });
+function ensureToken(token: TokenRef): TokenRequest {
+  if (!token.current) {
+    const request: TokenRequest = { promise: Promise.resolve(undefined), receivedAt: 0 };
+    request.promise = requestFormToken().then(
+      (value) => {
+        request.receivedAt = performance.now();
+        return value;
+      },
+      () => {
+        // Only forget this request; a newer one may already be on its way.
+        if (token.current === request) token.current = null;
+        return undefined;
+      },
+    );
+    token.current = request;
+  }
   return token.current;
+}
+
+/**
+ * Waits until the server accepts the token: it counts the fill time from when it issued the
+ * token, so a token fetched only at "senden" or after an error needs a short pause.
+ */
+async function readyToken(request: TokenRequest): Promise<string | undefined> {
+  const value = await request.promise;
+  const wait = request.receivedAt + MIN_FILL_MS + 250 - performance.now();
+  if (value && wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
+  return value;
 }
 
 /** Quick check in the browser, so an unsuitable file fails before it is uploaded. */
@@ -138,17 +163,18 @@ export function ContactForm({
   const successRef = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
-    if (state.status === "invalid" || state.status === "error") summaryRef.current?.focus();
-    if (state.status === "success") successRef.current?.focus();
+    // The server refused the token (missing, invalid or expired): fetch a new one right away,
+    // so the next attempt goes through. Before the focus below, whose onFocus would otherwise
+    // keep the refused token.
+    if (state.status === "error" && state.newToken) {
+      token.current = null;
+      ensureToken(token);
+    }
   }, [state]);
 
   useEffect(() => {
-    // The server refused the token (missing, invalid or expired): fetch a new one right away,
-    // so the next attempt goes through.
-    if (state.status === "error" && state.newToken) {
-      token.current = null;
-      void ensureToken(token);
-    }
+    if (state.status === "invalid" || state.status === "error") summaryRef.current?.focus();
+    if (state.status === "success") successRef.current?.focus();
   }, [state]);
 
   if (state.status === "success") {
@@ -171,7 +197,7 @@ export function ContactForm({
   const v = (field: ContactTextField, fallback = "") => values[field] ?? fallback;
 
   function startToken() {
-    void ensureToken(token);
+    ensureToken(token);
   }
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -187,7 +213,7 @@ export function ContactForm({
       return;
     }
     setPreparing(true);
-    void ensureToken(token).then((value) => {
+    void readyToken(ensureToken(token)).then((value) => {
       if (value) data.set("formToken", value);
       setPreparing(false);
       startTransition(() => send(data));

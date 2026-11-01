@@ -1,6 +1,7 @@
 import "server-only";
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { serverEnv } from "@/lib/env";
+import { MIN_FILL_MS } from "./state";
 
 /**
  * Spam protection for the contact form: a signed token with the time the visitor started on
@@ -11,8 +12,7 @@ import { serverEnv } from "@/lib/env";
  * random number.
  */
 
-/** Minimum time between the first interaction and sending. People need longer. */
-export const MIN_FILL_MS = 3000;
+export { MIN_FILL_MS };
 /** Older tokens are refused; the form then fetches a new one. */
 export const MAX_TOKEN_AGE_MS = 24 * 60 * 60 * 1000;
 /** Clock difference between server instances that is still accepted. */
@@ -62,21 +62,43 @@ export function checkFormToken(value: unknown, now = Date.now()): FormTokenCheck
 }
 
 /**
- * Tokens that already delivered a request, with its reference. A second request with the same
- * token is not sent again; the visitor sees the first reference. Per server instance, like the
- * in-memory rate limit: the rate limits still apply across instances.
+ * Tokens that delivered a request, with its reference, and tokens whose request is still being
+ * processed. A second request with the same token is not sent again; the visitor sees the first
+ * reference. Per server instance, like the in-memory rate limit: the rate limits still apply
+ * across instances.
  */
 const used = new Map<string, { reference: string; at: number }>();
+const inProgress = new Map<string, Promise<unknown>>();
 
-export function deliveredReference(nonce: string): string | undefined {
-  return used.get(nonce)?.reference;
-}
+export type TokenClaim = { earlier: string } | { release: (reference?: string) => void };
 
-export function markTokenUsed(nonce: string, reference: string, now = Date.now()): void {
-  used.set(nonce, { reference, at: now });
-  if (used.size > 2000) {
-    for (const [key, entry] of used) {
-      if (now - entry.at > MAX_TOKEN_AGE_MS) used.delete(key);
-    }
+/**
+ * Reserves the token for this request, or returns the reference of an earlier request that
+ * delivered with it. Waits while another request with the same token is still running. Call
+ * release once at the end, with the reference when the request was delivered; without one the
+ * token stays usable, so the visitor can correct the request and send it again.
+ */
+export async function claimToken(nonce: string, now = Date.now()): Promise<TokenClaim> {
+  // No await between the check and the reservation, so two requests cannot both pass.
+  for (;;) {
+    const done = used.get(nonce);
+    if (done) return { earlier: done.reference };
+    const pending = inProgress.get(nonce);
+    if (!pending) break;
+    await pending;
   }
+  let finish: () => void = () => {};
+  inProgress.set(nonce, new Promise<void>((resolve) => (finish = resolve)));
+  return {
+    release(reference) {
+      if (reference) used.set(nonce, { reference, at: now });
+      inProgress.delete(nonce);
+      finish();
+      if (used.size > 2000) {
+        for (const [key, entry] of used) {
+          if (now - entry.at > MAX_TOKEN_AGE_MS) used.delete(key);
+        }
+      }
+    },
+  };
 }

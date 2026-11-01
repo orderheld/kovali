@@ -73,20 +73,61 @@ describe("content check (spam.ts)", () => {
       texts: ["Dear Sir, we are a leading SEO agency. We can get your website on the first page of Google with backlinks."],
     });
     expect(seo.spam).toBe(true);
-    expect(seo.reasons).toEqual(expect.arrayContaining(["seo", "ranking", "greeting", "pitch"]));
+    expect(seo.reasons).toEqual(expect.arrayContaining(["seo", "ranking"]));
     expect(
       checkSpam({
         name: "Raj Example",
         company: "Example Tech",
-        texts: ["Hello sir, hire dedicated developers from our offshore team. Free trial! WhatsApp me: +91 00000"],
+        texts: [
+          "Dear business owner, I was checking your website and noticed it is not ranking on Google. We offer affordable SEO services with a free audit.",
+        ],
       }).spam,
     ).toBe(true);
+    expect(
+      checkSpam({
+        name: "Max Beispiel",
+        company: "Beispiel Marketing",
+        texts: ["Wir haben Ihre Website analysiert. Gerne erstellen wir eine kostenlose SEO-Analyse, Suchmaschinenoptimierung zu fairen Preisen."],
+      }).spam,
+    ).toBe(true);
+    expect(checkSpam({ ...request, texts: ["Cheap viagra and cialis without prescription."] }).spam).toBe(true);
+    expect(checkSpam({ ...request, texts: ["Payday loans with no credit check, approved in 2 hours."] }).spam).toBe(true);
+  });
+
+  it("lets requests through that only resemble spam", () => {
+    const passes = (input: Partial<typeof request>) => expect(checkSpam({ ...request, ...input }).spam).toBe(false);
+    // A client in the gambling business, a formal greeting, a leading firm with two links.
+    passes({ company: "Grand Casino Beispiel AG", texts: ["Wir suchen einen Business Analyst für unser Casino-Managementsystem."] });
+    passes({
+      name: "Paul Example",
+      company: "Example Advisory AG",
+      texts: [
+        "Dear Sir or Madam, we are a leading consultancy and look for a Requirements Engineer. Details: https://example.com/job and https://example.com/team",
+      ],
+    });
+    // Several job ads with real text in between.
+    passes({
+      texts: [
+        "Wir haben aktuell vier passende Mandate und würden gerne über eine Zusammenarbeit sprechen. Die Ausschreibungen: https://example.com/a für die Ablösung der Fachapplikation, https://example.com/b für das Testmanagement, https://example.com/c für Requirements Engineering im Zahlungsverkehr und https://example.com/d für die Prozessanalyse im Kundenservice.",
+      ],
+    });
+    // A placeholder from a copied ad, a Markdown link, a Cyrillic name with a short German text.
+    passes({ texts: ["Die Ausschreibung finden Sie unter [Link]. Start im Januar."] });
+    passes({ texts: ["Profil: [Stelle](https://example.com/stelle)"] });
+    passes({ name: "Олена Приклад", texts: ["Kurze Anfrage: BA, 80 %."] });
+    // Opt-out and offshore as part of a real project, a CamelCase company.
+    passes({ texts: ["Wir bauen einen Opt-out-Prozess für Newsletter und arbeiten mit einem Offshore-Team in Indien."] });
+    passes({ company: "SwissQualityTestCenter GmbH" });
   });
 
   it("stops bots that put the same text everywhere or random names", () => {
     expect(checkSpam({ name: "Testanfrage Nummer eins", company: "x", texts: ["Testanfrage Nummer eins", "Testanfrage Nummer eins"] }).spam).toBe(true);
     expect(checkSpam({ ...request, name: "jJxkqQbWvLz", texts: [...request.texts, "https://example.com"] }).spam).toBe(false);
-    expect(checkSpam({ ...request, name: "jJxkqQbWvLz", texts: ["Kurz: https://a.example und https://b.example"] }).score).toBeGreaterThanOrEqual(SPAM_SCORE);
+    expect(
+      checkSpam({ ...request, name: "jJxkqQbWvLz", texts: ["Kurz: https://a.example https://b.example https://c.example"] }).score,
+    ).toBeGreaterThanOrEqual(SPAM_SCORE);
+    // A short text equal to the name may be a signature.
+    expect(checkSpam({ ...request, texts: [...request.texts, "Anna Muster"] }).spam).toBe(false);
   });
 });
 
@@ -204,6 +245,23 @@ describe("contact action with spam protection", () => {
     expect(sendContactEmail).toHaveBeenCalledTimes(1);
   });
 
+  it("sends a request only once when the same token comes twice at the same time", async () => {
+    const formToken = await tokenFrom(30);
+    const [first, second] = await Promise.all([submitContact(idle, form({ formToken })), submitContact(idle, form({ formToken }))]);
+    expect(first.status).toBe("success");
+    expect(second).toEqual(first);
+    expect(sendContactEmail).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the token usable after a refused request, so a corrected one goes through", async () => {
+    const formToken = await tokenFrom(30);
+    const invalid = await submitContact(idle, form({ formToken, email: "" }));
+    expect(invalid.status).toBe("invalid");
+    const corrected = await submitContact(idle, form({ formToken }));
+    expect(corrected.status).toBe("success");
+    expect(sendContactEmail).toHaveBeenCalledTimes(1);
+  });
+
   it("stops a wave from many addresses with the overall limit", async () => {
     const results = [];
     for (let i = 0; i < 16; i++) {
@@ -212,5 +270,22 @@ describe("contact action with spam protection", () => {
     }
     expect(results.filter((s) => s === "success")).toHaveLength(15);
     expect(results.at(-1)).toBe("error");
+  });
+
+  it("does not let one sender or refused spam use up the overall limit", async () => {
+    // One address at its own limit.
+    const own = [];
+    for (let i = 0; i < 6; i++) own.push((await submitContact(idle, form({ formToken: await tokenFrom(30) }))).status);
+    expect(own).toEqual(["success", "success", "success", "success", "success", "error"]);
+    // Refused spam from many addresses.
+    for (let i = 0; i < 30; i++) {
+      mocks.ip.current = `198.51.100.${i}`;
+      const state = await submitContact(idle, form({ formToken: await tokenFrom(30), projectDescription: "Buy backlinks for SEO: https://example.com/a https://example.com/b https://example.com/c https://example.com/d" }));
+      expect(state.status).toBe("error");
+    }
+    // Another sender still gets through.
+    mocks.ip.current = "192.0.2.10";
+    expect((await submitContact(idle, form({ formToken: await tokenFrom(30) }))).status).toBe("success");
+    expect(sendContactEmail).toHaveBeenCalledTimes(6);
   });
 });

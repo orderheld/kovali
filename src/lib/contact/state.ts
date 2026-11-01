@@ -1,5 +1,11 @@
 /** Form state shared by the Server Action and the client form (no runtime dependencies). */
 
+/**
+ * Minimum time between issuing the spam token (lib/contact/form-token.ts) and sending. People
+ * need longer; the form also waits for it itself, so a quick click never fails.
+ */
+export const MIN_FILL_MS = 3000;
+
 export type ContactField =
   | "name"
   | "company"

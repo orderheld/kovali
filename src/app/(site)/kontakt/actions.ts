@@ -4,17 +4,17 @@ import { headers } from "next/headers";
 import { site } from "@/config/site";
 import { checkAttachment } from "@/lib/contact/attachment";
 import { sendContactEmail } from "@/lib/contact/email";
-import { checkFormToken, deliveredReference, issueFormToken, markTokenUsed } from "@/lib/contact/form-token";
-import { clientIp, hashIp, takeGlobalToken, takeToken } from "@/lib/contact/rate-limit";
+import { checkFormToken, claimToken, issueFormToken } from "@/lib/contact/form-token";
+import { clientIp, globalLimitReached, hashIp, recordDelivery, takeToken } from "@/lib/contact/rate-limit";
 import { createReference } from "@/lib/contact/reference";
 import { contactSchema, fieldErrors, storageCopy } from "@/lib/contact/schema";
 import { checkSpam } from "@/lib/contact/spam";
 import type { ContactErrorField, ContactState, ContactTextField, ContactValues } from "@/lib/contact/state";
-import { isStorageConfigured, recentRequestCount, recentTotalCount, storeContactRequest } from "@/lib/contact/store";
+import { isStorageConfigured, recentRequestCount, recentSenderCount, storeContactRequest } from "@/lib/contact/store";
 
-/** Stored requests per hour, across all server instances: per sender and for all senders together. */
+/** Per hour, across all server instances: stored requests per sender, and different senders. */
 const DB_HOURLY_LIMIT = 5;
-const DB_TOTAL_HOURLY_LIMIT = 20;
+const DB_SENDERS_HOURLY_LIMIT = 20;
 
 const TEXT_FIELDS: ContactTextField[] = [
   "name",
@@ -98,13 +98,24 @@ export async function submitContact(_prev: ContactState, formData: FormData): Pr
       newToken: true,
     };
   }
-  // The same request sent twice: no second e-mail, the visitor sees the first reference.
-  const earlier = deliveredReference(token.nonce);
-  if (earlier) {
-    log("contact.duplicate", { reference: earlier });
-    return { status: "success", reference: earlier };
+  // The same request sent twice, for example after a dropped connection: no second e-mail, the
+  // visitor sees the first reference. The token is reserved while this request runs.
+  const claim = await claimToken(token.nonce);
+  if ("earlier" in claim) {
+    log("contact.duplicate", { reference: claim.earlier });
+    return { status: "success", reference: claim.earlier };
   }
+  let delivered: string | undefined;
+  try {
+    const state = await validateAndDeliver(formData, values, fallback);
+    if (state.status === "success") delivered = state.reference;
+    return state;
+  } finally {
+    claim.release(delivered);
+  }
+}
 
+async function validateAndDeliver(formData: FormData, values: ContactValues, fallback: string): Promise<ContactState> {
   // 3. Server-side validation of the text fields and the optional file, reported together.
   const parsed = contactSchema.safeParse({ ...Object.fromEntries(formData), services: formData.getAll("services") });
   const file = await checkAttachment(formData.get("attachment"));
@@ -131,13 +142,14 @@ export async function submitContact(_prev: ContactState, formData: FormData): Pr
     };
   }
 
-  // 5. Rate limiting per IP (hashed, never stored in plain text) and for all senders together.
+  // 5. Rate limiting per IP (hashed, never stored in plain text), and an overall limit on the
+  //    number of different senders (a spam wave from many IPs).
   const ipHash = hashIp(clientIp(await headers()));
-  let limited = !takeToken(ipHash) || !takeGlobalToken();
+  let limited = !takeToken(ipHash) || globalLimitReached();
   if (!limited && isStorageConfigured()) {
     try {
-      const [fromSender, fromAll] = await Promise.all([recentRequestCount(ipHash), recentTotalCount()]);
-      limited = fromSender >= DB_HOURLY_LIMIT || fromAll >= DB_TOTAL_HOURLY_LIMIT;
+      const [fromSender, senders] = await Promise.all([recentRequestCount(ipHash), recentSenderCount()]);
+      limited = fromSender >= DB_HOURLY_LIMIT || senders >= DB_SENDERS_HOURLY_LIMIT;
     } catch (err) {
       log("contact.ratelimit_db_error", { error: err instanceof Error ? err.message : "unknown" });
     }
@@ -185,6 +197,6 @@ export async function submitContact(_prev: ContactState, formData: FormData): Pr
     };
   }
 
-  markTokenUsed(token.nonce, reference);
+  recordDelivery(ipHash);
   return { status: "success", reference };
 }
