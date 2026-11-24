@@ -2,12 +2,12 @@ import type { ServiceSlug } from "@/content/types";
 
 // Options of the contact form. Shared by the client form and the server validation.
 
-/** How a company wants to work with KOVALI. What it needs is asked separately (serviceChoices). */
+/** How a company wants to work with us. What it needs is asked separately (serviceChoices). */
 export const requestTypes = [
   // The values stay as they are: /unternehmen links to ?anfrage=contracting, and stored requests use them.
-  { value: "contracting", label: "Subunternehmen im Kundenmandat", description: "KOVALI übernimmt eine offene Aufgabe im Mandat Ihres Kunden." },
+  { value: "contracting", label: "Subunternehmen im Kundenmandat", description: "Wir übernehmen eine offene Aufgabe im Mandat Ihres Kunden." },
   { value: "projekt", label: "Projekt oder Teilmandat", description: "Ein abgegrenztes Vorhaben mit klarem Ergebnis." },
-  { value: "kooperation", label: "Wiederkehrende Zusammenarbeit", description: "Sie vergeben regelmässig Aufgaben an KOVALI, zum Beispiel in grösseren Mandaten." },
+  { value: "kooperation", label: "Wiederkehrende Zusammenarbeit", description: "Sie vergeben regelmässig Aufgaben an uns, zum Beispiel in grösseren Mandaten." },
   { value: "allgemeine-anfrage", label: "Allgemeine Anfrage", description: "Eine Frage oder ein erstes Kennenlernen." },
 ] as const;
 

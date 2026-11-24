@@ -67,7 +67,7 @@ export function FileDrop({
 
   return (
     <div>
-      <p id={`${id}-label`} className="mb-2 block text-[0.9375rem] font-medium text-ink">
+      <p id={`${id}-label`} className="mb-2 block text-sm font-medium text-navy">
         {label}
         {optional ? <span className="font-normal text-slate"> (optional)</span> : null}
       </p>
@@ -93,33 +93,37 @@ export function FileDrop({
           onDragLeave={() => setDragging(false)}
           onDrop={handleDrop}
           className={cn(
-            "flex cursor-pointer items-center gap-4 rounded-lg border-2 border-dashed px-5 py-6 transition-colors",
+            "flex cursor-pointer items-center gap-4 rounded-[2px] border border-dashed px-5 py-6 transition-colors",
             "peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-blue",
-            dragging ? "border-blue bg-blue/[0.06]" : "border-line bg-mist/50 hover:border-blue/50 hover:bg-mist",
-            file && !error && "border-solid border-blue/40 bg-white",
-            error && "border-red-600/60",
+            dragging ? "border-blue bg-blue/[0.04]" : "border-field bg-cloud hover:border-navy hover:bg-white",
+            file && !error && "border-solid border-navy bg-white",
+            error && "border-fail",
           )}
         >
           <span
             aria-hidden
             className={cn(
-              "flex size-11 shrink-0 items-center justify-center rounded-md",
-              file && !error ? "bg-blue/10 text-blue" : "bg-white text-blue shadow-[0_0_0_1px_var(--color-line)]",
+              "flex size-11 shrink-0 items-center justify-center border text-blue",
+              file && !error ? "border-blue/30 bg-blue/[0.06]" : "border-line bg-white",
             )}
           >
-            {file && !error ? <CheckCircle2 className="size-5" /> : <FileUp className="size-5" />}
+            {file && !error ? (
+              <CheckCircle2 strokeWidth={1.5} className="size-5" />
+            ) : (
+              <FileUp strokeWidth={1.5} className="size-5" />
+            )}
           </span>
           <span id={`${id}-zone`} className={cn("min-w-0", file && "pr-10")}>
             {file ? (
               <>
-                <span className="block truncate font-medium text-ink">{file.name}</span>
+                <span className="block truncate font-medium text-navy">{file.name}</span>
                 <span className="block text-sm text-slate">
                   {formatSize(file.size)} · <span className="text-blue underline underline-offset-2">Andere Datei wählen</span>
                 </span>
               </>
             ) : (
               <>
-                <span className="block font-medium text-ink">
+                <span className="block font-medium text-navy">
                   {/* Touch devices cannot drag files, so they only see "Datei auswählen". */}
                   <span className="hidden pointer-fine:inline">Datei hierher ziehen oder </span>
                   <span className="pointer-fine:hidden">Datei </span>
@@ -134,7 +138,7 @@ export function FileDrop({
           <button
             type="button"
             onClick={remove}
-            className="absolute right-3 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-md text-slate hover:bg-mist hover:text-ink"
+            className="absolute right-3 top-1/2 flex size-10 -translate-y-1/2 items-center justify-center rounded-[2px] text-slate hover:bg-cloud hover:text-navy"
           >
             <X aria-hidden className="size-4" />
             <span className="sr-only">Datei entfernen</span>
@@ -142,12 +146,12 @@ export function FileDrop({
         ) : null}
       </div>
       {hint ? (
-        <p id={hintId} className="mt-2 text-sm text-slate">
+        <p id={hintId} className="mt-2 text-sm leading-relaxed text-slate">
           {hint}
         </p>
       ) : null}
       {error ? (
-        <p id={errorId} className="mt-2 text-sm text-red-700">
+        <p id={errorId} className="mt-2 text-sm text-fail">
           {error}
         </p>
       ) : null}

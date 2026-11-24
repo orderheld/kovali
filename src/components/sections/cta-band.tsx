@@ -1,10 +1,9 @@
-import { DarkBackdrop } from "@/components/brand/motifs";
+import Image from "next/image";
 import { ButtonLink } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { site } from "@/config/site";
-import { founder } from "@/content/company";
 import { contactCta } from "@/content/home";
-import { Portrait } from "./portrait";
+import { scenes } from "@/content/scenes";
 
 interface CtaLink {
   label: string;
@@ -15,68 +14,54 @@ interface CtaBandProps {
   title?: string;
   text?: React.ReactNode;
   primary?: CtaLink;
-  /** Pass null for no secondary button. */
-  secondary?: CtaLink | null;
-  /** "Oder direkt per E-Mail: info@kovali.ch" below the buttons. */
+  /** "Oder per E-Mail an info@kovali.ch" below the button. */
   showMail?: boolean;
   /** Id of the H2 (the section is labelled by it). Change it if a page has two bands. */
   headingId?: string;
 }
 
 /**
- * Closing call to action on near-black ink, flowing into the dark footer: heading, text,
- * buttons (full width below sm) and mail line on the left, Ferhat Demir's signature (round
- * avatar, name, title in mono) on the right, as wide as its content.
+ * Closing call to action before the footer: a wide panorama with a centred heading, a short
+ * text, one button and the e-mail address.
  */
 export function CtaBand({
   title = contactCta.title,
   text = contactCta.text,
   primary = contactCta.primary,
-  secondary = contactCta.secondary,
   showMail = true,
   headingId = "cta-title",
 }: CtaBandProps) {
   const email = site.contact.email.value;
   return (
     <section aria-labelledby={headingId} className="on-dark relative isolate overflow-hidden bg-night text-white">
-      <DarkBackdrop variant="band" />
-      <Container className="relative grid gap-12 py-20 md:py-28 lg:grid-cols-12 lg:items-end lg:gap-8">
-        <div className="lg:col-span-7">
-          <h2 id={headingId} className="text-h2 font-semibold text-white">
-            {title}
-          </h2>
-          <div className="mt-5 max-w-2xl text-lead text-white/70">{text}</div>
-          <div className="mt-9 grid gap-3 sm:flex sm:flex-wrap">
-            <ButtonLink href={primary.href} variant="inverse" arrow>
-              {primary.label}
-            </ButtonLink>
-            {secondary ? (
-              <ButtonLink href={secondary.href} variant="outline-inverse">
-                {secondary.label}
-              </ButtonLink>
-            ) : null}
-          </div>
-          {showMail ? (
-            <p className="mt-7 text-white/70">
-              Oder direkt per E-Mail:{" "}
-              <a
-                href={`mailto:${email}`}
-                className="text-electric underline decoration-electric/40 underline-offset-[3px] transition-colors hover:decoration-electric"
-              >
-                {email}
-              </a>
-            </p>
-          ) : null}
-        </div>
-        <div className="lg:col-span-4 lg:col-start-9 lg:justify-self-end">
-          <div className="flex w-fit items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 pr-6 backdrop-blur-sm">
-            <Portrait size="md" />
-            <p className="min-w-0 font-mono text-xs uppercase leading-5 tracking-[0.08em]">
-              <span className="block font-medium text-white">{founder.name}</span>
-              <span className="block text-sky">{founder.role}</span>
-            </p>
-          </div>
-        </div>
+      <Image
+        src={scenes.cta}
+        alt=""
+        fill
+        sizes="100vw"
+        placeholder="blur"
+        className="-z-20 object-cover object-[50%_70%]"
+      />
+      <div aria-hidden className="absolute inset-0 -z-10 bg-[linear-gradient(to_bottom,rgb(2_5_12/0.55),rgb(2_5_12/0.25)_55%,rgb(2_5_12/0.55))]" />
+      <Container className="flex flex-col items-center py-24 text-center md:py-32">
+        <h2 id={headingId} className="max-w-3xl text-h2 text-white">
+          {title}
+        </h2>
+        {text ? <div className="mt-5 max-w-2xl text-lead text-white/80">{text}</div> : null}
+        <ButtonLink href={primary.href} variant="accent" className="mt-10">
+          {primary.label}
+        </ButtonLink>
+        {showMail ? (
+          <p className="mt-6 text-white/75">
+            Oder per E-Mail an{" "}
+            <a
+              href={`mailto:${email}`}
+              className="text-white underline decoration-white/40 underline-offset-4 transition-colors hover:decoration-white"
+            >
+              {email}
+            </a>
+          </p>
+        ) : null}
       </Container>
     </section>
   );

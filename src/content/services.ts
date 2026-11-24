@@ -1,7 +1,7 @@
 import type { Service, ServiceSlug } from "./types";
 
 /**
- * The four disciplines of IT Consulting at KOVALI, in the order shown everywhere (lists,
+ * The four disciplines of IT Consulting, in the order shown everywhere (lists,
  * footer, /leistungen): Business Analysis & Requirements Engineering, Testmanagement,
  * Test Engineering, Application Management. Business Analysis and Requirements Engineering
  * form one discipline (Ferhat Demir, 13.10.2026).
@@ -10,34 +10,28 @@ import type { Service, ServiceSlug } from "./types";
 export const services: Service[] = [
   {
     slug: "business-analysis",
-    code: "01",
     name: "Business Analysis & Requirements Engineering",
     summary:
-      "Wenn noch offen ist, was genau gebaut werden soll, oder wenn viele Stellen mitreden. KOVALI klärt Ziele und Abläufe mit Ihren Fachbereichen und schreibt Anforderungen, mit denen Entwicklung und Test arbeiten können.",
+      "Wenn noch offen ist, was genau gebaut werden soll, oder wenn viele Stellen mitreden. Wir klären Ziele und Abläufe mit Ihren Fachbereichen und schreiben Anforderungen, mit denen Entwicklung und Test arbeiten können.",
     h1: "Business Analyst und Requirements Engineer für IT-Projekte in der Schweiz",
     metaTitle: "Business Analyst & Requirements Engineer Schweiz",
     metaDescription:
       "Externer Business Analyst und Requirements Engineer für IT-Projekte in der Schweiz: Prozesse analysieren, Anforderungen nach IREB erheben und spezifizieren.",
     keyword: "Business Analyst Schweiz",
     intro:
-      "Ein Business Analyst klärt, was eine Software leisten muss, bevor sie gebaut wird. KOVALI erhebt die Anforderungen bei Ihren Fachbereichen und modelliert die Abläufe in BPMN. Daraus entstehen User Stories mit Akzeptanzkriterien, die Ihr Entwicklungsteam im nächsten Refinement schätzen kann. Schnittstellen beschreiben wir bis auf Feldebene, mit Fehlerfällen.",
-    tasksTitle: "Was ein Business Analyst bei KOVALI macht",
+      "Ein Business Analyst klärt, was eine Software leisten muss, bevor sie gebaut wird. Wir erheben die Anforderungen bei Ihren Fachbereichen und modellieren die Abläufe in BPMN. Daraus entstehen User Stories mit Akzeptanzkriterien, die Ihr Entwicklungsteam im nächsten Refinement schätzen kann. Schnittstellen beschreiben wir bis auf Feldebene, mit Fehlerfällen.",
+    tasksTitle: "Was unsere Business Analysts übernehmen",
     tasks: [
       "Analyse geschäftlicher Anforderungen",
-      "Stakeholder Management",
-      "Requirements Workshops",
-      "Geschäftsprozessanalyse",
-      "Business Process Modeling (BPMN)",
-      "Ist-/Soll-Analysen",
-      "Fachkonzepte und fachliche Lösungsdefinition",
+      "Stakeholder Management und Requirements Workshops",
+      "Geschäftsprozessanalyse und Modellierung in BPMN",
       "User Stories, Epics und Akzeptanzkriterien",
+      "Fachkonzepte und fachliche Lösungsdefinition",
+      "Schnittstellenanforderungen, Datenflüsse und Feld-Mappings",
+      "Ist-/Soll-Analysen",
       "Funktionale und nichtfunktionale Anforderungen",
       "UML Use Cases und Use-Case-Spezifikationen",
-      "Schnittstellenanforderungen",
-      "Datenflüsse und Feld-Mappings",
-      "Requirements Validation und Requirements Management",
-      "Anforderungspriorisierung",
-      "Change Requests",
+      "Requirements Management und Change Requests",
     ],
     deliverables: [
       "Ist-/Soll-Analyse mit Handlungsbedarf",
@@ -45,36 +39,8 @@ export const services: Service[] = [
       "Fachkonzept mit Lösungsvarianten und Empfehlung",
       "Anforderungsspezifikation mit funktionalen und nichtfunktionalen Anforderungen",
       "Epics und umsetzungsreife User Stories mit Akzeptanzkriterien",
-      "Use-Case-Diagramme (UML) und Use-Case-Spezifikationen",
       "Schnittstellenspezifikationen mit Datenflüssen, Feld-Mappings und Fehlerfällen",
-      "Priorisierter, nachvollziehbarer Anforderungsbestand",
-      "Bewertete Change Requests",
-    ],
-    situations: [
-      "Ihr Scrum-Team hat ein volles Backlog, aber kaum eine Story ist bereit für den Sprint.",
-      "Eine neue Fachapplikation soll mehrere Ämter und externe Organisationen bedienen, und jede Gruppe will etwas anderes.",
-      "Ihr System bekommt eine Schnittstelle zu einem Zahlungsdienstleister, und die Fehlerfälle sind nirgends beschrieben.",
-      "Sie schreiben eine Software aus und brauchen Anforderungen, auf die Anbieter vergleichbar offerieren können.",
-    ],
-    industries: [
-      "oeffentliche-verwaltung",
-      "logistik-transport",
-      "detailhandel-zahlungsverkehr",
-      "finanzdienstleistungen",
-      "versicherungen",
-    ],
-    methods: [
-      "IREB CPRE",
-      "BPMN",
-      "UML",
-      "Use Cases",
-      "User Stories",
-      "Schnittstellenspezifikation",
-      "Scrum",
-      "SAFe",
-      "Kanban",
-      "Jira",
-      "Confluence",
+      "Priorisierter Anforderungsbestand",
     ],
     faqTitle: "Fragen zu Business Analysis",
     faq: [
@@ -86,7 +52,7 @@ export const services: Service[] = [
       {
         question: "Ist Business Analysis dasselbe wie Requirements Engineering?",
         answer:
-          "Nicht ganz. Business Analysis klärt, welches geschäftliche Problem gelöst werden soll und welche Lösung den grössten Nutzen bringt. Requirements Engineering beschreibt die gewählte Lösung in prüfbaren Anforderungen und pflegt sie bis zum Ende des Projekts. In der Praxis greifen beide ineinander, deshalb bietet KOVALI sie als eine Disziplin an. Ausführlich im Artikel [Business Analysis vs. Requirements Engineering](/insights/business-analysis-vs-requirements-engineering).",
+          "Nicht ganz. Business Analysis klärt, welches geschäftliche Problem gelöst werden soll und welche Lösung den grössten Nutzen bringt. Requirements Engineering beschreibt die gewählte Lösung in prüfbaren Anforderungen und pflegt sie bis zum Ende des Projekts. In der Praxis greifen beide ineinander, deshalb bieten wir sie als eine Disziplin an. Ausführlich im Artikel [Business Analysis vs. Requirements Engineering](/insights/business-analysis-vs-requirements-engineering).",
       },
       {
         question: "Wann lohnt sich ein externer Business Analyst?",
@@ -94,14 +60,14 @@ export const services: Service[] = [
           "Wenn intern die Zeit oder das Methodenwissen fehlt oder wenn ein Vorhaben jemanden braucht, der zwischen den Fachbereichen neutral moderiert. Ein externer Business Analyst lässt sich für eine einzelne Projektphase beauftragen.",
       },
       {
-        question: "Arbeitet KOVALI agil oder klassisch?",
+        question: "Agil oder klassisch?",
         answer:
-          "Beides. KOVALI arbeitet in Scrum-, Kanban- und SAFe-Umgebungen ebenso wie in klassischen Projekten mit Fachkonzept. Das Vorgehen richtet sich nach Ihrer Organisation.",
+          "Beides. Wir arbeiten in Scrum-, Kanban- und SAFe-Umgebungen ebenso wie in klassischen Projekten mit Fachkonzept. Das Vorgehen richtet sich nach Ihrer Organisation.",
       },
       {
-        question: "Kann KOVALI auch über einen IT-Dienstleister beauftragt werden?",
+        question: "Ist eine Beauftragung über einen IT-Dienstleister möglich?",
         answer:
-          "Ja. Neben Direktmandaten arbeitet KOVALI als Subunternehmen für Beratungen und IT-Dienstleister. Details zur Zusammenarbeit finden Sie unter [Für Unternehmen](/unternehmen).",
+          "Ja. Neben Direktmandaten arbeiten wir als Subunternehmen für Beratungen und IT-Dienstleister. Personalverleih und Stellenvermittlung bieten wir nicht an. Details zur Zusammenarbeit finden Sie unter [Über uns](/unternehmen#zusammenarbeit).",
       },
     ],
     ctaTitle: "Brauchen Sie einen Business Analyst?",
@@ -109,30 +75,28 @@ export const services: Service[] = [
   },
   {
     slug: "test-management",
-    code: "02",
     name: "Testmanagement",
     summary:
-      "Wenn ein Go-live ansteht oder mehrere Lieferanten beteiligt sind. KOVALI legt fest, was wann getestet wird, und führt den Fehlerprozess bis zur Abnahme.",
+      "Wenn ein Go-live ansteht oder mehrere Lieferanten beteiligt sind. Wir legen fest, was wann getestet wird, und führen den Fehlerprozess bis zur Abnahme.",
     h1: "Test Manager für IT-Projekte in der Schweiz",
     metaTitle: "Test Manager Schweiz – Testmanagement für IT-Projekte",
     metaDescription:
       "Testmanagement nach ISTQB: Testkonzept, Testplanung, Koordination, Defect Management und fachliche Abnahme für Integrations- und End-to-End-Tests.",
     keyword: "Test Manager Schweiz",
     intro:
-      "Ein Test Manager legt fest, was vor einem Release getestet wird und welcher Fehler ein Release stoppt. KOVALI schreibt das Testkonzept und koordiniert Fachbereich und Entwicklungspartner im Test. Am Ende steht der Testbericht, auf dessen Grundlage Sie freigeben.",
+      "Ein Test Manager legt fest, was vor einem Release getestet wird und welcher Fehler ein Release stoppt. Wir schreiben das Testkonzept und koordinieren Fachbereich und Entwicklungspartner im Test. Am Ende steht der Testbericht, auf dessen Grundlage Sie freigeben.",
     tasksTitle: "Was zum Testmanagement gehört",
     tasks: [
       "Testkonzeption",
       "Testplanung",
       "Testkoordination",
-      "Testfallmanagement",
-      "Testdurchführung",
       "Defect Management",
       "Testreporting",
-      "Qualitätssicherung",
+      "Fachliche Abnahmetests",
       "Integrationstests",
       "End-to-End-Tests",
-      "Fachliche Abnahmetests",
+      "Testfallmanagement",
+      "Testdurchführung",
     ],
     deliverables: [
       "Testkonzept und risikobasierte Teststrategie",
@@ -141,14 +105,6 @@ export const services: Service[] = [
       "Fehlerberichte und Defect-Übersicht",
       "Testberichte und Abnahmeprotokolle",
     ],
-    situations: [
-      "Ein Go-live steht an, und niemand kann sagen, welche Fehler noch offen sind und welcher davon den Termin gefährdet.",
-      "Mehrere Lieferanten liefern Teile derselben Lösung, und die Fehler landen in verschiedenen Systemen.",
-      "Ein Geschäftsprozess läuft über mehrere Systeme, getestet wird bisher aber jedes System für sich.",
-      "Ihr agiles Team liefert jeden Sprint, aber Regression und Abnahme hängen hinterher.",
-    ],
-    industries: ["logistik-transport", "detailhandel-zahlungsverkehr", "oeffentliche-verwaltung", "finanzdienstleistungen", "versicherungen"],
-    methods: ["ISTQB", "Risikobasiertes Testen", "Jira Xray", "Zephyr", "SAFe", "Scrum"],
     faqTitle: "Fragen zum Testmanagement",
     faq: [
       {
@@ -162,9 +118,9 @@ export const services: Service[] = [
           "Sobald die ersten Anforderungen feststehen. Dann lassen sich die Testfälle direkt aus den Akzeptanzkriterien ableiten, und das Testkonzept liegt vor, bevor das erste Release in den Test geht.",
       },
       {
-        question: "Unterstützt KOVALI fachliche Abnahmetests?",
+        question: "Gehören fachliche Abnahmetests dazu?",
         answer:
-          "Ja. KOVALI plant die Abnahmetests mit den Fachbereichen und bereitet Testfälle und Testdaten vor. Während der Durchführung ist KOVALI dabei und hält das Ergebnis im Abnahmeprotokoll fest.",
+          "Ja. Wir planen die Abnahmetests mit den Fachbereichen und bereiten Testfälle und Testdaten vor. Während der Durchführung sind wir dabei und halten das Ergebnis im Abnahmeprotokoll fest.",
       },
     ],
     ctaTitle: "Steht ein Release an?",
@@ -172,26 +128,25 @@ export const services: Service[] = [
   },
   {
     slug: "test-engineering",
-    code: "03",
     name: "Test Engineering",
     summary:
-      "Wenn Ihrem Team Testkapazität fehlt. KOVALI leitet Testfälle aus den Anforderungen ab und führt sie durch. Jeder gefundene Fehler lässt sich anhand des Berichts nachstellen.",
+      "Wenn Ihrem Team Testkapazität fehlt. Unsere Test Engineers leiten Testfälle aus den Anforderungen ab und führen sie durch. Jeder gefundene Fehler lässt sich anhand des Berichts nachstellen.",
     h1: "Test Engineering für zuverlässige IT-Systeme",
     metaTitle: "Test Engineering Schweiz – System- und Regressionstests",
     metaDescription:
       "Test Engineering in der Schweiz: Testfalldesign, funktionale System-, Integrations-, Regressions- und End-to-End-Tests, Testdaten und Fehleranalyse.",
     keyword: "Test Engineering Schweiz",
     intro:
-      "KOVALI leitet Testfälle aus Ihren Anforderungen ab und führt System-, Integrations- und Regressionstests durch. Ergebnisse prüfen wir bei Bedarf per SQL direkt in der Datenbank. Jeder Fehlerbericht enthält Schritte, Testdaten und das erwartete Verhalten.",
-    tasksTitle: "Welche Tests KOVALI übernimmt",
+      "Wir leiten Testfälle aus Ihren Anforderungen ab und führen System-, Integrations- und Regressionstests durch. Ergebnisse prüfen wir bei Bedarf per SQL direkt in der Datenbank. Jeder Fehlerbericht enthält Schritte, Testdaten und das erwartete Verhalten.",
+    tasksTitle: "Welche Tests wir übernehmen",
     tasks: [
       "Testfallanalyse und Testfalldesign",
       "Funktionale Systemtests",
       "Integrationstests",
       "Regressionstests",
-      "End-to-End-Testverfahren",
-      "Testdaten und Testumgebungen",
+      "End-to-End-Tests",
       "Fehleranalyse",
+      "Testdaten und Testumgebungen",
       "Zusammenarbeit mit Entwicklungsteams",
       "Qualitätssicherung im agilen Umfeld",
     ],
@@ -202,14 +157,6 @@ export const services: Service[] = [
       "Reproduzierbare Fehlerberichte",
       "Gepflegte Regressionstest-Sets",
     ],
-    situations: [
-      "Vor dem Release bleibt Ihrem Team keine Zeit, die Regression vollständig durchzuspielen.",
-      "Zwei Systeme tauschen Daten aus, und bei Fehlern weiss niemand genau, wo die Daten falsch werden.",
-      "Eine Webapplikation oder App bekommt neue Funktionen, und die bestehenden Abläufe sollen weiter funktionieren.",
-      "Testergebnisse sollen in der Datenbank überprüft werden, nicht nur an der Oberfläche.",
-    ],
-    industries: ["logistik-transport", "oeffentliche-verwaltung", "detailhandel-zahlungsverkehr", "it-dienstleister"],
-    methods: ["ISTQB", "Äquivalenzklassen", "Grenzwertanalyse", "SQL", "Jira Xray", "Zephyr", "Scrum", "SAFe"],
     faqTitle: "Fragen zum Test Engineering",
     faq: [
       {
@@ -218,12 +165,12 @@ export const services: Service[] = [
           "Testmanagement plant und steuert die Tests, Test Engineering entwirft sie und führt sie durch. In kleineren Vorhaben macht oft eine Person beides, in grösseren Projekten sind die Aufgaben auf zwei Personen verteilt.",
       },
       {
-        question: "Erstellt KOVALI auch automatisierte Tests?",
+        question: "Gehören automatisierte Tests dazu?",
         answer:
           "Der Schwerpunkt liegt auf fachlichem und funktionalem Testen. Wo Automatisierung sinnvoll ist, wird sie im Testkonzept festgehalten und mit Ihrem Entwicklungsteam abgestimmt.",
       },
       {
-        question: "Welche Testarten deckt KOVALI ab?",
+        question: "Welche Testarten gehören dazu?",
         answer:
           "Funktionale Systemtests, Integrationstests, Regressionstests, End-to-End-Tests und fachliche Abnahmetests.",
       },
@@ -233,27 +180,26 @@ export const services: Service[] = [
   },
   {
     slug: "application-management",
-    code: "04",
     name: "Application Management",
     summary:
-      "Wenn eine Applikation im Betrieb laufend Änderungen braucht. KOVALI bewertet Änderungswünsche und stimmt Releases mit Entwicklung und Betrieb ab.",
+      "Wenn eine Applikation im Betrieb laufend Änderungen braucht. Wir bewerten Änderungswünsche und stimmen Releases mit Entwicklung und Betrieb ab.",
     h1: "Fachliches Application Management für Business-Applikationen",
     metaTitle: "Application Management Schweiz – fachliche Betreuung",
     metaDescription:
       "Fachliches Application Management in der Schweiz: Änderungsanforderungen analysieren, Releases begleiten, Incidents untersuchen und Applikationen weiterentwickeln.",
     keyword: "Application Management Schweiz",
     intro:
-      "KOVALI betreut Ihre Applikation fachlich im Betrieb. Wir prüfen und priorisieren Change Requests und stimmen Releases und Hotfixes mit Entwicklung und Betrieb ab. Bei Incidents suchen wir die fachliche Ursache. Hosting und technischer Betrieb bleiben bei Ihrem Betreiber.",
+      "Wir betreuen Ihre Applikation fachlich im Betrieb. Wir prüfen und priorisieren Change Requests und stimmen Releases und Hotfixes mit Entwicklung und Betrieb ab. Bei Incidents suchen wir die fachliche Ursache. Hosting und technischer Betrieb bleiben bei Ihrem Betreiber.",
     tasksTitle: "Was fachliches Application Management umfasst",
     tasks: [
       "Fachliche Betreuung von Business-Applikationen",
       "Analyse von Änderungsanforderungen",
       "Change- und Release-Begleitung",
+      "Incident- und Problemanalyse",
       "Koordination zwischen Fachbereichen und IT",
-      "Incident- und Problem-Analyse",
+      "Weiterentwicklung bestehender Systeme",
       "Anwendungsschnittstellen",
       "Applikationsoptimierung",
-      "Weiterentwicklung bestehender Systeme",
     ],
     deliverables: [
       "Analysierte und priorisierte Change Requests",
@@ -262,14 +208,6 @@ export const services: Service[] = [
       "Aktuelle Anwendungs- und Prozessdokumentation",
       "Optimierungsvorschläge mit Nutzenbewertung",
     ],
-    situations: [
-      "Ihre Fachapplikation läuft, aber die Liste der Änderungswünsche wird länger, und niemand entscheidet, was ins nächste Release kommt.",
-      "Ein Hotfix muss raus, und Entwicklung, Betrieb und Fachbereich brauchen einen gemeinsamen Termin.",
-      "Jede Änderung muss dokumentiert und nachweisbar geprüft sein, weil Vorgaben zu Datenschutz oder Revision gelten.",
-      "Sie wechseln das Werkzeug für Tickets oder Anforderungen, und danach soll klar sein, wer was wo erfasst.",
-    ],
-    industries: ["oeffentliche-verwaltung", "logistik-transport", "detailhandel-zahlungsverkehr", "versicherungen"],
-    methods: ["Incident Management", "Problem Management", "Change Management", "Release Management", "Kanban", "Jira", "SQL"],
     faqTitle: "Fragen zum Application Management",
     faq: [
       {
@@ -278,9 +216,9 @@ export const services: Service[] = [
           "Die fachliche Betreuung einer Applikation im Betrieb: Änderungswünsche analysieren, Releases planen und begleiten, Incidents und Probleme fachlich untersuchen. Der technische Betrieb wie Hosting und Infrastruktur bleibt beim IT-Betreiber.",
       },
       {
-        question: "Übernimmt KOVALI auch den technischen Betrieb?",
+        question: "Gehört der technische Betrieb dazu?",
         answer:
-          "Nein. KOVALI übernimmt die fachliche Seite und arbeitet dabei mit Ihrem technischen Betrieb und Ihren Entwicklungspartnern zusammen.",
+          "Nein. Wir übernehmen die fachliche Seite und arbeiten dabei mit Ihrem technischen Betrieb und Ihren Entwicklungspartnern zusammen.",
       },
       {
         question: "Wie wird die Weiterentwicklung priorisiert?",
