@@ -36,7 +36,12 @@ export default function HomePage() {
   return (
     <>
       <section aria-labelledby="hero-title" className="on-dark relative isolate overflow-hidden bg-night text-white">
-        <div aria-hidden className="absolute inset-y-0 right-0 -z-20 w-full lg:w-[72%]">
+        {/* Small screens: the image as a band at the top, the text below it. Wide screens: the image
+            on the right behind the text. */}
+        <div
+          aria-hidden
+          className="absolute inset-x-0 top-0 -z-20 h-[19rem] sm:h-[24rem] md:h-[30rem] lg:inset-y-0 lg:left-auto lg:h-auto lg:w-[72%]"
+        >
           <Image
             src={scenes.hero}
             alt=""
@@ -44,15 +49,15 @@ export default function HomePage() {
             preload
             sizes="(min-width: 1024px) 72vw, 100vw"
             placeholder="blur"
-            className="object-cover object-[70%_50%]"
+            className="object-cover object-[85%_50%] lg:object-[70%_50%]"
           />
         </div>
-        {/* Dark behind the text: from the left on wide screens, from the bottom on small ones. */}
+        {/* Dark behind the text: from the left on wide screens, below the image band on small ones. */}
         <div
           aria-hidden
-          className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgb(6_11_24/0.35)_0%,rgb(6_11_24/0.8)_55%,var(--color-night)_100%)] lg:bg-[linear-gradient(90deg,var(--color-night)_0%,rgb(6_11_24/0.9)_32%,rgb(6_11_24/0.2)_62%,rgb(6_11_24/0)_100%)]"
+          className="absolute inset-x-0 top-0 -z-10 h-[19rem] bg-[linear-gradient(180deg,rgb(6_11_24/0)_0%,rgb(6_11_24/0.15)_45%,var(--color-night)_100%)] sm:h-[24rem] md:h-[30rem] lg:inset-y-0 lg:h-auto lg:bg-[linear-gradient(90deg,var(--color-night)_0%,rgb(6_11_24/0.9)_32%,rgb(6_11_24/0.2)_62%,rgb(6_11_24/0)_100%)]"
         />
-        <Container className="flex min-h-[34rem] flex-col justify-end pb-16 pt-28 md:min-h-[40rem] lg:min-h-[calc(100svh-8rem)] lg:max-h-[50rem] lg:justify-center lg:pb-20">
+        <Container className="flex flex-col justify-end pb-16 pt-[15rem] sm:pt-[19rem] md:pt-[23rem] lg:min-h-[calc(100svh-8rem)] lg:max-h-[50rem] lg:justify-center lg:pb-20 lg:pt-28">
           <p className="kicker kv-rise">IT Consulting · Schweiz</p>
           <h1 id="hero-title" className="kv-rise mt-6 max-w-[16ch] text-hero font-semibold text-white [--kv-delay:0.04s]">
             {hero.title}

@@ -54,7 +54,7 @@ export function PageBanner({
       {/* Fades the image into the dark surface: fully dark behind the text on every width. */}
       <div
         aria-hidden
-        className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgb(6_11_24/0.5)_0%,rgb(6_11_24/0.88)_65%,var(--color-night)_100%)] md:bg-[linear-gradient(90deg,var(--color-night)_0%,rgb(6_11_24/0.92)_36%,rgb(6_11_24/0.3)_70%,rgb(6_11_24/0)_100%)]"
+        className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgb(6_11_24/0.2)_0%,rgb(6_11_24/0.8)_60%,var(--color-night)_100%)] md:bg-[linear-gradient(90deg,var(--color-night)_0%,rgb(6_11_24/0.92)_36%,rgb(6_11_24/0.3)_70%,rgb(6_11_24/0)_100%)]"
       />
       <Container
         className={cn(
