@@ -2,16 +2,19 @@ import { cn } from "@/lib/utils";
 import { Container } from "./container";
 
 /**
- * Section backgrounds of the public site: white and cool light grey (cloud) for content,
- * navy for the dark bands. Navy sets `.on-dark` (electric focus rings and kickers) and white text.
+ * Section backgrounds of the public site: white and a cool light grey (mist) for reading
+ * content, night for the dark bands. Night sets `.on-dark` (electric focus rings, sky labels)
+ * and white text. "cloud" and "navy" are the older names of mist and night.
  */
-export type SectionTone = "white" | "cloud" | "navy";
+export type SectionTone = "white" | "mist" | "night" | "cloud" | "navy";
 export type SectionSpace = "tight" | "default" | "loose";
 
 const tones: Record<SectionTone, string> = {
   white: "bg-white",
-  cloud: "bg-cloud",
-  navy: "on-dark bg-navy text-white",
+  mist: "bg-mist",
+  night: "on-dark bg-night text-white",
+  cloud: "bg-mist",
+  navy: "on-dark bg-night text-white",
 };
 
 const spaces: Record<SectionSpace, string> = {
@@ -23,8 +26,10 @@ const spaces: Record<SectionSpace, string> = {
 /** Hairline at the top, for two consecutive sections with the same tone. */
 const rules: Record<SectionTone, string> = {
   white: "border-t border-line",
-  cloud: "border-t border-cloud-line",
-  navy: "border-t border-white/10",
+  mist: "border-t border-line",
+  night: "border-t border-white/[0.08]",
+  cloud: "border-t border-line",
+  navy: "border-t border-white/[0.08]",
 };
 
 export function Section({
@@ -63,37 +68,34 @@ export function Section({
 }
 
 /**
- * Heading block of a section: optional kicker (small spaced capitals), H2 and text.
- * `align="center"` centres the block, as for the service and article overviews.
+ * Heading block of a section: optional mono label (`.kicker`, e.g. "02 / Leistungen"), H2 and text,
+ * always left-aligned.
  */
 export function SectionHeader({
   id,
   kicker,
   title,
   text,
-  align = "start",
   className,
   titleClassName,
   as: Heading = "h2",
 }: {
   id?: string;
-  /** Small spaced capitals above the heading, e.g. "Leistungen". Only where it helps orientation. */
+  /** Mono label above the heading, e.g. "02 / Leistungen". */
   kicker?: string;
   title: React.ReactNode;
   text?: React.ReactNode;
-  align?: "start" | "center";
   className?: string;
   titleClassName?: string;
   as?: "h1" | "h2";
 }) {
-  const center = align === "center";
   return (
-    <div className={cn(center ? "mx-auto max-w-3xl text-center" : "max-w-3xl", className)}>
+    <div className={cn("max-w-3xl", className)}>
       {kicker ? <p className="kicker">{kicker}</p> : null}
       <Heading
         id={id}
         className={cn(
-          "text-navy in-[.on-dark]:text-white",
+          "text-night in-[.on-dark]:text-white",
           Heading === "h1" ? "text-h1" : "text-h2",
           kicker ? "mt-4" : null,
           titleClassName,
@@ -102,7 +104,7 @@ export function SectionHeader({
         {title}
       </Heading>
       {text ? (
-        <div className={cn("mt-5 text-lead text-slate in-[.on-dark]:text-white/75", center && "mx-auto max-w-2xl")}>
+        <div className="mt-5 text-lead text-slate in-[.on-dark]:text-white/75">
           {text}
         </div>
       ) : null}

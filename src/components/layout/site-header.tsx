@@ -6,20 +6,22 @@ import { primaryCta } from "@/content/navigation";
 import { DesktopNav } from "./nav-links";
 import { MobileNav } from "./mobile-nav";
 
-/** Sticky white header: wordmark, main navigation and the contact button. */
+/**
+ * Sticky dark header: wordmark, main navigation and the contact button. Solid night, so it
+ * reads the same over dark and light sections. Never give it a backdrop-filter: that makes the
+ * header the containing block of the fixed mobile menu panel and collapses the panel to 1 px.
+ */
 export function SiteHeader() {
   return (
-    // Solid white on purpose: a backdrop-filter here would make the header the containing block
-    // of the fixed mobile menu panel and collapse it to the header's height.
-    <header className="sticky top-0 z-50 border-b border-line/80 bg-white text-navy">
-      <Container className="flex h-20 items-center justify-between gap-6">
+    <header className="on-dark sticky top-0 z-50 border-b border-white/[0.08] bg-night text-white">
+      <Container className="flex h-[4.5rem] items-center justify-between gap-6">
         <Link href="/" className="-m-1 shrink-0 rounded p-1">
           <Wordmark />
           <span className="sr-only">, zur Startseite</span>
         </Link>
-        <div className="flex items-center gap-4 lg:gap-10">
+        <div className="flex items-center gap-3 lg:gap-8">
           <DesktopNav />
-          <ButtonLink href={primaryCta.href} size="sm" className="hidden sm:inline-flex">
+          <ButtonLink href={primaryCta.href} variant="light" size="sm" className="hidden sm:inline-flex">
             {primaryCta.label}
           </ButtonLink>
           <MobileNav />

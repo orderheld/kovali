@@ -20,7 +20,9 @@ export const about = {
 
   banner: { title: "Über uns" },
 
+  /** Section labels: the page puts the mono number in front ("01 / Unternehmen"). */
   intro: {
+    kicker: "Unternehmen",
     title: "Wer wir sind",
     paragraphs: [
       `${site.brand} ist ein Beratungsunternehmen für IT-Projekte in der Schweiz. Wir übernehmen Business Analysis, Requirements Engineering, Testmanagement und Test Engineering. Wir arbeiten vor Ort, remote oder hybrid in der ganzen Schweiz.`,
@@ -55,6 +57,7 @@ export const about = {
   },
 
   approach: {
+    kicker: "Arbeitsweise",
     title: "Wie wir arbeiten",
     steps: [
       {
@@ -79,6 +82,7 @@ export const about = {
   /** Target of the links /unternehmen#zusammenarbeit. Icons are chosen in the page. */
   collaboration: {
     id: "zusammenarbeit",
+    kicker: "Mandate",
     title: "Zusammenarbeit",
     models: [
       {
@@ -94,6 +98,8 @@ export const about = {
         text: "Sie beauftragen uns direkt mit einem festgelegten Ergebnis. Das kann eine Ist-Analyse, ein Fachkonzept, eine Teststrategie oder ein Abnahmetest sein.",
       },
     ],
+    /** Heading of the terms below the three models. */
+    termsTitle: "Vertrag und Abrechnung",
     /** No amounts: the hourly rate is named in the written offer only (Ferhat Demir, 14.10.2026). */
     terms: [
       "Aufgaben, Ergebnisse und Verantwortlichkeiten halten wir vor dem Start schriftlich fest. Wir rechnen monatlich nach Aufwand ab. Den Stundensatz nennen wir in der schriftlichen Offerte.",

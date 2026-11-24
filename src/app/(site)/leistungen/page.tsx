@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
 import { CtaBand } from "@/components/sections/cta-band";
 import { PageBanner } from "@/components/sections/page-banner";
 import { ServiceIcon } from "@/components/sections/service-icon";
+import { ButtonArrow, ButtonLink, buttonClasses } from "@/components/ui/button";
 import { Section } from "@/components/ui/section";
 import { site } from "@/config/site";
+import { home } from "@/content/home";
 import { serviceHref, services } from "@/content/services";
 import { pageMetadata } from "@/lib/seo";
 
@@ -17,9 +18,36 @@ export const metadata = pageMetadata({
 /** How many tasks of each service the overview lists (the most important come first). */
 const TASKS_SHOWN = 6;
 
+/** "01", "02", … for the mono numbering of the services. */
+const nr = (i: number) => String(i + 1).padStart(2, "0");
+
+/** How the services work together: the strength "Analyse und Test aus einer Hand" of the home page. */
+const together = home.strengths.items[1];
+
 /**
- * Overview of the four services: banner, one row per service (name and link on the left,
- * summary and main tasks on the right), closing band.
+ * Looks like a button at the end of each card; the card link on the title is the actual target.
+ * Below the summary from lg, below the tasks on smaller screens.
+ */
+function MorePill() {
+  return (
+    <span
+      aria-hidden
+      className={buttonClasses({
+        variant: "outline",
+        size: "sm",
+        className: "group-hover:border-night/40 group-hover:bg-mist",
+      })}
+    >
+      Mehr erfahren
+      <ButtonArrow />
+    </span>
+  );
+}
+
+/**
+ * Overview of the four services: banner, one large numbered card per service (name, summary
+ * and main tasks; the whole card links to the service page), how analysis and test work
+ * together, closing panel.
  */
 export default function LeistungenPage() {
   return (
@@ -34,23 +62,35 @@ export default function LeistungenPage() {
         lead="Wir übernehmen in Ihrem IT-Projekt eine einzelne Aufgabe oder Analyse und Test im selben Mandat."
       />
 
-      <Section>
-        <ul className="divide-y divide-line">
-          {services.map((s) => (
-            // Name and link sit in the left column from lg; on small screens the link follows the text.
+      <Section tone="mist">
+        <ol className="grid gap-4 md:gap-6">
+          {services.map((s, i) => (
             <li
               key={s.slug}
-              className="grid gap-8 py-14 first:pt-0 last:pb-0 md:py-20 lg:grid-cols-12 lg:grid-rows-[auto_1fr] lg:gap-x-8 lg:gap-y-5"
+              className="group relative grid gap-10 rounded-3xl border border-line bg-white p-7 transition-colors hover:border-blue/40 sm:p-10 lg:grid-cols-12 lg:gap-12 lg:p-12 xl:p-14"
             >
-              <div className="lg:col-span-5 lg:pr-8">
-                <ServiceIcon slug={s.slug} />
-                <h2 id={`${s.slug}-title`} className="mt-6 text-h3 text-navy">
-                  {s.name}
+              <div className="flex flex-col lg:col-span-5">
+                <div className="flex items-start justify-between gap-4">
+                  <ServiceIcon slug={s.slug} />
+                  <span aria-hidden className="font-mono text-sm text-blue">
+                    {nr(i)}
+                  </span>
+                </div>
+                <h2 id={`${s.slug}-title`} className="mt-10 text-h3 text-night lg:mt-12">
+                  {/* The link covers the whole card. */}
+                  <Link href={serviceHref(s.slug)} className="after:absolute after:inset-0 after:rounded-3xl">
+                    {s.name}
+                  </Link>
                 </h2>
+                <p className="mt-4 leading-relaxed text-slate">{s.summary}</p>
+                <div className="mt-auto hidden pt-10 lg:block">
+                  <MorePill />
+                </div>
               </div>
-              <div className="lg:col-span-7 lg:col-start-6 lg:row-span-2 lg:row-start-1">
-                <p className="text-lead text-slate">{s.summary}</p>
-                <ul className="mt-8 space-y-3">
+              <div className="lg:col-span-7 lg:border-l lg:border-line lg:pl-12">
+                <p className="kicker">Aufgaben</p>
+                {/* Two columns only where a long task name still fits on one line. */}
+                <ul className="mt-6 grid gap-x-8 gap-y-3 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
                   {s.tasks.slice(0, TASKS_SHOWN).map((task) => (
                     <li
                       key={task}
@@ -60,20 +100,30 @@ export default function LeistungenPage() {
                     </li>
                   ))}
                 </ul>
+                <div className="mt-10 lg:hidden">
+                  <MorePill />
+                </div>
               </div>
-              <p className="lg:col-span-5 lg:col-start-1 lg:row-start-2 lg:pr-8">
-                <Link href={serviceHref(s.slug)} className="group font-medium text-blue hover:text-blue-700">
-                  Mehr zu {s.name}
-                  <ArrowRight
-                    aria-hidden
-                    strokeWidth={2}
-                    className="ml-2 inline size-4 align-[-0.125em] transition-transform duration-200 group-hover:translate-x-0.5"
-                  />
-                </Link>
-              </p>
             </li>
           ))}
-        </ul>
+        </ol>
+      </Section>
+
+      <Section labelledBy="zusammenspiel-title">
+        <div className="grid gap-10 lg:grid-cols-12 lg:gap-16">
+          <div className="lg:col-span-5">
+            <p className="kicker">Arbeitsweise</p>
+            <h2 id="zusammenspiel-title" className="mt-5 text-h2 text-night">
+              {together.title}
+            </h2>
+          </div>
+          <div className="lg:col-span-7">
+            <p className="text-lead text-slate">{together.text}</p>
+            <ButtonLink href="/unternehmen#zusammenarbeit" variant="outline" className="mt-10">
+              Formen der Zusammenarbeit
+            </ButtonLink>
+          </div>
+        </div>
       </Section>
 
       <CtaBand title="Welche Aufgabe ist in Ihrem Projekt offen?" />

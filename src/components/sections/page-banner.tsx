@@ -11,13 +11,14 @@ export interface Crumb {
   path: string;
 }
 
-/** Id of the page title (the H1 in the banner); the banner section is labelled by it. */
+/** Id of the page title (the H1 in the header); the header section is labelled by it. */
 export const PAGE_TITLE_ID = "seitentitel";
 
 /**
- * Opening banner of every subpage: a wide alpine panorama (decorative) with the page title
- * centred on it in white. An optional kicker sits above the title and an optional lead below.
- * The breadcrumb trail goes to search engines as structured data only (none on the 404 page).
+ * Dark page header of every subpage: a mono label, the page title and an optional lead,
+ * left-aligned; a 3D image fills the right side and fades into the dark surface. The image
+ * is decorative. The breadcrumb trail goes to search engines as structured data (none on the
+ * 404 page); the label shows the parent page unless a kicker is given.
  */
 export function PageBanner({
   crumbs,
@@ -29,34 +30,46 @@ export function PageBanner({
 }: {
   crumbs?: Crumb[];
   scene: BannerScene;
+  /** Mono label above the title; defaults to the parent page of the breadcrumb trail. */
   kicker?: string;
   title: React.ReactNode;
   lead?: React.ReactNode;
   /** md: title only or short lead; lg: more height for a longer title and lead. */
   size?: "md" | "lg";
 }) {
+  const label = kicker ?? (crumbs && crumbs.length > 2 ? crumbs[crumbs.length - 2].name : undefined);
   return (
     <section aria-labelledby={PAGE_TITLE_ID} className="on-dark relative isolate overflow-hidden bg-night text-white">
-      <Image
-        src={scenes.banner[scene]}
-        alt=""
-        fill
-        priority
-        sizes="100vw"
-        placeholder="blur"
-        className="-z-20 object-cover object-[50%_60%]"
+      <div aria-hidden className="absolute inset-y-0 right-0 -z-20 w-full md:w-[68%]">
+        <Image
+          src={scenes.banner[scene]}
+          alt=""
+          fill
+          preload
+          sizes="(min-width: 768px) 68vw, 100vw"
+          placeholder="blur"
+          className="object-cover object-right"
+        />
+      </div>
+      {/* Fades the image into the dark surface: fully dark behind the text on every width. */}
+      <div
+        aria-hidden
+        className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgb(6_11_24/0.5)_0%,rgb(6_11_24/0.88)_65%,var(--color-night)_100%)] md:bg-[linear-gradient(90deg,var(--color-night)_0%,rgb(6_11_24/0.92)_36%,rgb(6_11_24/0.3)_70%,rgb(6_11_24/0)_100%)]"
       />
-      {/* Darker towards the edges, so the white title reads on every crop. */}
-      <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_70%_90%_at_50%_55%,rgb(6_11_24/0.25),rgb(6_11_24/0.6))]" />
       <Container
         className={cn(
-          "flex flex-col items-center justify-center text-center",
-          size === "lg" ? "min-h-[22rem] py-20 md:min-h-[26rem]" : "min-h-[16rem] py-16 md:min-h-[19rem]",
+          "flex flex-col justify-end",
+          size === "lg" ? "min-h-[24rem] pb-16 pt-24 md:min-h-[30rem] md:pb-20" : "min-h-[20rem] pb-14 pt-20 md:min-h-[26rem] md:pb-[4.5rem]",
         )}
       >
-        {kicker ? <p className="kicker kv-rise">{kicker}</p> : null}
-        <h1 id={PAGE_TITLE_ID} className={cn("kv-rise max-w-4xl text-h1 text-white [--kv-delay:0.04s]", kicker && "mt-4")}>{title}</h1>
-        {lead ? <div className="kv-rise mt-5 max-w-2xl text-lead text-white/80 [--kv-delay:0.08s]">{lead}</div> : null}
+        {label ? <p className="kicker kv-rise">{label}</p> : null}
+        <h1
+          id={PAGE_TITLE_ID}
+          className={cn("kv-rise max-w-3xl text-h1 text-white [--kv-delay:0.04s]", label && "mt-5")}
+        >
+          {title}
+        </h1>
+        {lead ? <div className="kv-rise mt-6 max-w-2xl text-lead text-white/75 [--kv-delay:0.08s]">{lead}</div> : null}
       </Container>
       {crumbs ? <JsonLd data={breadcrumbJsonLd(crumbs)} /> : null}
     </section>

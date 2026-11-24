@@ -47,25 +47,29 @@
   --font-mono: var(--font-geist-mono), ui-monospace, "SFMono-Regular", monospace;
 
   /*
-   * Geist throughout, as in the logo. Calm type scale in the manner of a consulting site:
-   * medium weight, moderate tracking, generous line height.
-   *   display   home hero line under the kicker
-   *   h1        page banners
+   * Geist throughout, as in the logo. Large, tight, left-aligned headings in semibold, the
+   * Geist Mono labels (.kicker) as the technical counterpoint.
+   *   hero      home hero headline
+   *   display   lead line under the home headline
+   *   h1        page headers
    *   h2        section headings
    */
-  --text-display: clamp(1.625rem, 1.2rem + 1.5vw, 2.375rem);
-  --text-display--line-height: 1.25;
-  --text-display--letter-spacing: -0.015em;
-  --text-h1: clamp(2.25rem, 1.7rem + 2vw, 3.5rem);
-  --text-h1--line-height: 1.1;
-  --text-h1--letter-spacing: -0.022em;
-  --text-h2: clamp(1.875rem, 1.5rem + 1.3vw, 2.625rem);
-  --text-h2--line-height: 1.15;
-  --text-h2--letter-spacing: -0.018em;
-  --text-h3: clamp(1.25rem, 1.15rem + 0.35vw, 1.5rem);
+  --text-hero: clamp(2.5rem, 1.6rem + 3.6vw, 4.75rem);
+  --text-hero--line-height: 1.02;
+  --text-hero--letter-spacing: -0.04em;
+  --text-display: clamp(1.25rem, 1.1rem + 0.6vw, 1.5rem);
+  --text-display--line-height: 1.5;
+  --text-display--letter-spacing: -0.01em;
+  --text-h1: clamp(2.375rem, 1.7rem + 2.6vw, 4rem);
+  --text-h1--line-height: 1.04;
+  --text-h1--letter-spacing: -0.035em;
+  --text-h2: clamp(1.875rem, 1.45rem + 1.6vw, 2.875rem);
+  --text-h2--line-height: 1.1;
+  --text-h2--letter-spacing: -0.03em;
+  --text-h3: clamp(1.1875rem, 1.1rem + 0.35vw, 1.375rem);
   --text-h3--line-height: 1.3;
-  --text-h3--letter-spacing: -0.01em;
-  --text-lead: clamp(1.125rem, 1.05rem + 0.3vw, 1.25rem);
+  --text-h3--letter-spacing: -0.015em;
+  --text-lead: clamp(1.0625rem, 1rem + 0.3vw, 1.1875rem);
   --text-lead--line-height: 1.65;
 
   --container-site: 76rem;
@@ -99,13 +103,16 @@
     text-wrap: pretty;
   }
 
-  /* Public site only: headings in Geist, medium weight, calm spacing. The admin area keeps its own type. */
-  .site :where(h1, h2, h3) {
+  /* Public site only: semibold, tight headings; card and row titles in medium. The admin area keeps its own type. */
+  .site :where(h1, h2) {
+    font-weight: 600;
+  }
+  .site :where(h3) {
     font-weight: 500;
   }
+  /* Large, tight headings break only between words; a single over-long word still wraps. */
   .site :where(h1, h2) {
-    hyphens: auto;
-    /* Last resort where no hyphenation dictionary exists, e.g. "Datenschutzerklärung" at 320 px. */
+    hyphens: manual;
     overflow-wrap: break-word;
   }
 
@@ -140,22 +147,22 @@
   }
 
   /*
-   * Public site: small spaced capitals above or below a heading, e.g. "LEISTUNGEN".
-   * Corporate Blue on light surfaces, Electric Blue on dark ones.
+   * Public site: technical label above a heading, e.g. "01 / LEISTUNGEN", in Geist Mono.
+   * Corporate Blue on light surfaces, sky on dark ones.
    */
   .site .eyebrow,
   .kicker {
     display: inline-block;
-    font-family: var(--font-sans);
+    font-family: var(--font-mono);
     font-size: 0.75rem;
     line-height: 1rem;
-    font-weight: 600;
-    letter-spacing: 0.18em;
+    font-weight: 500;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--color-blue);
   }
   .on-dark .kicker {
-    color: var(--color-electric);
+    color: var(--color-sky);
   }
 
   /* Article and legal text. */
@@ -177,8 +184,8 @@
     color: var(--color-ink);
     font-size: 1.75rem;
     line-height: 1.2;
-    font-weight: 500;
-    letter-spacing: -0.02em;
+    font-weight: 600;
+    letter-spacing: -0.025em;
   }
   .prose-kovali h3 {
     margin-top: 1.75em;

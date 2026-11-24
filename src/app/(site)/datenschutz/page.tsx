@@ -9,10 +9,21 @@ export const metadata = pageMetadata({
   path: "/datenschutz",
 });
 
-/** Section numbers count up in order, so adding or removing a section needs no renumbering. */
+/**
+ * Section numbers count up in order, so adding or removing a section needs no renumbering.
+ * The number is a mono label in front of the heading text ("05 Aufbewahrung").
+ */
 function sectionCounter() {
   let n = 0;
-  return (title: string) => `${++n}. ${title}`;
+  return function section(title: string) {
+    const number = String(++n).padStart(2, "0");
+    return (
+      <>
+        <span className="mr-1 font-mono text-[0.875rem] font-medium tracking-[0.04em] text-blue">{number}</span>{" "}
+        {title}
+      </>
+    );
+  };
 }
 
 export default function DatenschutzPage() {
@@ -21,7 +32,12 @@ export default function DatenschutzPage() {
   const email = contact.email.value;
   const section = sectionCounter();
   return (
-    <LegalPage title="Datenschutzerklärung" path="/datenschutz" updated="November 2026">
+    <LegalPage
+      title="Datenschutzerklärung"
+      heading={<>Datenschutz&shy;erklärung</>}
+      path="/datenschutz"
+      updated="November 2026"
+    >
       <p>
         Diese Datenschutzerklärung informiert darüber, welche Personendaten beim Besuch dieser Website, bei einer
         Kontaktaufnahme und in der Zusammenarbeit mit Kunden und Partnern bearbeitet werden. Sie richtet sich nach dem

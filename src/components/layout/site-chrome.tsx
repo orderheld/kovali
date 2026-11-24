@@ -12,7 +12,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
     <div className="site contents">
       <a
         href="#inhalt"
-        className="sr-only z-[60] rounded-[2px] bg-navy px-4 py-3 font-medium text-white focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:px-4 focus:py-3"
+        className="sr-only z-[60] rounded-full bg-electric px-4 py-3 font-medium text-night focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:px-4 focus:py-3"
       >
         Zum Inhalt springen
       </a>

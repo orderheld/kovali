@@ -21,8 +21,8 @@ interface CtaBandProps {
 }
 
 /**
- * Closing call to action before the footer: a wide panorama with a centred heading, a short
- * text, one button and the e-mail address.
+ * Closing call to action before the footer: a dark rounded panel on white, text and button
+ * on the left, a 3D image on the right that fades into the panel.
  */
 export function CtaBand({
   title = contactCta.title,
@@ -33,35 +33,43 @@ export function CtaBand({
 }: CtaBandProps) {
   const email = site.contact.email.value;
   return (
-    <section aria-labelledby={headingId} className="on-dark relative isolate overflow-hidden bg-night text-white">
-      <Image
-        src={scenes.cta}
-        alt=""
-        fill
-        sizes="100vw"
-        placeholder="blur"
-        className="-z-20 object-cover object-[50%_70%]"
-      />
-      <div aria-hidden className="absolute inset-0 -z-10 bg-[linear-gradient(to_bottom,rgb(2_5_12/0.55),rgb(2_5_12/0.25)_55%,rgb(2_5_12/0.55))]" />
-      <Container className="flex flex-col items-center py-24 text-center md:py-32">
-        <h2 id={headingId} className="max-w-3xl text-h2 text-white">
-          {title}
-        </h2>
-        {text ? <div className="mt-5 max-w-2xl text-lead text-white/80">{text}</div> : null}
-        <ButtonLink href={primary.href} variant="accent" className="mt-10">
-          {primary.label}
-        </ButtonLink>
-        {showMail ? (
-          <p className="mt-6 text-white/75">
-            Oder per E-Mail an{" "}
-            <a
-              href={`mailto:${email}`}
-              className="text-white underline decoration-white/40 underline-offset-4 transition-colors hover:decoration-white"
-            >
-              {email}
-            </a>
-          </p>
-        ) : null}
+    <section aria-labelledby={headingId} className="bg-white py-16 md:py-24">
+      <Container>
+        <div className="on-dark relative isolate overflow-hidden rounded-3xl bg-night text-white">
+          <div aria-hidden className="absolute inset-y-0 right-0 -z-20 w-full md:w-[62%]">
+            <Image
+              src={scenes.cta}
+              alt=""
+              fill
+              sizes="(min-width: 768px) 46rem, 100vw"
+              placeholder="blur"
+              className="object-cover object-right"
+            />
+          </div>
+          <div
+            aria-hidden
+            className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgb(6_11_24/0.6)_0%,rgb(6_11_24/0.92)_70%)] md:bg-[linear-gradient(90deg,var(--color-night)_0%,rgb(6_11_24/0.9)_40%,rgb(6_11_24/0.2)_80%)]"
+          />
+          <div className="px-7 py-14 sm:px-12 md:py-20 lg:px-16">
+            <h2 id={headingId} className="max-w-xl text-h2 text-white">
+              {title}
+            </h2>
+            {text ? <div className="mt-5 max-w-lg text-lead text-white/75">{text}</div> : null}
+            <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-4">
+              <ButtonLink href={primary.href} variant="light">
+                {primary.label}
+              </ButtonLink>
+              {showMail ? (
+                <a
+                  href={`mailto:${email}`}
+                  className="text-white/80 underline decoration-white/30 underline-offset-4 transition-colors hover:text-white hover:decoration-white"
+                >
+                  {email}
+                </a>
+              ) : null}
+            </div>
+          </div>
+        </div>
       </Container>
     </section>
   );

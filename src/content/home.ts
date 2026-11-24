@@ -1,26 +1,27 @@
 import { responseClause, site } from "@/config/site";
 
 /**
- * Copy for the home page, in the reduced structure of the 2026-11 redesign (Ferhat Demir,
- * 24.11.2026: clean, reduced, targeted, in the manner of a Swiss consulting site): hero,
- * introduction, three strengths, services, articles, closing band. No prices on the site
- * (Ferhat Demir, 14.10.2026). The team is named by roles only, never by person.
+ * Copy for the home page (redesign 2026-11, Ferhat Demir: clean, reduced, targeted, in a
+ * look of its own): hero, introduction, services, how we work, team roles, articles,
+ * closing panel. No prices on the site (Ferhat Demir, 14.10.2026). The team is named by
+ * roles only, never by person.
  */
 export const home = {
   hero: {
-    /** H1, set in small capitals above the lead. */
+    /** H1 of the hero. */
     title: "IT Consulting für Business Analysis und Test",
     lead: "Wir klären, was Ihre Software leisten muss, und prüfen vor dem Go-live, ob sie es tut.",
     primary: { label: "Projekt besprechen", href: "/kontakt" },
   },
   intro: {
+    title: "Beratung für IT-Projekte in der Schweiz",
     paragraphs: [
       `${site.brand} ist ein Beratungsunternehmen für IT-Projekte in der Schweiz. Wir arbeiten in Business Analysis, Requirements Engineering und Softwaretest.`,
       "Im Team arbeiten Business Analysts, Test Manager und Test Engineers. Wir übernehmen Aufgaben direkt für Unternehmen und öffentliche Organisationen oder als Subunternehmen für Beratungen und IT-Dienstleister.",
     ],
     link: { label: "Über uns", href: "/unternehmen" },
   },
-  /** Navy band with three strengths. Icons are chosen in the page. */
+  /** Three numbered strengths ("Arbeitsweise"). */
   strengths: {
     title: "Worauf Sie sich verlassen können",
     items: [

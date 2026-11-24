@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { Mail } from "lucide-react";
 import { PageBanner } from "@/components/sections/page-banner";
 import { Portrait } from "@/components/sections/portrait";
-import { buttonClasses } from "@/components/ui/button";
+import { ButtonArrow, buttonClasses } from "@/components/ui/button";
 import { Section } from "@/components/ui/section";
 import { responseClause, site } from "@/config/site";
 import { isEmailConfigured, serverEnv } from "@/lib/env";
@@ -33,9 +33,13 @@ const helpfulDetails = [
 ];
 
 const bullet =
-  "relative pl-6 leading-relaxed text-slate before:absolute before:left-0 before:top-[0.8em] before:h-px before:w-3 before:bg-blue";
+  "relative pl-6 leading-relaxed text-slate before:absolute before:left-0 before:top-[0.7em] before:h-px before:w-3 before:bg-blue";
 
-/** Contact page: heading, short text and contact person on the left, the form (or the e-mail route) on the right. */
+/**
+ * Contact page: banner, then the direct contact (e-mail address, Ferhat Demir as contact
+ * person) on the left and the form card (or the e-mail route) on the right. No closing band:
+ * this page is the contact itself.
+ */
 export default function KontaktPage() {
   const email = site.contact.email.value;
   return (
@@ -50,45 +54,52 @@ export default function KontaktPage() {
       />
 
       <Section labelledBy="kontakt-title">
-        <div className="grid gap-14 lg:grid-cols-12 lg:gap-8">
-          <div className="lg:sticky lg:top-28 lg:col-span-4 lg:self-start">
-            <h2 id="kontakt-title" className="text-h2 text-navy">
+        <div className="grid gap-12 lg:grid-cols-12 lg:gap-16">
+          <div className="lg:sticky lg:top-28 lg:col-span-5 lg:self-start">
+            <p className="kicker">Direkter Kontakt</p>
+            <h2 id="kontakt-title" className="mt-5 text-h2 text-night">
               Sprechen wir über Ihr Vorhaben
             </h2>
-            <p className="mt-6 leading-relaxed text-slate">
+            <p className="mt-6 text-lead text-slate">
               Beschreiben Sie kurz Aufgabe, Zeitraum und Pensum. {site.contact.person} meldet sich mit einer ersten
               Einschätzung{responseClause()}.
             </p>
-            <p className="mt-6">
-              <a
-                href={`mailto:${email}`}
-                className="font-medium text-blue underline decoration-blue/40 decoration-1 underline-offset-4 transition-colors hover:text-blue-700 hover:decoration-blue-700"
-              >
-                {email}
-              </a>
-            </p>
 
-            <div className="mt-10 flex items-center gap-4 border-t border-line pt-8">
-              <Portrait size="md" />
-              <div className="min-w-0">
-                <p className="font-medium leading-snug text-navy">{site.contact.person}</p>
-                <p className="mt-1 text-[0.9375rem] leading-snug text-slate">{site.contact.title}</p>
+            <div className="mt-10 border-t border-line">
+              <div className="border-b border-line py-6">
+                <p className="font-mono text-xs uppercase tracking-[0.08em] text-slate">E-Mail</p>
+                <a
+                  href={`mailto:${email}`}
+                  className="mt-2 inline-block text-h3 font-medium text-blue underline decoration-blue/30 decoration-1 underline-offset-[6px] transition-colors hover:text-blue-700 hover:decoration-blue-700"
+                >
+                  {email}
+                </a>
+              </div>
+              <div className="flex items-center gap-4 border-b border-line py-6">
+                <Portrait size="md" />
+                <div className="min-w-0">
+                  <p className="font-medium leading-snug text-night">{site.contact.person}</p>
+                  <p className="mt-1 text-[0.9375rem] leading-snug text-slate">{site.contact.title}</p>
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="lg:col-span-7 lg:col-start-6">
+          <div className="lg:col-span-7">
             {formActive ? (
-              <Suspense fallback={<ContactForm fallbackEmail={email} testMode={serverEnv.dryRun} />}>
-                <PreselectedContactForm fallbackEmail={email} testMode={serverEnv.dryRun} />
-              </Suspense>
+              <div className="rounded-3xl border border-line bg-mist p-6 sm:p-10">
+                <Suspense fallback={<ContactForm fallbackEmail={email} testMode={serverEnv.dryRun} />}>
+                  <PreselectedContactForm fallbackEmail={email} testMode={serverEnv.dryRun} />
+                </Suspense>
+              </div>
             ) : (
-              <div className="border-t border-line pt-10 lg:border-t-0 lg:pt-0">
-                <h3 className="text-h3 text-navy">Anfrage per E-Mail</h3>
+              <div className="rounded-3xl border border-line bg-mist p-7 sm:p-10">
+                <Mail aria-hidden strokeWidth={1.25} className="size-10 text-blue" />
+                <h3 className="mt-8 text-h3 text-night">Anfrage per E-Mail</h3>
                 <p className="mt-4 leading-relaxed text-slate">
                   Senden Sie Ihre Anfrage an {email}. Diese Angaben helfen uns bei der ersten Einschätzung:
                 </p>
-                <ul className="mt-6 space-y-3">
+                <ul className="mt-6 space-y-3 border-t border-line pt-6">
                   {helpfulDetails.map((item) => (
                     <li key={item} className={bullet}>
                       {item}
@@ -96,8 +107,8 @@ export default function KontaktPage() {
                   ))}
                 </ul>
                 <a href={`mailto:${email}`} className={buttonClasses({ className: "mt-10" })}>
-                  <Mail aria-hidden strokeWidth={1.5} className="size-4" />
                   E-Mail schreiben
+                  <ButtonArrow />
                 </a>
               </div>
             )}

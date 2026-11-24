@@ -7,19 +7,19 @@ export type PortraitSize = "lg" | "md" | "avatar";
 /** "Ferhat Demir, Geschäftsführer". No brand name, so it survives the coming name change. */
 const PHOTO_ALT = `${founder.name}, ${founder.role}`;
 
-/** Small square avatar sizes. md: contact cards; avatar: bylines. */
+/** Small avatar sizes with rounded corners. md: contact cards; avatar: bylines. */
 const square: Record<Exclude<PortraitSize, "lg">, { box: string; sizes: string }> = {
   md: { box: "size-16 sm:size-[4.5rem]", sizes: "4.5rem" },
   avatar: { box: "size-11", sizes: "2.75rem" },
 };
 
 /**
- * Ferhat Demir's portrait: the cutout (white shirt, transparent background) on a calm navy
- * tile with a subtle vertical gradient. Square corners, no decoration.
+ * Ferhat Demir's portrait: the cutout (white shirt, transparent background) on a calm
+ * night-navy tile with a subtle vertical gradient. Rounded corners as the cards, no decoration.
  *
- * - lg: 4:5 tile (company page). Names the person in its alt text.
- * - md: square navy avatar of 4.5 rem (contact page).
- * - avatar: square navy avatar of 2.75 rem (bylines).
+ * - lg: 4:5 tile with rounded-3xl corners (company page). Names the person in its alt text.
+ * - md: navy avatar of 4.5 rem with rounded-xl corners (contact page).
+ * - avatar: navy avatar of 2.75 rem with rounded-xl corners (bylines).
  *
  * md and avatar sit next to the visible name, so they are decorative (alt "").
  */
@@ -42,7 +42,13 @@ export function Portrait({
   if (size !== "lg") {
     const r = square[size];
     return (
-      <span className={cn("relative inline-block shrink-0 overflow-hidden bg-navy bg-[linear-gradient(180deg,#1c3a78_0%,#0b1733_100%)]", r.box, className)}>
+      <span
+        className={cn(
+          "relative inline-block shrink-0 overflow-hidden rounded-xl bg-navy bg-[linear-gradient(180deg,#1c3a78_0%,#0b1733_100%)]",
+          r.box,
+          className,
+        )}
+      >
         <Image
           src={founder.avatar}
           alt=""
@@ -58,7 +64,7 @@ export function Portrait({
   return (
     <figure className={cn("w-full max-w-[24rem]", className)}>
       {/* Lighter navy behind the head, so dark hair stays visible; full navy behind the white shirt. */}
-      <div className="relative aspect-[4/5] overflow-hidden bg-navy bg-[linear-gradient(180deg,#1c3a78_0%,#13224a_48%,#0b1733_100%)]">
+      <div className="relative isolate aspect-[4/5] overflow-hidden rounded-3xl bg-navy bg-[linear-gradient(180deg,#1c3a78_0%,#13224a_48%,#0b1733_100%)]">
         <Image
           src={founder.portrait}
           alt={PHOTO_ALT}
@@ -71,7 +77,7 @@ export function Portrait({
       </div>
       {caption ? (
         <figcaption className="mt-4">
-          <span className="block font-medium text-navy">{founder.name}</span>
+          <span className="block font-medium text-night">{founder.name}</span>
           <span className="block text-[0.9375rem] text-slate">{founder.role}</span>
         </figcaption>
       ) : null}

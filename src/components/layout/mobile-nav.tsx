@@ -55,7 +55,7 @@ export function MobileNav() {
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((v) => !v)}
-        className="-mr-2 inline-flex size-11 items-center justify-center rounded-md text-navy hover:bg-cloud"
+        className="-mr-2 inline-flex size-11 items-center justify-center rounded-full text-white hover:bg-white/10"
       >
         <span className="sr-only">{open ? "Menü schliessen" : "Menü öffnen"}</span>
         {open ? <X aria-hidden className="size-6" /> : <Menu aria-hidden className="size-6" />}
@@ -63,20 +63,23 @@ export function MobileNav() {
       <div
         id={panelId}
         hidden={!open}
-        className="fixed inset-x-0 bottom-0 top-20 z-40 overflow-y-auto border-t border-line bg-white"
+        className="on-dark fixed inset-x-0 bottom-0 top-[4.5rem] z-40 overflow-y-auto border-t border-white/10 bg-night text-white"
       >
         <nav aria-label="Hauptnavigation mobil" className="px-5 pb-12 pt-6 sm:px-8">
-          <ul className="border-b border-line">
-            {mobileNav.map((item) => {
+          <ul className="border-b border-white/10">
+            {mobileNav.map((item, i) => {
               const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
               return (
-                <li key={item.href} className="border-t border-line">
+                <li key={item.href} className="border-t border-white/10">
                   <Link
                     href={item.href}
                     onClick={close}
                     aria-current={active ? "page" : undefined}
-                    className={cn("block py-5 text-2xl", active ? "text-blue" : "text-navy")}
+                    className={cn("flex items-baseline gap-4 py-5 text-2xl font-medium tracking-[-0.02em]", active ? "text-electric" : "text-white")}
                   >
+                    <span aria-hidden className="font-mono text-xs text-sky/70">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
                     {item.label}
                   </Link>
                 </li>
@@ -85,7 +88,7 @@ export function MobileNav() {
           </ul>
           <p className="mt-10 kicker">E-Mail</p>
           <p className="mt-2">
-            <a href={`mailto:${email}`} className="text-lg text-navy underline decoration-navy/30 underline-offset-4">
+            <a href={`mailto:${email}`} className="text-lg text-white underline decoration-white/30 underline-offset-4">
               {email}
             </a>
           </p>

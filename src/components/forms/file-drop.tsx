@@ -67,7 +67,7 @@ export function FileDrop({
 
   return (
     <div>
-      <p id={`${id}-label`} className="mb-2 block text-sm font-medium text-navy">
+      <p id={`${id}-label`} className="mb-2 block text-sm font-medium text-night">
         {label}
         {optional ? <span className="font-normal text-slate"> (optional)</span> : null}
       </p>
@@ -93,18 +93,18 @@ export function FileDrop({
           onDragLeave={() => setDragging(false)}
           onDrop={handleDrop}
           className={cn(
-            "flex cursor-pointer items-center gap-4 rounded-[2px] border border-dashed px-5 py-6 transition-colors",
-            "peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-blue",
-            dragging ? "border-blue bg-blue/[0.04]" : "border-field bg-cloud hover:border-navy hover:bg-white",
-            file && !error && "border-solid border-navy bg-white",
+            "flex cursor-pointer items-center gap-4 rounded-xl border border-dashed px-5 py-6 transition-colors",
+            "peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-night",
+            dragging ? "border-blue bg-blue/[0.04]" : "border-field bg-white hover:border-night",
+            file && !error && "border-solid border-night bg-white",
             error && "border-fail",
           )}
         >
           <span
             aria-hidden
             className={cn(
-              "flex size-11 shrink-0 items-center justify-center border text-blue",
-              file && !error ? "border-blue/30 bg-blue/[0.06]" : "border-line bg-white",
+              "flex size-11 shrink-0 items-center justify-center rounded-lg border text-blue",
+              file && !error ? "border-blue/30 bg-blue/[0.06]" : "border-line bg-mist",
             )}
           >
             {file && !error ? (
@@ -116,14 +116,14 @@ export function FileDrop({
           <span id={`${id}-zone`} className={cn("min-w-0", file && "pr-10")}>
             {file ? (
               <>
-                <span className="block truncate font-medium text-navy">{file.name}</span>
+                <span className="block truncate font-medium text-night">{file.name}</span>
                 <span className="block text-sm text-slate">
                   {formatSize(file.size)} · <span className="text-blue underline underline-offset-2">Andere Datei wählen</span>
                 </span>
               </>
             ) : (
               <>
-                <span className="block font-medium text-navy">
+                <span className="block font-medium text-night">
                   {/* Touch devices cannot drag files, so they only see "Datei auswählen". */}
                   <span className="hidden pointer-fine:inline">Datei hierher ziehen oder </span>
                   <span className="pointer-fine:hidden">Datei </span>
@@ -138,7 +138,7 @@ export function FileDrop({
           <button
             type="button"
             onClick={remove}
-            className="absolute right-3 top-1/2 flex size-10 -translate-y-1/2 items-center justify-center rounded-[2px] text-slate hover:bg-cloud hover:text-navy"
+            className="absolute right-3 top-1/2 flex size-10 -translate-y-1/2 items-center justify-center rounded-lg text-slate hover:bg-mist hover:text-night"
           >
             <X aria-hidden className="size-4" />
             <span className="sr-only">Datei entfernen</span>

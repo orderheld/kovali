@@ -5,12 +5,12 @@ import { articleCover } from "@/content/scenes";
 import type { PublishedArticle } from "@/content/types";
 import { formatDate } from "@/lib/utils";
 
-/** Article teaser: cover panorama, category and reading time, title, excerpt, date. The whole card is the link. */
+/** Article teaser: 3D cover image, category and reading time, title, excerpt, date. The whole card is the link. */
 export function ArticleCard({ article, headingLevel = "h3" }: { article: PublishedArticle; headingLevel?: "h2" | "h3" }) {
   const Heading = headingLevel;
   return (
     <article className="group relative flex h-full flex-col">
-      <div className="relative aspect-[16/10] overflow-hidden bg-cloud">
+      <div className="relative aspect-[16/10] overflow-hidden rounded-2xl bg-night">
         <Image
           src={articleCover(article.slug)}
           alt=""
@@ -20,12 +20,12 @@ export function ArticleCard({ article, headingLevel = "h3" }: { article: Publish
           className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
         />
       </div>
-      <p className="mt-6 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate">
-        <span className="font-medium text-blue">{article.category}</span>
-        <span aria-hidden>·</span>
+      <p className="mt-6 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-xs uppercase tracking-[0.06em] text-slate">
+        <span className="text-blue">{article.category}</span>
+        <span aria-hidden>/</span>
         <span>{article.readingMinutes} Min. Lesezeit</span>
       </p>
-      <Heading className="mt-3 text-h3 text-navy">
+      <Heading className="mt-3 text-h3 text-night">
         <Link href={articleHref(article.slug)} className="after:absolute after:inset-0 group-hover:text-blue">
           {article.title}
         </Link>
