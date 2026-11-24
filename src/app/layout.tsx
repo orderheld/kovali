@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import { isIndexable, site } from "@/config/site";
-import { shareImage } from "@/lib/seo";
 import "./globals.css";
 
 const googleVerification = process.env.GOOGLE_SITE_VERIFICATION;
@@ -23,11 +22,6 @@ export const metadata: Metadata = {
     type: "website",
     siteName: site.brand,
     locale: "de_CH",
-    images: [shareImage],
-  },
-  twitter: {
-    card: "summary_large_image",
-    images: [shareImage.url],
   },
   robots: isIndexable ? { index: true, follow: true } : { index: false, follow: false },
   ...(googleVerification ? { verification: { google: googleVerification } } : {}),

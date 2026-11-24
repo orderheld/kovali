@@ -1,4 +1,3 @@
-import { site } from "@/config/site";
 import type { Article } from "../types";
 
 export const article: Article = {
@@ -100,7 +99,7 @@ export const article: Article = {
     },
     {
       type: "p",
-      text: "Scrum kennt die Rolle des Business Analysts nicht ausdrücklich. In agilen Teams ist sie dennoch verbreitet, häufig als Teil des Entwicklungsteams oder als enge Unterstützung des Product Owners. Auch SAFe sieht keine eigene Rolle dafür vor, die Tätigkeiten fallen aber auf mehreren Ebenen an.",
+      text: "Scrum kennt die Rolle des Business Analyst nicht ausdrücklich. In agilen Teams ist sie dennoch verbreitet, häufig als Teil des Entwicklungsteams oder als enge Unterstützung des Product Owner. Auch SAFe sieht keine eigene Rolle dafür vor, die Tätigkeiten fallen aber auf mehreren Ebenen an.",
     },
     { type: "h2", id: "faehigkeiten", text: "Fähigkeiten, auf die es ankommt" },
     {
@@ -121,10 +120,10 @@ export const article: Article = {
       type: "p",
       text: "Als Nachweis der Methodenkompetenz gelten die Zertifizierungen des IIBA (ECBA, CCBA, CBAP) sowie für das Anforderungshandwerk der IREB CPRE. Ein Zertifikat ersetzt keine Projekterfahrung, schafft aber ein gemeinsames Vokabular im Team.",
     },
-    { type: "h2", id: "unterstuetzung", text: `Business Analysis mit ${site.brand}` },
+    { type: "h2", id: "unterstuetzung", text: "Business Analysis mit KOVALI" },
     {
       type: "p",
-      text: "Wir unterstützen Unternehmen in der Schweiz bei der Business Analysis: von der Klärung der Ausgangslage über die Prozessanalyse bis zu Anforderungen, mit denen Entwicklung und Test arbeiten können. Mehr zum Vorgehen finden Sie unter [Business Analysis & Requirements Engineering](/leistungen/business-analysis). Für ein erstes Gespräch über Ihr Vorhaben erreichen Sie uns über die [Kontaktseite](/kontakt).",
+      text: "KOVALI unterstützt Unternehmen in der Schweiz bei der Business Analysis: von der Klärung der Ausgangslage über die Prozessanalyse bis zu Anforderungen, mit denen Entwicklung und Test arbeiten können. Mehr zum Vorgehen finden Sie unter [Business Analysis & Requirements Engineering](/leistungen/business-analysis). Für ein erstes Gespräch über Ihr Vorhaben erreichen Sie uns über die [Kontaktseite](/kontakt).",
     },
   ],
 };

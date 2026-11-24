@@ -138,7 +138,8 @@ Das Formular sendet jede Anfrage über [Resend](https://resend.com) an `info@kov
 - [ ] Alle Seiten in der Hauptnavigation und im Footer öffnen, auch auf dem Smartphone.
 - [ ] Kontaktformular: leer absenden (Fehlermeldungen erscheinen, auch für das Unternehmen), dann vollständig ausfüllen, mit zwei Leistungen, Laufzeit, Pensum und Voraussetzungen. Die E-Mail mit allen Angaben kommt bei `info@kovali.ch` an, «Antworten» geht an die eingegebene Adresse, Spam-Ordner prüfen.
 - [ ] Link von einer Leistungsseite («… anfragen») öffnet das Formular mit vorausgewählter Leistung.
-- [ ] `/partner`, `/fachleute`, `/ueber-uns`, `/warum-wir`, `/warum-kovali` und `/branchen` leiten direkt auf `/unternehmen` um, `/it-consulting` auf `/leistungen`.
+- [ ] `/partner` und `/fachleute` leiten auf `/unternehmen` um.
+- [ ] `/ueber-uns` und `/warum-wir` leiten auf `/warum-kovali` um, `/it-consulting` auf `/leistungen`.
 - [ ] `https://www.kovali.ch/sitemap.xml` und `/robots.txt` sind erreichbar.
 - [ ] Vorschau beim Teilen prüfen, z. B. mit dem [LinkedIn Post Inspector](https://www.linkedin.com/post-inspector/).
 - [ ] Sicherheits-Header prüfen, z. B. mit [securityheaders.com](https://securityheaders.com).

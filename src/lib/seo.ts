@@ -4,7 +4,7 @@ import { company } from "@/content/company-ref";
 import type { Article, FaqItem, Service } from "@/content/types";
 
 interface PageMetaInput {
-  /** Title without the " | <site.brand>" suffix (the layout template adds it). */
+  /** Title without the " | KOVALI" suffix (the layout template adds it). */
   title: string;
   description: string;
   /** Open Graph and Twitter text when it must differ from the meta description. */
@@ -19,16 +19,14 @@ interface PageMetaInput {
 }
 
 /**
- * Default share image (public/opengraph-image.png), set on every page: by pageMetadata and,
- * for pages without their own metadata (404, admin), by the root layout. It holds no text (a
- * night panorama and the K symbol), so a new brand name needs no new image; the alt text takes
- * the name from site.brand.
+ * Default share image (app/opengraph-image.png). Listed explicitly because a page's own
+ * openGraph object replaces the file-based image of the root segment.
  */
-export const shareImage = {
+const shareImage = {
   url: "/opengraph-image.png",
   width: 1200,
   height: 630,
-  alt: `${site.brand}: Alpenpanorama in Linien mit dem Logo-Symbol`,
+  alt: "KOVALI – Business & Technology Consulting. Klarheit in Anforderungen. Sicherheit in der Umsetzung.",
 };
 
 /** Metadata for a page: canonical URL, Open Graph and Twitter. */
@@ -71,8 +69,8 @@ export function pageMetadata(input: PageMetaInput): Metadata {
 /* ---------- Structured data (schema.org). Only facts that are true today. ---------- */
 
 const ORG_ID = `${absoluteUrl("/")}#organization`;
-/** Ferhat Demir's person block on the company page (/unternehmen) carries the anchor #ferhat-demir. */
-const PERSON_ID = `${absoluteUrl("/unternehmen")}#ferhat-demir`;
+/** Ferhat Demir's person block on Warum KOVALI carries the anchor #ferhat-demir (its H2). */
+const PERSON_ID = `${absoluteUrl("/warum-kovali")}#ferhat-demir`;
 const WEBSITE_ID = `${absoluteUrl("/")}#website`;
 
 export function organizationJsonLd() {
@@ -82,10 +80,10 @@ export function organizationJsonLd() {
     "@id": ORG_ID,
     name: site.brand,
     ...(site.legal.entityName.confirmed ? { legalName: site.legal.entityName.value } : {}),
+    slogan: site.claim,
     description: site.description,
     url: absoluteUrl("/"),
-    // The symbol only: the full logo has the name drawn into it.
-    logo: absoluteUrl("/brand/kovali-app-icon-512.png"),
+    logo: absoluteUrl("/brand/kovali-logo.svg"),
     image: absoluteUrl("/opengraph-image.png"),
     email: site.contact.email.value,
     ...(site.contact.phone.value ? { telephone: site.contact.phone.value } : {}),
@@ -118,7 +116,7 @@ export function personJsonLd() {
     name: company.founder.name,
     jobTitle: company.founder.role,
     worksFor: { "@id": ORG_ID },
-    url: absoluteUrl("/unternehmen"),
+    url: absoluteUrl("/warum-kovali"),
     image: absoluteUrl(company.founder.portrait.src),
     knowsLanguage: ["de", "fr", "en"],
     hasCredential: company.certifications.map((c) => ({

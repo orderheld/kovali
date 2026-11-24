@@ -117,7 +117,7 @@ export const article: Article = {
     { type: "h2", id: "unterstuetzung", text: "Unterstützung in beiden Disziplinen" },
     {
       type: "p",
-      text: "Viele Vorhaben brauchen beide Perspektiven, oft in wechselnder Gewichtung über die Projektlaufzeit. Wir bieten beides als eine Disziplin an: [Business Analysis & Requirements Engineering](/leistungen/business-analysis). Der Beitrag [Was macht ein Business Analyst?](/insights/was-macht-ein-business-analyst) beschreibt, welche Aufgaben die Rolle im Alltag umfasst. Für eine Einschätzung Ihres Vorhabens erreichen Sie uns über die [Kontaktseite](/kontakt).",
+      text: "Viele Vorhaben brauchen beide Perspektiven, oft in wechselnder Gewichtung über die Projektlaufzeit. KOVALI bietet beides als eine Disziplin an: [Business Analysis & Requirements Engineering](/leistungen/business-analysis). Der Beitrag [Was macht ein Business Analyst?](/insights/was-macht-ein-business-analyst) beschreibt, welche Aufgaben die Rolle im Alltag umfasst. Für eine Einschätzung Ihres Vorhabens erreichen Sie uns über die [Kontaktseite](/kontakt).",
     },
   ],
 };

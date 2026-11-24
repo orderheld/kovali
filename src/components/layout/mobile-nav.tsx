@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
-import { Menu, X } from "lucide-react";
-import { site } from "@/config/site";
-import { mobileNav } from "@/content/navigation";
+import { Menu, X, ArrowRight } from "lucide-react";
+import { mobileNav, primaryCta } from "@/content/navigation";
 import { cn } from "@/lib/utils";
+
+/** The mobile menu has room for Branchen and Insights, which the desktop header leaves to the footer. */
+const items = mobileNav;
 
 export function MobileNav() {
   const [open, setOpen] = useState(false);
@@ -29,23 +31,14 @@ export function MobileNav() {
       }
     };
     window.addEventListener("keydown", onKey);
-    // From the lg breakpoint the desktop navigation takes over: close the panel, so the page is
-    // not left inert and unscrollable after the window grows.
-    const wide = window.matchMedia("(min-width: 64rem)");
-    const onWide = () => {
-      if (wide.matches) setOpen(false);
-    };
-    wide.addEventListener("change", onWide);
     return () => {
       document.body.style.overflow = previous;
       behind.forEach((el) => el.removeAttribute("inert"));
       window.removeEventListener("keydown", onKey);
-      wide.removeEventListener("change", onWide);
     };
   }, [open]);
 
   const close = () => setOpen(false);
-  const email = site.contact.email.value;
 
   return (
     <div className="lg:hidden">
@@ -55,7 +48,7 @@ export function MobileNav() {
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((v) => !v)}
-        className="-mr-2 inline-flex size-11 items-center justify-center rounded-md text-navy hover:bg-cloud"
+        className="-mr-2 inline-flex size-11 items-center justify-center rounded-md text-white hover:bg-white/10"
       >
         <span className="sr-only">{open ? "Menü schliessen" : "Menü öffnen"}</span>
         {open ? <X aria-hidden className="size-6" /> : <Menu aria-hidden className="size-6" />}
@@ -63,32 +56,41 @@ export function MobileNav() {
       <div
         id={panelId}
         hidden={!open}
-        className="fixed inset-x-0 bottom-0 top-20 z-40 overflow-y-auto border-t border-line bg-white"
+        className="fixed inset-x-0 bottom-0 top-[4.5rem] z-40 overflow-y-auto border-t border-white/10 bg-night"
       >
-        <nav aria-label="Hauptnavigation mobil" className="px-5 pb-12 pt-6 sm:px-8">
-          <ul className="border-b border-line">
-            {mobileNav.map((item) => {
+        <div aria-hidden className="tech-grid pointer-events-none absolute inset-0 [--grid-color:rgb(143_201_255/0.06)] [mask-image:linear-gradient(to_bottom,black,transparent_70%)]" />
+        <nav aria-label="Hauptnavigation mobil" className="relative px-5 pb-10 pt-4 sm:px-8">
+          <ul className="divide-y divide-white/10">
+            {items.map((item, i) => {
               const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
               return (
-                <li key={item.href} className="border-t border-line">
+                <li key={item.href}>
                   <Link
                     href={item.href}
                     onClick={close}
                     aria-current={active ? "page" : undefined}
-                    className={cn("block py-5 text-2xl", active ? "text-blue" : "text-navy")}
+                    className={cn(
+                      "flex items-center gap-4 py-4 text-lg font-medium",
+                      active ? "text-electric" : "text-white",
+                    )}
                   >
-                    {item.label}
+                    <span aria-hidden className="w-6 font-mono text-xs text-sky/70">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <span className="flex-1">{item.label}</span>
+                    <ArrowRight aria-hidden className="size-4 text-white/50" />
                   </Link>
                 </li>
               );
             })}
           </ul>
-          <p className="mt-10 kicker">E-Mail</p>
-          <p className="mt-2">
-            <a href={`mailto:${email}`} className="text-lg text-navy underline decoration-navy/30 underline-offset-4">
-              {email}
-            </a>
-          </p>
+          <Link
+            href={primaryCta.href}
+            onClick={close}
+            className="mt-8 flex h-12 items-center justify-center rounded-lg bg-electric font-medium text-night hover:bg-sky"
+          >
+            {primaryCta.label}
+          </Link>
         </nav>
       </div>
     </div>

@@ -1,51 +1,11 @@
 import Link from "next/link";
 import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
-import { buttonClasses } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-/**
- * Form controls of the contact form: square corners, a 1 px border in the field colour
- * (3.70:1 on white, WCAG 1.4.11), a blue focus ring and error texts in the fail colour.
- */
+/** Form controls of the contact form. */
 
-const controlBase =
-  "block w-full rounded-[2px] border border-field bg-white px-4 text-base text-navy transition-colors placeholder:text-hint hover:border-slate focus:border-blue focus:outline-none focus:ring-1 focus:ring-blue aria-[invalid=true]:border-fail aria-[invalid=true]:focus:ring-fail";
-
-/** Single-line inputs. */
-export const inputClass = cn(controlBase, "h-12 py-0");
-
-/** Multi-line inputs: the height comes from `rows`, the visitor can make them taller. */
-export const textareaClass = cn(controlBase, "resize-y py-3 leading-relaxed");
-
-const labelClass = "mb-2 block text-sm font-medium text-navy";
-
-/** " *" for required fields, " (optional)" for optional ones. */
-function LabelSuffix({ required, optional }: { required?: boolean; optional?: boolean }) {
-  return (
-    <>
-      {required ? <span aria-hidden className="text-blue"> *</span> : null}
-      {optional ? <span className="font-normal text-slate"> (optional)</span> : null}
-    </>
-  );
-}
-
-/** Hint and error below a control; the ids are referenced by aria-describedby. */
-function HelpTexts({ hintId, hint, errorId, error }: { hintId?: string; hint?: string; errorId?: string; error?: string }) {
-  return (
-    <>
-      {hint ? (
-        <p id={hintId} className="mt-2 text-sm leading-relaxed text-slate">
-          {hint}
-        </p>
-      ) : null}
-      {error ? (
-        <p id={errorId} className="mt-2 text-sm text-fail">
-          {error}
-        </p>
-      ) : null}
-    </>
-  );
-}
+export const inputClass =
+  "block w-full rounded-lg border border-field bg-white px-3.5 py-3 text-base text-ink shadow-[inset_0_1px_0_rgb(11_23_51/0.03)] transition-colors placeholder:text-hint hover:border-slate focus:border-blue focus:outline-none focus:ring-2 focus:ring-blue/20 aria-[invalid=true]:border-red-600 aria-[invalid=true]:focus:ring-red-600/20";
 
 export interface ControlProps {
   id: string;
@@ -76,12 +36,22 @@ export function Field({
   const describedBy = [hintId, errorId].filter(Boolean).join(" ") || undefined;
   return (
     <div>
-      <label htmlFor={id} className={labelClass}>
+      <label htmlFor={id} className="mb-2 block text-[0.9375rem] font-medium text-ink">
         {label}
-        <LabelSuffix required={required} optional={optional} />
+        {required ? <span aria-hidden className="text-blue"> *</span> : null}
+        {optional ? <span className="font-normal text-slate"> (optional)</span> : null}
       </label>
       {children({ id, required, "aria-invalid": error ? true : undefined, "aria-describedby": describedBy })}
-      <HelpTexts hintId={hintId} hint={hint} errorId={errorId} error={error} />
+      {hint ? (
+        <p id={hintId} className="mt-2 text-sm text-slate">
+          {hint}
+        </p>
+      ) : null}
+      {error ? (
+        <p id={errorId} className="mt-2 text-sm text-red-700">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -96,7 +66,7 @@ export function Honeypot() {
   );
 }
 
-/** A numbered section of a form, so longer forms read as a few short steps. Separated by a hairline. */
+/** A numbered section of a form, so longer forms read as a few short steps. */
 export function FormStep({
   number,
   title,
@@ -107,17 +77,18 @@ export function FormStep({
   children: React.ReactNode;
 }) {
   return (
-    <div className="border-t border-line pt-10">
-      <fieldset className="space-y-7">
-        <legend className="mb-8">
-          <span aria-hidden className="kicker block">
-            Schritt {number}
-          </span>
-          <span className="mt-3 block text-h3 font-medium text-navy">{title}</span>
-        </legend>
-        {children}
-      </fieldset>
-    </div>
+    <fieldset className="space-y-6">
+      <legend className="mb-6 flex items-center gap-3 text-lg font-semibold tracking-[-0.015em] text-ink">
+        <span
+          aria-hidden
+          className="flex h-7 shrink-0 items-center justify-center rounded-md bg-night px-2 font-mono text-xs font-medium tabular-nums text-electric"
+        >
+          {String(number).padStart(2, "0")}
+        </span>
+        {title}
+      </legend>
+      {children}
+    </fieldset>
   );
 }
 
@@ -157,20 +128,27 @@ function ChoiceGroup({
       aria-describedby={[hintId, errorId].filter(Boolean).join(" ") || undefined}
       className="scroll-mt-28 focus:outline-none"
     >
-      <legend className="mb-3 text-sm font-medium text-navy">
+      <legend className="mb-3 text-[0.9375rem] font-medium text-ink">
         {legend}
-        <LabelSuffix required={required} optional={optional} />
+        {required ? <span aria-hidden className="text-blue"> *</span> : null}
+        {optional ? <span className="font-normal text-slate"> (optional)</span> : null}
       </legend>
       {children}
-      <HelpTexts hintId={hintId} hint={hint} errorId={errorId} error={error} />
+      {hint ? (
+        <p id={hintId} className="mt-2 text-sm text-slate">
+          {hint}
+        </p>
+      ) : null}
+      {error ? (
+        <p id={errorId} className="mt-2 text-sm text-red-700">
+          {error}
+        </p>
+      ) : null}
     </fieldset>
   );
 }
 
-/** Focus ring of a label around a visually hidden or native radio/checkbox. */
-const focusWithin = "has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-blue";
-
-/** Single choice as bordered tiles with a short explanation each. Native radios, so it works without JavaScript. */
+/** Single choice as cards with a short explanation each. Native radios, so it works without JavaScript. */
 export function ChoiceTiles({ options, defaultValue, ...group }: ChoiceProps) {
   return (
     <ChoiceGroup {...group}>
@@ -179,10 +157,10 @@ export function ChoiceTiles({ options, defaultValue, ...group }: ChoiceProps) {
           <label
             key={o.value}
             className={cn(
-              "flex cursor-pointer gap-3 rounded-[2px] border bg-white p-4 transition-colors hover:border-navy",
-              "has-checked:border-navy has-checked:bg-cloud has-checked:shadow-[inset_0_0_0_1px_var(--color-navy)]",
-              focusWithin,
-              group.error ? "border-fail" : "border-field",
+              "flex cursor-pointer gap-3 rounded-lg border bg-white p-4 transition-colors hover:border-slate",
+              "has-checked:border-blue has-checked:bg-blue/[0.04] has-checked:shadow-[inset_0_0_0_1px_var(--color-blue)]",
+              "has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-blue",
+              group.error ? "border-red-600/60" : "border-field",
             )}
           >
             <input
@@ -191,10 +169,10 @@ export function ChoiceTiles({ options, defaultValue, ...group }: ChoiceProps) {
               value={o.value}
               required={group.required}
               defaultChecked={defaultValue === o.value}
-              className="mt-0.5 size-4 shrink-0 accent-navy focus:outline-none"
+              className="mt-0.5 size-4 shrink-0 accent-blue focus:outline-none"
             />
             <span>
-              <span className="block font-medium leading-snug text-navy">{o.label}</span>
+              <span className="block font-medium leading-snug text-ink">{o.label}</span>
               {o.description ? <span className="mt-1 block text-sm leading-snug text-slate">{o.description}</span> : null}
             </span>
           </label>
@@ -205,24 +183,29 @@ export function ChoiceTiles({ options, defaultValue, ...group }: ChoiceProps) {
 }
 
 /**
- * Square option label around a visually hidden radio or checkbox; navy when checked. In
- * forced-colors mode (Windows high contrast) the fill is replaced, so a checked option takes
- * the system Highlight colours.
+ * Pill label around a visually hidden radio or checkbox. In forced-colors mode (Windows high
+ * contrast) the blue fill is replaced, so a checked chip takes the system Highlight colours.
  */
 const chipClass = cn(
-  "inline-flex min-h-11 cursor-pointer items-center rounded-[2px] border bg-white px-4 py-2 text-left text-[0.9375rem] leading-snug text-navy transition-colors hover:border-navy",
-  "has-checked:border-navy has-checked:bg-navy has-checked:text-white",
-  focusWithin,
+  "cursor-pointer rounded-[1.25rem] border bg-white px-4 py-2 text-left text-[0.9375rem] text-ink transition-colors hover:border-slate",
+  "has-checked:border-blue has-checked:bg-blue has-checked:text-white",
+  "has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-blue",
   "forced-colors:has-checked:forced-color-adjust-none forced-colors:has-checked:border-[color:Highlight] forced-colors:has-checked:bg-[color:Highlight] forced-colors:has-checked:text-[color:HighlightText]",
 );
 
-/** Single choice as compact options in a row, for short option lists. */
+/** Single choice as compact pills, for short option lists. */
 export function ChoiceChips({ options, defaultValue, ...group }: ChoiceProps) {
   return (
     <ChoiceGroup {...group}>
       <div className="flex flex-wrap gap-2">
         {options.map((o) => (
-          <label key={o.value} className={cn(chipClass, group.error ? "border-fail" : "border-field")}>
+          <label
+            key={o.value}
+            className={cn(
+              chipClass,
+              group.error ? "border-red-600/60" : "border-field",
+            )}
+          >
             <input
               type="radio"
               name={group.name}
@@ -239,7 +222,7 @@ export function ChoiceChips({ options, defaultValue, ...group }: ChoiceProps) {
   );
 }
 
-/** Multiple choice as compact options. Native checkboxes: each checked one is sent under the same name. */
+/** Multiple choice as compact pills. Native checkboxes: each checked one is sent under the same name. */
 export function MultiChoiceChips({
   options,
   defaultValues = [],
@@ -249,7 +232,13 @@ export function MultiChoiceChips({
     <ChoiceGroup {...group}>
       <div className="flex flex-wrap gap-2">
         {options.map((o) => (
-          <label key={o.value} className={cn(chipClass, group.error ? "border-fail" : "border-field")}>
+          <label
+            key={o.value}
+            className={cn(
+              chipClass,
+              group.error ? "border-red-600/60" : "border-field",
+            )}
+          >
             <input
               type="checkbox"
               name={group.name}
@@ -268,13 +257,11 @@ export function MultiChoiceChips({
 /** Shown above a form whose submissions are only checked, not sent (dry run, previews). */
 export function TestModeNotice() {
   return (
-    <p className="border-l-2 border-open bg-open-bg px-4 py-3 text-sm text-navy">
+    <p className="rounded-lg border border-amber-500/40 bg-amber-50 px-4 py-3 text-sm text-amber-950">
       <strong className="font-semibold">Testmodus:</strong> Dieses Formular prüft Ihre Eingaben, versendet aber nichts.
     </p>
   );
 }
-
-const alertClass = "border-l-2 border-fail bg-fail-bg p-5 text-navy focus:outline-none";
 
 /** Lists every invalid field with a link to it. Receives focus after a failed submit. */
 export function ErrorSummary({
@@ -286,15 +273,15 @@ export function ErrorSummary({
   errors: [string, string, string][];
 }) {
   return (
-    <div ref={ref} tabIndex={-1} role="alert" className={alertClass}>
-      <p className="flex items-center gap-2 font-semibold text-fail">
-        <AlertCircle aria-hidden strokeWidth={1.75} className="size-5" />
+    <div ref={ref} tabIndex={-1} role="alert" className="rounded-lg border border-red-600/30 bg-red-50 p-5 text-red-900 focus:outline-none">
+      <p className="flex items-center gap-2 font-semibold">
+        <AlertCircle aria-hidden className="size-5" />
         Bitte prüfen Sie {errors.length === 1 ? "eine Angabe" : `${errors.length} Angaben`}.
       </p>
       <ul className="mt-3 list-disc space-y-1 pl-7 text-sm">
         {errors.map(([id, label, message]) => (
           <li key={id}>
-            <a href={`#${id}`} className="font-medium underline underline-offset-2">
+            <a href={`#${id}`} className="underline underline-offset-2">
               {label}
             </a>
             : {message}
@@ -318,15 +305,15 @@ export function SubmitError({
   fallbackEmail: string;
 }) {
   return (
-    <div ref={ref} tabIndex={-1} role="alert" className={alertClass}>
-      <p className="flex items-start gap-2 font-semibold text-fail">
-        <AlertCircle aria-hidden strokeWidth={1.75} className="mt-0.5 size-5 shrink-0" />
+    <div ref={ref} tabIndex={-1} role="alert" className="rounded-lg border border-red-600/30 bg-red-50 p-5 text-red-900 focus:outline-none">
+      <p className="flex items-start gap-2 font-semibold">
+        <AlertCircle aria-hidden className="mt-0.5 size-5 shrink-0" />
         {message}
       </p>
       {reference ? <p className="mt-2 pl-7 text-sm tabular-nums">Referenz: {reference}</p> : null}
       <p className="mt-2 pl-7 text-sm">
         E-Mail:{" "}
-        <a href={`mailto:${fallbackEmail}`} className="font-medium underline underline-offset-2">
+        <a href={`mailto:${fallbackEmail}`} className="underline underline-offset-2">
           {fallbackEmail}
         </a>
       </p>
@@ -346,17 +333,17 @@ export function SuccessPanel({
   reference: string;
 }) {
   return (
-    <div role="status" className="bg-cloud p-8 md:p-12">
-      <CheckCircle2 aria-hidden className="size-10 text-blue" strokeWidth={1.25} />
-      <h2 ref={headingRef} tabIndex={-1} className="mt-6 text-h3 text-navy focus:outline-none">
+    <div role="status" className="rounded-xl border border-cloud-line bg-cloud p-8 md:p-10">
+      <CheckCircle2 aria-hidden className="size-9 text-blue" strokeWidth={1.75} />
+      <h2 ref={headingRef} tabIndex={-1} className="mt-5 text-2xl font-semibold tracking-[-0.02em] focus:outline-none">
         {title}
       </h2>
       <p className="mt-3 leading-relaxed text-slate">{text}</p>
-      <p className="mt-6 text-sm text-navy">
-        Referenz: <span className="font-semibold tabular-nums">{reference}</span>
+      <p className="mt-6 text-sm tabular-nums text-ink">
+        Referenz: <span className="font-mono font-semibold">{reference}</span>
       </p>
       <p className="mt-8">
-        <Link href="/" className={buttonClasses({ variant: "outline" })}>
+        <Link href="/" className="font-medium text-blue hover:underline">
           Zur Startseite
         </Link>
       </p>
@@ -377,11 +364,11 @@ export function Consent({ text, defaultChecked, error }: { text: string; default
           defaultChecked={defaultChecked}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? "consent-error" : undefined}
-          className="mt-0.5 size-5 shrink-0 accent-navy"
+          className="mt-1 size-5 shrink-0 rounded border-field accent-blue"
         />
-        <label htmlFor="consent" className="text-[0.9375rem] leading-relaxed text-navy">
+        <label htmlFor="consent" className="leading-relaxed text-ink">
           Ich habe die{" "}
-          <Link href="/datenschutz" className="text-blue underline decoration-blue/40 underline-offset-[3px] hover:decoration-blue">
+          <Link href="/datenschutz" className="text-blue underline underline-offset-[3px]">
             Datenschutzerklärung
           </Link>{" "}
           gelesen und bin einverstanden, {text}
@@ -389,7 +376,7 @@ export function Consent({ text, defaultChecked, error }: { text: string; default
         </label>
       </div>
       {error ? (
-        <p id="consent-error" className="mt-2 pl-8 text-sm text-fail">
+        <p id="consent-error" className="mt-2 pl-8 text-sm text-red-700">
           {error}
         </p>
       ) : null}
@@ -400,8 +387,12 @@ export function Consent({ text, defaultChecked, error }: { text: string; default
 export function SubmitRow({ pending, label, pendingLabel }: { pending: boolean; label: string; pendingLabel: string }) {
   return (
     <>
-      <div className="flex flex-col gap-5 border-t border-line pt-8 sm:flex-row sm:items-center sm:justify-between">
-        <button type="submit" disabled={pending} className={buttonClasses({ className: "w-full sm:w-auto" })}>
+      <div className="flex flex-col gap-4 border-t border-line pt-7 sm:flex-row sm:items-center sm:justify-between">
+        <button
+          type="submit"
+          disabled={pending}
+          className="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-blue px-7 font-medium text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_1px_2px_rgb(11_23_51/0.2),0_8px_20px_-10px_rgb(20_91_206/0.7)] transition-colors hover:bg-blue-700 disabled:opacity-70"
+        >
           {pending ? <Loader2 aria-hidden className="size-4 animate-spin" /> : null}
           {pending ? pendingLabel : label}
         </button>

@@ -1,54 +1,48 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
+import { DarkBackdrop } from "@/components/brand/motifs";
 import { SiteChrome } from "@/components/layout/site-chrome";
-import { PageBanner } from "@/components/sections/page-banner";
 import { ButtonLink } from "@/components/ui/button";
-import { Section } from "@/components/ui/section";
-import { mainNav, primaryCta } from "@/content/navigation";
+import { Container } from "@/components/ui/container";
+import { mainNav } from "@/content/navigation";
 
 /** Tab title of the 404 page; the root layout's default title would show the logo tagline. */
 export const metadata: Metadata = { title: "Seite nicht gefunden" };
-
-const links = [...mainNav, primaryCta];
 
 /** Unknown addresses render outside the site layout, so the page brings its own chrome. */
 export default function NotFound() {
   return (
     <SiteChrome>
-      <PageBanner
-        scene="rechtliches"
-        kicker="Fehler 404"
-        title="Diese Seite wurde nicht gefunden"
-        lead="Die Adresse ist vielleicht veraltet oder falsch geschrieben."
-      />
-      <Section tone="white" labelledBy="weiter-titel">
-        <div className="mx-auto max-w-2xl">
-          <h2 id="weiter-titel" className="text-h3 text-navy">
-            Hier geht es weiter
-          </h2>
-          <ul className="mt-8 border-b border-line">
-            {links.map((item) => (
-              <li key={item.href} className="border-t border-line">
+      <section className="on-dark relative isolate overflow-hidden bg-night text-white">
+        <DarkBackdrop />
+        <Container className="relative py-24 md:py-32">
+          <p className="eyebrow">Fehler 404</p>
+          <h1 className="mt-5 max-w-2xl text-h1 font-semibold text-white">Diese Seite wurde nicht gefunden</h1>
+          <p className="mt-6 max-w-xl text-lead text-white/70">
+            Die Adresse ist möglicherweise veraltet oder falsch geschrieben. Diese Seiten helfen weiter:
+          </p>
+          <ul className="mt-9 grid max-w-2xl border-b border-white/10 sm:grid-cols-3 sm:gap-x-6">
+            {mainNav.map((item, i) => (
+              <li key={item.href} className="border-t border-white/10">
                 <Link
                   href={item.href}
-                  className="group flex items-center justify-between gap-6 py-5 text-lg text-navy transition-colors hover:text-blue"
+                  className="group flex items-center gap-3 py-3.5 font-medium text-white/90 transition-colors hover:text-electric"
                 >
-                  {item.label}
-                  <ArrowRight
-                    aria-hidden
-                    strokeWidth={1.5}
-                    className="size-5 shrink-0 text-blue transition-transform duration-200 group-hover:translate-x-1"
-                  />
+                  <span aria-hidden className="font-mono text-[0.6875rem] text-sky/80">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <span className="flex-1">{item.label}</span>
+                  <ArrowUpRight aria-hidden className="size-4 text-white/35 group-hover:text-electric" />
                 </Link>
               </li>
             ))}
           </ul>
-          <ButtonLink href="/" className="mt-12">
+          <ButtonLink href="/" variant="inverse" arrow className="mt-10">
             Zur Startseite
           </ButtonLink>
-        </div>
-      </Section>
+        </Container>
+      </section>
     </SiteChrome>
   );
 }

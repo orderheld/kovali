@@ -8,7 +8,7 @@ import { site, unconfirmedFields } from "../src/config/site.ts";
 const open = unconfirmedFields();
 let problems = 0;
 
-console.log(`\n${site.brand} launch check\n`);
+console.log(`\nKOVALI launch check\n`);
 
 if (open.length) {
   console.log("Noch zu bestätigen (src/config/site.ts):");
