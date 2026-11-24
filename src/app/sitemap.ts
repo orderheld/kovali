@@ -7,7 +7,7 @@ import { serviceHref, services } from "@/content/services";
  * Fixed modification date of the static pages. Update it when page content changes
  * (a fixed value keeps the sitemap static and the dates honest).
  */
-const SITE_UPDATED = "2026-10-14";
+const SITE_UPDATED = "2026-11-24";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const page = (path: string, priority: number, lastModified = SITE_UPDATED) => ({
@@ -20,8 +20,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     page("/", 1),
     page("/leistungen", 0.9),
     ...services.map((s) => page(serviceHref(s.slug), 0.9)),
-    page("/warum-kovali", 0.8),
-    page("/branchen", 0.7),
     page("/unternehmen", 0.8),
     page("/kontakt", 0.8),
     page("/insights", 0.6),

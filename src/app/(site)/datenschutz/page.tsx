@@ -5,7 +5,7 @@ import { pageMetadata } from "@/lib/seo";
 export const metadata = pageMetadata({
   title: "Datenschutzerklärung",
   description:
-    "Datenschutzerklärung von KOVALI nach dem Schweizer Datenschutzgesetz (DSG): welche Personendaten bearbeitet werden, zu welchem Zweck und welche Rechte Sie haben.",
+    `Datenschutzerklärung von ${site.brand} nach dem Schweizer Datenschutzgesetz (DSG): welche Personendaten bearbeitet werden, zu welchem Zweck und welche Rechte Sie haben.`,
   path: "/datenschutz",
 });
 

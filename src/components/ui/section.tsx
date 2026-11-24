@@ -1,32 +1,30 @@
-import { DarkBackdrop } from "@/components/brand/motifs";
 import { cn } from "@/lib/utils";
 import { Container } from "./container";
 
 /**
  * Section backgrounds of the public site: white and cool light grey (cloud) for content,
- * night (near-black ink) for dark bands. Night sets `.on-dark` (electric focus rings and
- * eyebrows), white text and the grid and glow behind the content.
+ * navy for the dark bands. Navy sets `.on-dark` (electric focus rings and kickers) and white text.
  */
-export type SectionTone = "white" | "cloud" | "night";
+export type SectionTone = "white" | "cloud" | "navy";
 export type SectionSpace = "tight" | "default" | "loose";
 
 const tones: Record<SectionTone, string> = {
   white: "bg-white",
   cloud: "bg-cloud",
-  night: "on-dark relative isolate overflow-hidden bg-night text-white",
+  navy: "on-dark bg-navy text-white",
 };
 
 const spaces: Record<SectionSpace, string> = {
   tight: "py-16 md:py-20",
   default: "py-20 md:py-28",
-  loose: "py-24 md:py-32",
+  loose: "py-24 md:py-36",
 };
 
 /** Hairline at the top, for two consecutive sections with the same tone. */
 const rules: Record<SectionTone, string> = {
   white: "border-t border-line",
   cloud: "border-t border-cloud-line",
-  night: "border-t border-white/10",
+  navy: "border-t border-white/10",
 };
 
 export function Section({
@@ -41,7 +39,7 @@ export function Section({
 }: {
   id?: string;
   tone?: SectionTone;
-  /** Vertical padding: tight `py-16 md:py-20`, default `py-20 md:py-28`, loose `py-24 md:py-32`. */
+  /** Vertical padding: tight `py-16 md:py-20`, default `py-20 md:py-28`, loose `py-24 md:py-36`. */
   space?: SectionSpace;
   /** Top hairline in the colour of the tone. */
   rule?: boolean;
@@ -50,76 +48,64 @@ export function Section({
   labelledBy?: string;
   children: React.ReactNode;
 }) {
-  const dark = tone === "night";
+  // A section without a heading of its own (e.g. the list right below a page banner) is a
+  // plain block: an unnamed <section> adds nothing for screen readers.
+  const Tag = labelledBy ? "section" : "div";
   return (
-    <section
+    <Tag
       id={id}
       aria-labelledby={labelledBy}
-      className={cn(spaces[space], tones[tone], rule && rules[tone], className)}
+      className={cn(spaces[space], tones[tone], rule && rules[tone], id && "scroll-mt-24", className)}
     >
-      {dark ? <DarkBackdrop variant="band" arms={false} /> : null}
-      <Container className={cn(dark && "relative", containerClassName)}>{children}</Container>
-    </section>
+      <Container className={containerClassName}>{children}</Container>
+    </Tag>
   );
 }
 
 /**
- * Heading block of a section. `layout="split"` puts the text in the right half on large
- * screens (H2 in columns 1–6, text in 8–12, aligned to the bottom); stacked below lg.
+ * Heading block of a section: optional kicker (small spaced capitals), H2 and text.
+ * `align="center"` centres the block, as for the service and article overviews.
  */
 export function SectionHeader({
   id,
-  eyebrow,
+  kicker,
   title,
   text,
-  layout = "stack",
+  align = "start",
   className,
   titleClassName,
   as: Heading = "h2",
 }: {
   id?: string;
-  /** Optional mono kicker above the heading. Use sparingly, only where it adds information. */
-  eyebrow?: string;
+  /** Small spaced capitals above the heading, e.g. "Leistungen". Only where it helps orientation. */
+  kicker?: string;
   title: React.ReactNode;
   text?: React.ReactNode;
-  layout?: "stack" | "split";
+  align?: "start" | "center";
   className?: string;
   titleClassName?: string;
   as?: "h1" | "h2";
 }) {
-  const heading = (
-    <>
-      {eyebrow ? <p className="eyebrow">{eyebrow}</p> : null}
+  const center = align === "center";
+  return (
+    <div className={cn(center ? "mx-auto max-w-3xl text-center" : "max-w-3xl", className)}>
+      {kicker ? <p className="kicker">{kicker}</p> : null}
       <Heading
         id={id}
         className={cn(
-          "font-semibold text-ink in-[.on-dark]:text-white",
+          "text-navy in-[.on-dark]:text-white",
           Heading === "h1" ? "text-h1" : "text-h2",
-          eyebrow ? "mt-5" : null,
+          kicker ? "mt-4" : null,
           titleClassName,
         )}
       >
         {title}
       </Heading>
-    </>
-  );
-  const body = text ? (
-    <div className="max-w-2xl text-lg leading-relaxed text-slate md:text-xl md:leading-relaxed in-[.on-dark]:text-white/70">{text}</div>
-  ) : null;
-
-  if (layout === "split") {
-    return (
-      <div className={cn("grid gap-5 lg:grid-cols-12 lg:gap-8", className)}>
-        <div className="lg:col-span-6">{heading}</div>
-        {body ? <div className="lg:col-span-5 lg:col-start-8 lg:self-end">{body}</div> : null}
-      </div>
-    );
-  }
-
-  return (
-    <div className={cn("max-w-3xl", className)}>
-      {heading}
-      {body ? <div className="mt-5">{body}</div> : null}
+      {text ? (
+        <div className={cn("mt-5 text-lead text-slate in-[.on-dark]:text-white/75", center && "mx-auto max-w-2xl")}>
+          {text}
+        </div>
+      ) : null}
     </div>
   );
 }
