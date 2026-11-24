@@ -3,16 +3,21 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
-import { Menu, X, ArrowRight } from "lucide-react";
-import { mobileNav, primaryCta } from "@/content/navigation";
+import { Menu, X } from "lucide-react";
+import { site } from "@/config/site";
+import { mobileNav } from "@/content/navigation";
 import { cn } from "@/lib/utils";
 
-/** The mobile menu has room for Branchen and Insights, which the desktop header leaves to the footer. */
-const items = mobileNav;
-
+/**
+ * Menu button and full-screen panel below lg. The panel belongs to the page it was opened on:
+ * it is closed as soon as the route changes (links, logo, back and forward), on Escape, on a
+ * click on any link and when the window grows to the desktop navigation.
+ */
 export function MobileNav() {
-  const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const [openedAt, setOpenedAt] = useState<string | null>(null);
+  const open = openedAt === pathname;
+  const setOpen = (value: boolean) => setOpenedAt(value ? pathname : null);
   const panelId = useId();
   const buttonRef = useRef<HTMLButtonElement>(null);
 
@@ -26,19 +31,34 @@ export function MobileNav() {
     behind.forEach((el) => el.setAttribute("inert", ""));
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        setOpen(false);
+        setOpenedAt(null);
         buttonRef.current?.focus();
       }
     };
     window.addEventListener("keydown", onKey);
+    // A click on any link (also the logo or the header button on the current page) closes it.
+    const onLinkClick = (e: MouseEvent) => {
+      if (e.target instanceof Element && e.target.closest("a[href]")) setOpenedAt(null);
+    };
+    document.addEventListener("click", onLinkClick);
+    // From the lg breakpoint the desktop navigation takes over: close the panel, so the page is
+    // not left inert and unscrollable after the window grows.
+    const wide = window.matchMedia("(min-width: 64rem)");
+    const onWide = () => {
+      if (wide.matches) setOpenedAt(null);
+    };
+    wide.addEventListener("change", onWide);
     return () => {
       document.body.style.overflow = previous;
       behind.forEach((el) => el.removeAttribute("inert"));
       window.removeEventListener("keydown", onKey);
+      document.removeEventListener("click", onLinkClick);
+      wide.removeEventListener("change", onWide);
     };
   }, [open]);
 
   const close = () => setOpen(false);
+  const email = site.contact.email.value;
 
   return (
     <div className="lg:hidden">
@@ -47,8 +67,8 @@ export function MobileNav() {
         type="button"
         aria-expanded={open}
         aria-controls={panelId}
-        onClick={() => setOpen((v) => !v)}
-        className="-mr-2 inline-flex size-11 items-center justify-center rounded-md text-white hover:bg-white/10"
+        onClick={() => setOpen(!open)}
+        className="-mr-2 inline-flex size-11 items-center justify-center rounded-full text-white hover:bg-white/10"
       >
         <span className="sr-only">{open ? "Menü schliessen" : "Menü öffnen"}</span>
         {open ? <X aria-hidden className="size-6" /> : <Menu aria-hidden className="size-6" />}
@@ -56,41 +76,35 @@ export function MobileNav() {
       <div
         id={panelId}
         hidden={!open}
-        className="fixed inset-x-0 bottom-0 top-[4.5rem] z-40 overflow-y-auto border-t border-white/10 bg-night"
+        className="on-dark fixed inset-x-0 bottom-0 top-[4.5rem] z-40 overflow-y-auto border-t border-white/10 bg-night text-white"
       >
-        <div aria-hidden className="tech-grid pointer-events-none absolute inset-0 [--grid-color:rgb(143_201_255/0.06)] [mask-image:linear-gradient(to_bottom,black,transparent_70%)]" />
-        <nav aria-label="Hauptnavigation mobil" className="relative px-5 pb-10 pt-4 sm:px-8">
-          <ul className="divide-y divide-white/10">
-            {items.map((item, i) => {
+        <nav aria-label="Hauptnavigation mobil" className="px-5 pb-12 pt-6 sm:px-8">
+          <ul className="border-b border-white/10">
+            {mobileNav.map((item, i) => {
               const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
               return (
-                <li key={item.href}>
+                <li key={item.href} className="border-t border-white/10">
                   <Link
                     href={item.href}
                     onClick={close}
                     aria-current={active ? "page" : undefined}
-                    className={cn(
-                      "flex items-center gap-4 py-4 text-lg font-medium",
-                      active ? "text-electric" : "text-white",
-                    )}
+                    className={cn("flex items-baseline gap-4 py-5 text-2xl font-medium tracking-[-0.02em]", active ? "text-electric" : "text-white")}
                   >
-                    <span aria-hidden className="w-6 font-mono text-xs text-sky/70">
+                    <span aria-hidden className="font-mono text-xs text-sky/70">
                       {String(i + 1).padStart(2, "0")}
                     </span>
-                    <span className="flex-1">{item.label}</span>
-                    <ArrowRight aria-hidden className="size-4 text-white/50" />
+                    {item.label}
                   </Link>
                 </li>
               );
             })}
           </ul>
-          <Link
-            href={primaryCta.href}
-            onClick={close}
-            className="mt-8 flex h-12 items-center justify-center rounded-lg bg-electric font-medium text-night hover:bg-sky"
-          >
-            {primaryCta.label}
-          </Link>
+          <p className="mt-10 kicker">E-Mail</p>
+          <p className="mt-2">
+            <a href={`mailto:${email}`} className="inline-flex min-h-10 items-center text-lg text-white underline decoration-white/30 underline-offset-4">
+              {email}
+            </a>
+          </p>
         </nav>
       </div>
     </div>

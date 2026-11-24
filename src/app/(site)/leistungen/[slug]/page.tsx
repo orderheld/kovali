@@ -1,19 +1,22 @@
-import { Fragment } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { DarkBackdrop } from "@/components/brand/motifs";
-import { CheckList, Tick } from "@/components/sections/check-list";
+import { ArrowUpRight } from "lucide-react";
 import { CtaBand } from "@/components/sections/cta-band";
-import { PageHero } from "@/components/sections/page-hero";
-import { ServiceList } from "@/components/sections/service-list";
+import { PageBanner } from "@/components/sections/page-banner";
+import { ServiceIcon } from "@/components/sections/service-icon";
 import { JsonLd } from "@/components/seo/json-ld";
 import { ButtonLink } from "@/components/ui/button";
 import { Faq } from "@/components/ui/faq";
-import { Section, SectionHeader } from "@/components/ui/section";
-import { responseClause } from "@/config/site";
-import { getIndustry } from "@/content/industries";
+import { Section } from "@/components/ui/section";
 import { getService, serviceHref, services } from "@/content/services";
 import { faqJsonLd, pageMetadata, serviceJsonLd } from "@/lib/seo";
+import { cn } from "@/lib/utils";
+
+/**
+ * Every service page is prerendered from generateStaticParams. A navigation may wait for the
+ * page instead of showing an empty fallback while `params` resolves (as on insights/[slug]).
+ */
+export const instant = false;
 
 export function generateStaticParams() {
   return services.map((s) => ({ slug: s.slug }));
@@ -30,135 +33,154 @@ export async function generateMetadata({ params }: PageProps<"/leistungen/[slug]
   });
 }
 
+/** "01", "02", … for the mono numbering of sections and services. */
+const nr = (i: number) => String(i + 1).padStart(2, "0");
+
+/** Bullet list of the site; `dark` for the night panel. */
+function Bullets({ items, dark = false }: { items: readonly string[]; dark?: boolean }) {
+  return (
+    <ul className="space-y-3">
+      {items.map((item) => (
+        <li
+          key={item}
+          className={cn(
+            "relative pl-6 leading-relaxed before:absolute before:left-0 before:top-[0.7em] before:h-px before:w-3",
+            dark ? "text-white/75 before:bg-electric" : "text-slate before:bg-blue",
+          )}
+        >
+          {item}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/**
+ * One service: banner, SEO heading with intro, tasks and results as two panels, FAQ, links to
+ * the other services, closing panel with the service's own call to action.
+ */
 export default async function ServicePage({ params }: PageProps<"/leistungen/[slug]">) {
   const { slug } = await params;
   const service = getService(slug);
   if (!service) notFound();
 
   const path = serviceHref(service.slug);
-  const contactHref = `/kontakt?leistung=${service.slug}`;
-  const others = services.filter((s) => s.slug !== service.slug).map((s) => s.slug);
-  const industries = service.industries.flatMap((id) => getIndustry(id) ?? []);
+  const others = services.filter((s) => s.slug !== service.slug);
 
   return (
     <>
-      <PageHero
+      <PageBanner
         crumbs={[
           { name: "Start", path: "/" },
           { name: "Leistungen", path: "/leistungen" },
           { name: service.name, path },
         ]}
-        eyebrow="IT Consulting"
+        scene="leistungen"
+        kicker="Leistungen"
         title={service.h1}
-        lead={service.intro}
-      >
-        <ButtonLink href={contactHref} variant="inverse" arrow>
-          {service.cta}
-        </ButtonLink>
-        <ButtonLink href="/leistungen" variant="outline-inverse">
-          IT Consulting im Überblick
-        </ButtonLink>
-      </PageHero>
+        size="lg"
+      />
 
-      <Section labelledBy="aufgaben-title">
-        <div className="grid gap-14 lg:grid-cols-12 lg:gap-8">
-          <div className="lg:col-span-7">
-            <SectionHeader id="aufgaben-title" title={service.tasksTitle} />
-            <CheckList items={service.tasks} className="mt-10" />
+      <Section labelledBy="einleitung-title">
+        <div className="grid gap-10 lg:grid-cols-12 lg:gap-16">
+          <div className="lg:col-span-5">
+            <p className="kicker">01 / Überblick</p>
+            <h2 id="einleitung-title" className="mt-5 text-h2 text-night">
+              {service.name}
+            </h2>
           </div>
-          <div className="on-dark relative isolate self-start overflow-hidden rounded-2xl bg-night p-8 text-white shadow-[0_30px_60px_-30px_rgb(6_11_24/0.6)] lg:col-span-5">
-            <DarkBackdrop variant="panel" arms={false} />
-            <h3 className="relative font-mono text-xs font-medium uppercase tracking-[0.08em] text-sky">Typische Ergebnisse</h3>
-            <ul className="relative mt-6 space-y-4">
-              {service.deliverables.map((d) => (
-                <li
-                  key={d}
-                  className="flex gap-3 border-b border-white/10 pb-4 leading-snug text-white/90 last:border-0 last:pb-0"
-                >
-                  <Tick />
-                  {d}
-                </li>
-              ))}
-            </ul>
-          </div>
+          <p className="text-lead text-slate lg:col-span-7 lg:pt-9">{service.intro}</p>
         </div>
       </Section>
 
-      <Section tone="cloud" labelledBy="ausgangslagen-title">
-        <SectionHeader id="ausgangslagen-title" title="Typische Ausgangslagen" />
-        <ul className="mt-12 grid gap-x-10 md:grid-cols-2">
-          {service.situations.map((situation, i) => (
-            <li
-              key={situation}
-              className="flex gap-4 border-t border-cloud-line py-6 text-lg leading-relaxed text-ink"
-            >
-              <span aria-hidden className="pt-1.5 font-mono text-xs text-blue">
-                {String(i + 1).padStart(2, "0")}
-              </span>
-              {situation}
-            </li>
-          ))}
-        </ul>
+      <Section tone="mist">
+        <div className="grid gap-4 lg:grid-cols-2 lg:gap-6">
+          <section
+            aria-labelledby="aufgaben-title"
+            className="rounded-3xl border border-line bg-white p-7 sm:p-10 lg:p-12"
+          >
+            <p className="kicker">02 / Aufgaben</p>
+            <h2 id="aufgaben-title" className="mt-5 text-h3 text-night">
+              {service.tasksTitle}
+            </h2>
+            <div className="mt-8">
+              <Bullets items={service.tasks} />
+            </div>
+          </section>
+          <section
+            aria-labelledby="ergebnisse-title"
+            className="on-dark rounded-3xl bg-night p-7 text-white sm:p-10 lg:p-12"
+          >
+            <p className="kicker">03 / Ergebnisse</p>
+            <h2 id="ergebnisse-title" className="mt-5 text-h3 text-white">
+              Was Sie von uns erhalten
+            </h2>
+            <div className="mt-8">
+              <Bullets items={service.deliverables} dark />
+            </div>
+          </section>
+        </div>
       </Section>
 
-      <Section space="tight" labelledBy="kontext-title">
-        <h2 id="kontext-title" className="sr-only">
-          Branchen und Werkzeuge
-        </h2>
-        <dl className="divide-y divide-line border-y border-line">
-          <div className="grid gap-2 py-6 sm:grid-cols-[14rem_1fr] sm:gap-8">
-            <dt className="font-mono text-xs font-medium uppercase leading-6 tracking-[0.08em] text-blue">Branchen</dt>
-            <dd className="leading-relaxed text-slate">
-              {industries.map((industry, i) => (
-                <Fragment key={industry.id}>
-                  {i > 0 ? ", " : null}
-                  <Link
-                    href={`/branchen#${industry.id}`}
-                    className="text-blue underline decoration-1 underline-offset-[3px] hover:decoration-2"
-                  >
-                    {industry.name}
-                  </Link>
-                  {industry.kind === "target" ? "\u00a0(Zielmarkt)" : null}
-                </Fragment>
-              ))}
-            </dd>
+      <Section labelledBy="faq-title">
+        <div className="grid gap-10 lg:grid-cols-12 lg:gap-16">
+          <div className="lg:col-span-5">
+            <p className="kicker">04 / FAQ</p>
+            <h2 id="faq-title" className="mt-5 text-h2 text-night">
+              {service.faqTitle}
+            </h2>
           </div>
-          <div className="grid gap-2 py-6 sm:grid-cols-[14rem_1fr] sm:gap-8">
-            <dt className="font-mono text-xs font-medium uppercase leading-6 tracking-[0.08em] text-blue">Methoden und Werkzeuge</dt>
-            <dd>
-              <ul className="flex flex-wrap gap-2">
-                {service.methods.map((m) => (
-                  <li key={m} className="rounded-md border border-line bg-cloud px-2.5 py-1 font-mono text-[0.8125rem] text-ink">
-                    {m}
-                  </li>
-                ))}
-              </ul>
-            </dd>
-          </div>
-        </dl>
-      </Section>
-
-      <Section tone="cloud" labelledBy="faq-title">
-        <div className="grid gap-12 lg:grid-cols-12 lg:gap-8">
-          <div className="lg:col-span-4">
-            <SectionHeader id="faq-title" title={service.faqTitle} />
-          </div>
-          <div className="lg:col-span-8">
+          <div className="lg:col-span-7">
             <Faq items={service.faq} />
           </div>
         </div>
       </Section>
 
-      <Section space="tight" labelledBy="weitere-title">
-        <SectionHeader id="weitere-title" title="Weitere Disziplinen im IT Consulting" />
-        <ServiceList only={others} layout="cards" className="mt-10" />
+      <Section tone="mist" labelledBy="weitere-title">
+        <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="kicker">05 / Leistungen</p>
+            <h2 id="weitere-title" className="mt-5 text-h2 text-night">
+              Weitere Leistungen
+            </h2>
+          </div>
+          <ButtonLink href="/leistungen" variant="outline" className="shrink-0 self-start md:self-auto">
+            Alle Leistungen
+          </ButtonLink>
+        </div>
+        <ul className="mt-12 grid gap-4 md:grid-cols-3">
+          {others.map((s) => (
+            // A compact row on small screens, a small card from md.
+            <li
+              key={s.slug}
+              className="group relative flex items-center gap-4 rounded-2xl border border-line bg-white p-5 transition-colors hover:border-blue/40 md:flex-col md:items-stretch md:gap-0 md:p-7"
+            >
+              <div className="flex shrink-0 items-start justify-between gap-4">
+                <ServiceIcon slug={s.slug} className="size-8" />
+                <span aria-hidden className="hidden font-mono text-xs text-blue md:inline">
+                  {nr(services.indexOf(s))}
+                </span>
+              </div>
+              <h3 className="flex-1 text-lg font-medium leading-snug tracking-[-0.01em] text-night md:mt-10 md:flex-none">
+                <Link href={serviceHref(s.slug)} className="after:absolute after:inset-0 after:rounded-2xl">
+                  {s.name}
+                </Link>
+              </h3>
+              <div className="shrink-0 md:mt-auto md:pt-6">
+                <ArrowUpRight
+                  aria-hidden
+                  strokeWidth={1.5}
+                  className="size-5 text-blue transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+                />
+              </div>
+            </li>
+          ))}
+        </ul>
       </Section>
 
       <CtaBand
         title={service.ctaTitle}
-        text={`Beschreiben Sie Vorhaben, Zeitraum und Pensum. Sie erhalten eine erste Einschätzung von Ferhat Demir${responseClause()}.`}
-        primary={{ label: service.cta, href: contactHref }}
-        secondary={{ label: "Alle Leistungen", href: "/leistungen" }}
+        primary={{ label: service.cta, href: `/kontakt?leistung=${service.slug}` }}
       />
 
       <JsonLd data={[serviceJsonLd(service, path), faqJsonLd(service.faq)]} />

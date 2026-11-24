@@ -7,7 +7,7 @@ import { extendTailwindMerge } from "tailwind-merge";
  */
 const twMerge = extendTailwindMerge({
   extend: {
-    theme: { text: ["display", "h1", "h2", "h3", "lead", "numeral", "statement"] },
+    theme: { text: ["hero", "display", "h1", "h2", "h3", "lead"] },
   },
 });
 
@@ -23,16 +23,4 @@ export function formatDate(iso: string): string {
     "Juli", "August", "September", "Oktober", "November", "Dezember",
   ];
   return `${d}. ${months[m - 1]} ${y}`;
-}
-
-const chfNumber = new Intl.NumberFormat("de-CH", { maximumFractionDigits: 0 });
-
-/** Swiss number format with the apostrophe as thousands separator, e.g. 112’000. */
-export function formatNumber(n: number): string {
-  return chfNumber.format(n);
-}
-
-/** Swiss franc amount without decimals, e.g. formatChf(112000) → "CHF 112’000". */
-export function formatChf(n: number): string {
-  return `CHF ${formatNumber(n)}`;
 }

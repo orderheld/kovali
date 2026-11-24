@@ -1,19 +1,14 @@
-import { LegalPage } from "@/components/sections/legal-page";
+import { LegalPage, sectionCounter } from "@/components/sections/legal-page";
 import { legalEntityName, site } from "@/config/site";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata = pageMetadata({
   title: "Datenschutzerklärung",
   description:
-    "Datenschutzerklärung von KOVALI nach dem Schweizer Datenschutzgesetz (DSG): welche Personendaten bearbeitet werden, zu welchem Zweck und welche Rechte Sie haben.",
+    `Datenschutzerklärung von ${site.brand} nach dem Schweizer Datenschutzgesetz (DSG): welche Personendaten bearbeitet werden, zu welchem Zweck und welche Rechte Sie haben.`,
   path: "/datenschutz",
 });
 
-/** Section numbers count up in order, so adding or removing a section needs no renumbering. */
-function sectionCounter() {
-  let n = 0;
-  return (title: string) => `${++n}. ${title}`;
-}
 
 export default function DatenschutzPage() {
   const { contact } = site;
@@ -21,7 +16,12 @@ export default function DatenschutzPage() {
   const email = contact.email.value;
   const section = sectionCounter();
   return (
-    <LegalPage title="Datenschutzerklärung" path="/datenschutz" updated="November 2026">
+    <LegalPage
+      title="Datenschutzerklärung"
+      heading={<>Datenschutz&shy;erklärung</>}
+      path="/datenschutz"
+      updated="November 2026"
+    >
       <p>
         Diese Datenschutzerklärung informiert darüber, welche Personendaten beim Besuch dieser Website, bei einer
         Kontaktaufnahme und in der Zusammenarbeit mit Kunden und Partnern bearbeitet werden. Sie richtet sich nach dem

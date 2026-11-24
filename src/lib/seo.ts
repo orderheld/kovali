@@ -4,7 +4,7 @@ import { company } from "@/content/company-ref";
 import type { Article, FaqItem, Service } from "@/content/types";
 
 interface PageMetaInput {
-  /** Title without the " | KOVALI" suffix (the layout template adds it). */
+  /** Title without the " | <site.brand>" suffix (the layout template adds it). */
   title: string;
   description: string;
   /** Open Graph and Twitter text when it must differ from the meta description. */
@@ -19,14 +19,16 @@ interface PageMetaInput {
 }
 
 /**
- * Default share image (app/opengraph-image.png). Listed explicitly because a page's own
- * openGraph object replaces the file-based image of the root segment.
+ * Default share image (public/opengraph-image.jpg), set on every page: by pageMetadata and,
+ * for pages without their own metadata (404, admin), by the root layout. It holds no text (a
+ * 3D render of glass panes and a light beam, with the K symbol), so a new brand name needs no
+ * new image; the alt text takes the name from site.brand.
  */
-const shareImage = {
-  url: "/opengraph-image.png",
+export const shareImage = {
+  url: "/opengraph-image.jpg",
   width: 1200,
   height: 630,
-  alt: "KOVALI – Business & Technology Consulting. Klarheit in Anforderungen. Sicherheit in der Umsetzung.",
+  alt: `${site.brand}: Glasscheiben mit blauem Lichtstrahl und dem Logo-Symbol`,
 };
 
 /** Metadata for a page: canonical URL, Open Graph and Twitter. */
@@ -69,8 +71,8 @@ export function pageMetadata(input: PageMetaInput): Metadata {
 /* ---------- Structured data (schema.org). Only facts that are true today. ---------- */
 
 const ORG_ID = `${absoluteUrl("/")}#organization`;
-/** Ferhat Demir's person block on Warum KOVALI carries the anchor #ferhat-demir (its H2). */
-const PERSON_ID = `${absoluteUrl("/warum-kovali")}#ferhat-demir`;
+/** Ferhat Demir's person block on the company page (/unternehmen) carries the anchor #ferhat-demir. */
+const PERSON_ID = `${absoluteUrl("/unternehmen")}#ferhat-demir`;
 const WEBSITE_ID = `${absoluteUrl("/")}#website`;
 
 export function organizationJsonLd() {
@@ -80,11 +82,11 @@ export function organizationJsonLd() {
     "@id": ORG_ID,
     name: site.brand,
     ...(site.legal.entityName.confirmed ? { legalName: site.legal.entityName.value } : {}),
-    slogan: site.claim,
     description: site.description,
     url: absoluteUrl("/"),
-    logo: absoluteUrl("/brand/kovali-logo.svg"),
-    image: absoluteUrl("/opengraph-image.png"),
+    // The symbol only: the full logo has the name drawn into it.
+    logo: absoluteUrl("/brand/kovali-app-icon-512.png"),
+    image: absoluteUrl(shareImage.url),
     email: site.contact.email.value,
     ...(site.contact.phone.value ? { telephone: site.contact.phone.value } : {}),
     // Only the country: the full address belongs in the imprint, not in marketing data.
@@ -116,7 +118,7 @@ export function personJsonLd() {
     name: company.founder.name,
     jobTitle: company.founder.role,
     worksFor: { "@id": ORG_ID },
-    url: absoluteUrl("/warum-kovali"),
+    url: absoluteUrl("/unternehmen"),
     image: absoluteUrl(company.founder.portrait.src),
     knowsLanguage: ["de", "fr", "en"],
     hasCredential: company.certifications.map((c) => ({
@@ -182,7 +184,7 @@ export function articleJsonLd(article: Article, path: string) {
     // The organisation until Ferhat Demir approves a personal byline (spec 3.10 and 7.19).
     author: { "@type": "Organization", "@id": ORG_ID, name: site.brand, url: absoluteUrl("/") },
     publisher: { "@id": ORG_ID },
-    image: absoluteUrl("/opengraph-image.png"),
+    image: absoluteUrl(shareImage.url),
   };
 }
 

@@ -43,13 +43,13 @@ npm run dev                  # http://localhost:3000
 
 ```
 src/
-  app/                    Root-Layout, sitemap.ts, robots.ts, manifest.ts, Icons, OG-Bild, 404
+  app/                    Root-Layout, sitemap.ts, robots.ts, manifest.ts, Icons, 404
     (site)/               Öffentliche Website (statisch vorgerendert, eigenes Layout mit Header und Footer)
       kontakt/actions.ts  Server Action des Kontaktformulars (Unternehmen)
     api/cron/retention/   Täglicher Lösch-Job für gespeicherte Anfragen (nur mit Neon)
   components/             Layout, Abschnitte, UI-Bausteine, Logo
   config/site.ts          Firmen-, Kontakt- und Rechtsangaben, aktive Logo-Richtung
-  content/                Alle Texte: Leistungen, Branchen, Unternehmen, Insights
+  content/                Alle Texte: Startseite, Leistungen, Unternehmen, Insights
   lib/                    SEO und strukturierte Daten, Kontaktformular, Hilfsfunktionen
 brand/                    Logo-Generator und alle drei Logo-Richtungen als SVG
 docs/                     Go-live-Anleitung, Redaktionsplan
@@ -58,8 +58,9 @@ docs/                     Go-live-Anleitung, Redaktionsplan
 ## Inhalte pflegen
 
 - **Firmendaten** (Name, Rechtsform, UID, Adresse, E-Mail, Telefon, Domain): nur in `src/config/site.ts`. Impressum, Footer, Kontaktseite und strukturierte Daten lesen von dort. Werte mit `confirmed: false` meldet `npm run check:launch`.
-- **Leistungen**: `src/content/services.ts`. Jede Leistung hat H1, Meta-Titel, Beschreibung, Aufgaben, Ergebnisse, Nutzen, Szenarien, Branchen, Methoden und FAQ.
-- **Branchen**: `src/content/industries.ts`. `kind: "experience"` für Branchen mit Praxiserfahrung (ohne Arbeitgeber, Projekte, Systeme oder Jahreszahlen), `kind: "target"` für Zielmärkte.
+- **Markenname**: nur `site.brand` in `src/config/site.ts`. Seiten, Metadaten und strukturierte Daten lesen ihn von dort. Logo-Dateien, Favicon und Teilen-Bild (`public/opengraph-image.jpg`) zeigen den Namen als Grafik und müssen bei einem neuen Namen neu erzeugt werden (siehe `brand/README.md`).
+- **Leistungen**: `src/content/services.ts`. Jede Leistung hat H1, Meta-Titel, Beschreibung, Aufgaben, Ergebnisse und FAQ.
+- **Startseite und Über uns**: `src/content/home.ts` und `src/content/about.ts`.
 - **Insights**: neue Datei in `src/content/insights/` nach dem Muster der bestehenden Artikel anlegen und in `src/content/insights/index.ts` eintragen. Sitemap, Übersicht und strukturierte Daten folgen automatisch.
 - **Links im Text**: `[Linktext](/pfad)`.
 - **Sprache**: Schweizer Hochdeutsch, immer «ss» statt «ß».

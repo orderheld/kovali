@@ -1,0 +1,11 @@
+hero|2560|1440|view=hero
+cta|2560|960|view=hero&cx=0.69&dist=8.6&fov=30
+banner-leistungen|2560|900|view=banner
+banner-unternehmen|2560|900|view=banner&az=14&el=2&dist=9&fov=28&np=6&xs=0.32&rise=0.10&tx=0.8&ty=0.25&tz=-1.5&cx=0.72&light=2.2,0.9,-4.6&beamA=2.2,0.9,-4.6&beamB=-0.3,-0.4,1.2
+banner-insights|2560|900|view=banner&az=38&el=30&dist=10.5&fov=28&cx=0.70&tz=-1.9
+banner-kontakt|2560|900|view=banner&np=4&dist=8&cx=0.64&tz=-1.0&light=0.9,0.5,-3.6&beamA=0.9,0.5,-3.6&beamB=-1.6,-1.0,4.0&tailK=0
+banner-rechtliches|2560|900|view=banner&np=1&az=55&el=4&dist=6.2&fov=30&tz=0&cx=0.72&light=0.6,0.3,-2.4&beamA=0.6,0.3,-2.4&beamB=-0.4,-0.3,1.0
+intro|1200|1500|view=detail
+team|1200|1500|view=detail&lightI=5.5&sheen=0.15&key=0.3&strip=0&az=76&el=4&np=3&gap=0.5&dist=5.4&tz=-0.5&light=0.6,0.4,-2.6&beamA=0.6,0.4,-2.6&beamB=-0.3,-0.3,1.0
+arbeitsweise|1200|1500|view=detail&az=22&el=8&np=5&dist=7.4&fov=32&tz=-1.2&light=0.9,0.5,-4.2&beamA=0.9,0.5,-4.2&beamB=-0.4,-0.35,1.2
+og|1200|630|view=cover

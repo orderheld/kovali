@@ -1,11 +1,52 @@
 import Link from "next/link";
 import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
+import { ButtonArrow, buttonClasses } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-/** Form controls of the contact form. */
+/**
+ * Form controls of the contact form (design v2): white fields with rounded-xl corners on the
+ * white or mist form card, a 1 px border in the field colour (3.70:1 on white, 3.47:1 on mist,
+ * WCAG 1.4.11), a 2 px night focus ring (border plus ring) and error texts in the fail colour.
+ */
 
-export const inputClass =
-  "block w-full rounded-lg border border-field bg-white px-3.5 py-3 text-base text-ink shadow-[inset_0_1px_0_rgb(11_23_51/0.03)] transition-colors placeholder:text-hint hover:border-slate focus:border-blue focus:outline-none focus:ring-2 focus:ring-blue/20 aria-[invalid=true]:border-red-600 aria-[invalid=true]:focus:ring-red-600/20";
+const controlBase =
+  "block w-full rounded-xl border border-field bg-white px-4 text-base text-night transition-colors placeholder:text-hint hover:border-slate focus:border-night focus:outline-none focus:ring-1 focus:ring-night aria-[invalid=true]:border-fail aria-[invalid=true]:focus:border-fail aria-[invalid=true]:focus:ring-fail";
+
+/** Single-line inputs. */
+export const inputClass = cn(controlBase, "h-12 py-0");
+
+/** Multi-line inputs: the height comes from `rows`, the visitor can make them taller. */
+export const textareaClass = cn(controlBase, "resize-y py-3 leading-relaxed");
+
+const labelClass = "mb-2 block text-sm font-medium text-night";
+
+/** " *" for required fields, " (optional)" for optional ones. */
+function LabelSuffix({ required, optional }: { required?: boolean; optional?: boolean }) {
+  return (
+    <>
+      {required ? <span aria-hidden className="text-blue"> *</span> : null}
+      {optional ? <span className="font-normal text-slate"> (optional)</span> : null}
+    </>
+  );
+}
+
+/** Hint and error below a control; the ids are referenced by aria-describedby. */
+function HelpTexts({ hintId, hint, errorId, error }: { hintId?: string; hint?: string; errorId?: string; error?: string }) {
+  return (
+    <>
+      {hint ? (
+        <p id={hintId} className="mt-2 text-sm leading-relaxed text-slate">
+          {hint}
+        </p>
+      ) : null}
+      {error ? (
+        <p id={errorId} className="mt-2 text-sm text-fail">
+          {error}
+        </p>
+      ) : null}
+    </>
+  );
+}
 
 export interface ControlProps {
   id: string;
@@ -36,22 +77,12 @@ export function Field({
   const describedBy = [hintId, errorId].filter(Boolean).join(" ") || undefined;
   return (
     <div>
-      <label htmlFor={id} className="mb-2 block text-[0.9375rem] font-medium text-ink">
+      <label htmlFor={id} className={labelClass}>
         {label}
-        {required ? <span aria-hidden className="text-blue"> *</span> : null}
-        {optional ? <span className="font-normal text-slate"> (optional)</span> : null}
+        <LabelSuffix required={required} optional={optional} />
       </label>
       {children({ id, required, "aria-invalid": error ? true : undefined, "aria-describedby": describedBy })}
-      {hint ? (
-        <p id={hintId} className="mt-2 text-sm text-slate">
-          {hint}
-        </p>
-      ) : null}
-      {error ? (
-        <p id={errorId} className="mt-2 text-sm text-red-700">
-          {error}
-        </p>
-      ) : null}
+      <HelpTexts hintId={hintId} hint={hint} errorId={errorId} error={error} />
     </div>
   );
 }
@@ -66,7 +97,7 @@ export function Honeypot() {
   );
 }
 
-/** A numbered section of a form, so longer forms read as a few short steps. */
+/** A numbered section of a form, so longer forms read as a few short steps. Separated by a hairline. */
 export function FormStep({
   number,
   title,
@@ -77,18 +108,17 @@ export function FormStep({
   children: React.ReactNode;
 }) {
   return (
-    <fieldset className="space-y-6">
-      <legend className="mb-6 flex items-center gap-3 text-lg font-semibold tracking-[-0.015em] text-ink">
-        <span
-          aria-hidden
-          className="flex h-7 shrink-0 items-center justify-center rounded-md bg-night px-2 font-mono text-xs font-medium tabular-nums text-electric"
-        >
-          {String(number).padStart(2, "0")}
-        </span>
-        {title}
-      </legend>
-      {children}
-    </fieldset>
+    <div className="border-t border-line pt-10">
+      <fieldset className="space-y-7">
+        <legend className="mb-8">
+          <span aria-hidden className="kicker block">
+            Schritt {String(number).padStart(2, "0")}
+          </span>
+          <span className="mt-3 block text-h3 font-medium text-night">{title}</span>
+        </legend>
+        {children}
+      </fieldset>
+    </div>
   );
 }
 
@@ -126,29 +156,22 @@ function ChoiceGroup({
       id={name}
       tabIndex={-1}
       aria-describedby={[hintId, errorId].filter(Boolean).join(" ") || undefined}
-      className="scroll-mt-28 focus:outline-none"
+      className="scroll-mt-4 focus:outline-none"
     >
-      <legend className="mb-3 text-[0.9375rem] font-medium text-ink">
+      <legend className="mb-3 text-sm font-medium text-night">
         {legend}
-        {required ? <span aria-hidden className="text-blue"> *</span> : null}
-        {optional ? <span className="font-normal text-slate"> (optional)</span> : null}
+        <LabelSuffix required={required} optional={optional} />
       </legend>
       {children}
-      {hint ? (
-        <p id={hintId} className="mt-2 text-sm text-slate">
-          {hint}
-        </p>
-      ) : null}
-      {error ? (
-        <p id={errorId} className="mt-2 text-sm text-red-700">
-          {error}
-        </p>
-      ) : null}
+      <HelpTexts hintId={hintId} hint={hint} errorId={errorId} error={error} />
     </fieldset>
   );
 }
 
-/** Single choice as cards with a short explanation each. Native radios, so it works without JavaScript. */
+/** Night focus ring of a label around a visually hidden or native radio/checkbox, as on the text fields. */
+const focusWithin = "has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-night";
+
+/** Single choice as bordered tiles with a short explanation each. Native radios, so it works without JavaScript. */
 export function ChoiceTiles({ options, defaultValue, ...group }: ChoiceProps) {
   return (
     <ChoiceGroup {...group}>
@@ -157,10 +180,10 @@ export function ChoiceTiles({ options, defaultValue, ...group }: ChoiceProps) {
           <label
             key={o.value}
             className={cn(
-              "flex cursor-pointer gap-3 rounded-lg border bg-white p-4 transition-colors hover:border-slate",
-              "has-checked:border-blue has-checked:bg-blue/[0.04] has-checked:shadow-[inset_0_0_0_1px_var(--color-blue)]",
-              "has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-blue",
-              group.error ? "border-red-600/60" : "border-field",
+              "flex cursor-pointer gap-3 rounded-xl border bg-white p-4 transition-colors hover:border-night",
+              "has-checked:border-night has-checked:shadow-[inset_0_0_0_1px_var(--color-night)]",
+              focusWithin,
+              group.error ? "border-fail" : "border-field",
             )}
           >
             <input
@@ -169,10 +192,10 @@ export function ChoiceTiles({ options, defaultValue, ...group }: ChoiceProps) {
               value={o.value}
               required={group.required}
               defaultChecked={defaultValue === o.value}
-              className="mt-0.5 size-4 shrink-0 accent-blue focus:outline-none"
+              className="mt-0.5 size-4 shrink-0 accent-night focus:outline-none"
             />
             <span>
-              <span className="block font-medium leading-snug text-ink">{o.label}</span>
+              <span className="block font-medium leading-snug text-night">{o.label}</span>
               {o.description ? <span className="mt-1 block text-sm leading-snug text-slate">{o.description}</span> : null}
             </span>
           </label>
@@ -183,29 +206,24 @@ export function ChoiceTiles({ options, defaultValue, ...group }: ChoiceProps) {
 }
 
 /**
- * Pill label around a visually hidden radio or checkbox. In forced-colors mode (Windows high
- * contrast) the blue fill is replaced, so a checked chip takes the system Highlight colours.
+ * Pill-shaped option label around a visually hidden radio or checkbox; night when checked. In
+ * forced-colors mode (Windows high contrast) the fill is replaced, so a checked option takes
+ * the system Highlight colours.
  */
 const chipClass = cn(
-  "cursor-pointer rounded-[1.25rem] border bg-white px-4 py-2 text-left text-[0.9375rem] text-ink transition-colors hover:border-slate",
-  "has-checked:border-blue has-checked:bg-blue has-checked:text-white",
-  "has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-blue",
+  "inline-flex min-h-11 cursor-pointer items-center rounded-full border bg-white px-5 py-2 text-left text-[0.9375rem] leading-snug text-night transition-colors hover:border-night",
+  "has-checked:border-night has-checked:bg-night has-checked:text-white",
+  focusWithin,
   "forced-colors:has-checked:forced-color-adjust-none forced-colors:has-checked:border-[color:Highlight] forced-colors:has-checked:bg-[color:Highlight] forced-colors:has-checked:text-[color:HighlightText]",
 );
 
-/** Single choice as compact pills, for short option lists. */
+/** Single choice as compact options in a row, for short option lists. */
 export function ChoiceChips({ options, defaultValue, ...group }: ChoiceProps) {
   return (
     <ChoiceGroup {...group}>
       <div className="flex flex-wrap gap-2">
         {options.map((o) => (
-          <label
-            key={o.value}
-            className={cn(
-              chipClass,
-              group.error ? "border-red-600/60" : "border-field",
-            )}
-          >
+          <label key={o.value} className={cn(chipClass, group.error ? "border-fail" : "border-field")}>
             <input
               type="radio"
               name={group.name}
@@ -222,7 +240,7 @@ export function ChoiceChips({ options, defaultValue, ...group }: ChoiceProps) {
   );
 }
 
-/** Multiple choice as compact pills. Native checkboxes: each checked one is sent under the same name. */
+/** Multiple choice as compact options. Native checkboxes: each checked one is sent under the same name. */
 export function MultiChoiceChips({
   options,
   defaultValues = [],
@@ -232,13 +250,7 @@ export function MultiChoiceChips({
     <ChoiceGroup {...group}>
       <div className="flex flex-wrap gap-2">
         {options.map((o) => (
-          <label
-            key={o.value}
-            className={cn(
-              chipClass,
-              group.error ? "border-red-600/60" : "border-field",
-            )}
-          >
+          <label key={o.value} className={cn(chipClass, group.error ? "border-fail" : "border-field")}>
             <input
               type="checkbox"
               name={group.name}
@@ -257,11 +269,13 @@ export function MultiChoiceChips({
 /** Shown above a form whose submissions are only checked, not sent (dry run, previews). */
 export function TestModeNotice() {
   return (
-    <p className="rounded-lg border border-amber-500/40 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+    <p className="rounded-xl border border-open/30 bg-open-bg px-4 py-3 text-sm text-night">
       <strong className="font-semibold">Testmodus:</strong> Dieses Formular prüft Ihre Eingaben, versendet aber nichts.
     </p>
   );
 }
+
+const alertClass = "rounded-xl border border-fail/40 bg-fail-bg p-5 text-night focus:outline-none";
 
 /** Lists every invalid field with a link to it. Receives focus after a failed submit. */
 export function ErrorSummary({
@@ -273,15 +287,15 @@ export function ErrorSummary({
   errors: [string, string, string][];
 }) {
   return (
-    <div ref={ref} tabIndex={-1} role="alert" className="rounded-lg border border-red-600/30 bg-red-50 p-5 text-red-900 focus:outline-none">
-      <p className="flex items-center gap-2 font-semibold">
-        <AlertCircle aria-hidden className="size-5" />
+    <div ref={ref} tabIndex={-1} role="alert" className={alertClass}>
+      <p className="flex items-center gap-2 font-semibold text-fail">
+        <AlertCircle aria-hidden strokeWidth={1.75} className="size-5" />
         Bitte prüfen Sie {errors.length === 1 ? "eine Angabe" : `${errors.length} Angaben`}.
       </p>
       <ul className="mt-3 list-disc space-y-1 pl-7 text-sm">
         {errors.map(([id, label, message]) => (
           <li key={id}>
-            <a href={`#${id}`} className="underline underline-offset-2">
+            <a href={`#${id}`} className="font-medium underline underline-offset-2">
               {label}
             </a>
             : {message}
@@ -305,15 +319,15 @@ export function SubmitError({
   fallbackEmail: string;
 }) {
   return (
-    <div ref={ref} tabIndex={-1} role="alert" className="rounded-lg border border-red-600/30 bg-red-50 p-5 text-red-900 focus:outline-none">
-      <p className="flex items-start gap-2 font-semibold">
-        <AlertCircle aria-hidden className="mt-0.5 size-5 shrink-0" />
+    <div ref={ref} tabIndex={-1} role="alert" className={alertClass}>
+      <p className="flex items-start gap-2 font-semibold text-fail">
+        <AlertCircle aria-hidden strokeWidth={1.75} className="mt-0.5 size-5 shrink-0" />
         {message}
       </p>
       {reference ? <p className="mt-2 pl-7 text-sm tabular-nums">Referenz: {reference}</p> : null}
       <p className="mt-2 pl-7 text-sm">
         E-Mail:{" "}
-        <a href={`mailto:${fallbackEmail}`} className="underline underline-offset-2">
+        <a href={`mailto:${fallbackEmail}`} className="font-medium underline underline-offset-2">
           {fallbackEmail}
         </a>
       </p>
@@ -333,17 +347,17 @@ export function SuccessPanel({
   reference: string;
 }) {
   return (
-    <div role="status" className="rounded-xl border border-cloud-line bg-cloud p-8 md:p-10">
-      <CheckCircle2 aria-hidden className="size-9 text-blue" strokeWidth={1.75} />
-      <h2 ref={headingRef} tabIndex={-1} className="mt-5 text-2xl font-semibold tracking-[-0.02em] focus:outline-none">
+    <div role="status" className="rounded-2xl border border-line bg-white p-8 md:p-10">
+      <CheckCircle2 aria-hidden className="size-10 text-blue" strokeWidth={1.25} />
+      <h2 ref={headingRef} tabIndex={-1} className="mt-6 text-h3 text-night focus:outline-none">
         {title}
       </h2>
       <p className="mt-3 leading-relaxed text-slate">{text}</p>
-      <p className="mt-6 text-sm tabular-nums text-ink">
-        Referenz: <span className="font-mono font-semibold">{reference}</span>
+      <p className="mt-6 text-sm text-night">
+        Referenz: <span className="font-semibold tabular-nums">{reference}</span>
       </p>
       <p className="mt-8">
-        <Link href="/" className="font-medium text-blue hover:underline">
+        <Link href="/" className={buttonClasses({ variant: "outline" })}>
           Zur Startseite
         </Link>
       </p>
@@ -364,11 +378,11 @@ export function Consent({ text, defaultChecked, error }: { text: string; default
           defaultChecked={defaultChecked}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? "consent-error" : undefined}
-          className="mt-1 size-5 shrink-0 rounded border-field accent-blue"
+          className="mt-0.5 size-5 shrink-0 accent-night"
         />
-        <label htmlFor="consent" className="leading-relaxed text-ink">
+        <label htmlFor="consent" className="text-[0.9375rem] leading-relaxed text-night">
           Ich habe die{" "}
-          <Link href="/datenschutz" className="text-blue underline underline-offset-[3px]">
+          <Link href="/datenschutz" className="text-blue underline decoration-blue/40 underline-offset-[3px] hover:decoration-blue">
             Datenschutzerklärung
           </Link>{" "}
           gelesen und bin einverstanden, {text}
@@ -376,7 +390,7 @@ export function Consent({ text, defaultChecked, error }: { text: string; default
         </label>
       </div>
       {error ? (
-        <p id="consent-error" className="mt-2 pl-8 text-sm text-red-700">
+        <p id="consent-error" className="mt-2 pl-8 text-sm text-fail">
           {error}
         </p>
       ) : null}
@@ -387,14 +401,11 @@ export function Consent({ text, defaultChecked, error }: { text: string; default
 export function SubmitRow({ pending, label, pendingLabel }: { pending: boolean; label: string; pendingLabel: string }) {
   return (
     <>
-      <div className="flex flex-col gap-4 border-t border-line pt-7 sm:flex-row sm:items-center sm:justify-between">
-        <button
-          type="submit"
-          disabled={pending}
-          className="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-blue px-7 font-medium text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_1px_2px_rgb(11_23_51/0.2),0_8px_20px_-10px_rgb(20_91_206/0.7)] transition-colors hover:bg-blue-700 disabled:opacity-70"
-        >
+      <div className="flex flex-col gap-5 border-t border-line pt-8 sm:flex-row sm:items-center sm:justify-between">
+        <button type="submit" disabled={pending} className={buttonClasses({ className: "w-full sm:w-auto" })}>
           {pending ? <Loader2 aria-hidden className="size-4 animate-spin" /> : null}
           {pending ? pendingLabel : label}
+          {pending ? null : <ButtonArrow />}
         </button>
         <p className="text-sm text-slate">Die Übermittlung ist verschlüsselt. Es werden keine Cookies gesetzt.</p>
       </div>
