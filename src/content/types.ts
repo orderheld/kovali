@@ -10,6 +10,19 @@ export type ServiceSlug =
   | "test-management"
   | "test-engineering";
 
+export type IndustryId =
+  | "oeffentliche-verwaltung"
+  | "logistik-transport"
+  | "detailhandel-zahlungsverkehr"
+  | "finanzdienstleistungen"
+  | "versicherungen"
+  | "it-dienstleister";
+
+export interface TitledText {
+  title: string;
+  text: string;
+}
+
 export interface FaqItem {
   question: string;
   answer: string;
@@ -17,32 +30,46 @@ export interface FaqItem {
 
 export interface Service {
   slug: ServiceSlug;
+  /** Two-digit position in the order of `services` (01–04). Internal only, no longer displayed. */
+  code: string;
   /** Visible name of the discipline, e.g. "Testmanagement" (one word in visible copy). */
   name: string;
-  /** Short line for lists and navigation: when the discipline helps and what we do. */
+  /** Short line for lists and navigation: when the discipline helps and what KOVALI does. */
   summary: string;
-  /** H2 beside the intro on the discipline page (SEO phrasing, keep stable). */
+  /** H1 of the discipline page (SEO, keep stable). */
   h1: string;
   metaTitle: string;
   metaDescription: string;
   /** Main keyword this page is optimised for (see concept, keyword mapping). */
   keyword: string;
-  /** Intro paragraph of the discipline page. */
+  /** Lead of the discipline page. */
   intro: string;
   /** H2 of the task list, hand-written per discipline (no template strings). */
   tasksTitle: string;
-  /** At most ten, most important first: /leistungen lists the first six. */
   tasks: string[];
-  /** Listed under "Ergebnisse" on the discipline page. */
   deliverables: string[];
+  /** Typical starting points as running sentences in the Sie-form. */
+  situations: string[];
+  industries: IndustryId[];
+  methods: string[];
   /** H2 of the FAQ section, hand-written per discipline. */
   faqTitle: string;
-  /** Discipline-specific questions (visible FAQ and FAQPage JSON-LD). */
+  /** Discipline-specific questions; the page puts the shared price question (`priceFaq`) first. */
   faq: FaqItem[];
   /** H2 of the closing call to action, hand-written per discipline. */
   ctaTitle: string;
   /** Label of the contextual call to action. */
   cta: string;
+}
+
+export interface Industry {
+  id: IndustryId;
+  name: string;
+  /** experience = sector known from practice; target = market KOVALI is building. */
+  kind: "experience" | "target";
+  summary: string;
+  points: string[];
+  services: ServiceSlug[];
 }
 
 export type ArticleBlock =
@@ -57,7 +84,7 @@ export type ArticleBlock =
 export interface Article {
   slug: string;
   title: string;
-  /** <title> without the " | <site.brand>" suffix, max. ~55 characters. */
+  /** <title> without the " | KOVALI" suffix, max. ~55 characters. */
   metaTitle: string;
   /** Meta description, 140–160 characters. */
   description: string;

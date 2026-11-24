@@ -1,4 +1,3 @@
-import { site } from "@/config/site";
 import type { Article } from "../types";
 
 export const article: Article = {
@@ -118,10 +117,10 @@ export const article: Article = {
       type: "p",
       text: "Unabhängig vom Weg lohnt es sich, vertragliche Fragen früh mit Ihrer Rechts- oder Einkaufsabteilung zu klären. Das gilt besonders für Haftung, Vertraulichkeit und die Nutzung der Arbeitsergebnisse.",
     },
-    { type: "h2", id: "unterstuetzung", text: `Unterstützung durch ${site.brand}` },
+    { type: "h2", id: "unterstuetzung", text: "Unterstützung durch KOVALI" },
     {
       type: "p",
-      text: "Wir übernehmen Mandate in [Business Analysis](/leistungen/business-analysis) und begleiten Vorhaben auf Wunsch bis ins [Testmanagement](/leistungen/test-management), damit die fachlichen Anforderungen auch in der Abnahme geprüft werden. Wenn Sie ein Vorhaben planen, können Sie uns Ihr Briefing über die [Kontaktseite](/kontakt) zustellen oder ein erstes Gespräch vereinbaren.",
+      text: "KOVALI übernimmt Mandate in [Business Analysis](/leistungen/business-analysis) und begleitet Vorhaben auf Wunsch bis ins [Testmanagement](/leistungen/test-management), damit die fachlichen Anforderungen auch in der Abnahme geprüft werden. Wenn Sie ein Vorhaben planen, können Sie uns Ihr Briefing über die [Kontaktseite](/kontakt) zustellen oder ein erstes Gespräch vereinbaren.",
     },
   ],
 };

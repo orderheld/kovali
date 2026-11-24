@@ -1,19 +1,19 @@
+import { Fragment } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { DarkBackdrop } from "@/components/brand/motifs";
+import { CheckList, Tick } from "@/components/sections/check-list";
 import { CtaBand } from "@/components/sections/cta-band";
-import { PageBanner } from "@/components/sections/page-banner";
-import { ServiceIcon } from "@/components/sections/service-icon";
+import { PageHero } from "@/components/sections/page-hero";
+import { ServiceList } from "@/components/sections/service-list";
 import { JsonLd } from "@/components/seo/json-ld";
+import { ButtonLink } from "@/components/ui/button";
 import { Faq } from "@/components/ui/faq";
 import { Section, SectionHeader } from "@/components/ui/section";
+import { responseClause } from "@/config/site";
+import { getIndustry } from "@/content/industries";
 import { getService, serviceHref, services } from "@/content/services";
 import { faqJsonLd, pageMetadata, serviceJsonLd } from "@/lib/seo";
-
-/**
- * Every service page is prerendered from generateStaticParams. A navigation may wait for the
- * page instead of showing an empty fallback while `params` resolves (as on insights/[slug]).
- */
-export const instant = false;
 
 export function generateStaticParams() {
   return services.map((s) => ({ slug: s.slug }));
@@ -30,107 +30,135 @@ export async function generateMetadata({ params }: PageProps<"/leistungen/[slug]
   });
 }
 
-function Bullets({ items }: { items: readonly string[] }) {
-  return (
-    <ul className="space-y-3">
-      {items.map((item) => (
-        <li
-          key={item}
-          className="relative pl-6 leading-relaxed text-slate before:absolute before:left-0 before:top-[0.7em] before:h-px before:w-3 before:bg-blue"
-        >
-          {item}
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-/**
- * One service: banner, SEO heading with intro, tasks and results, FAQ, links to the other
- * services, closing band.
- */
 export default async function ServicePage({ params }: PageProps<"/leistungen/[slug]">) {
   const { slug } = await params;
   const service = getService(slug);
   if (!service) notFound();
 
   const path = serviceHref(service.slug);
-  const others = services.filter((s) => s.slug !== service.slug);
+  const contactHref = `/kontakt?leistung=${service.slug}`;
+  const others = services.filter((s) => s.slug !== service.slug).map((s) => s.slug);
+  const industries = service.industries.flatMap((id) => getIndustry(id) ?? []);
 
   return (
     <>
-      <PageBanner
+      <PageHero
         crumbs={[
           { name: "Start", path: "/" },
           { name: "Leistungen", path: "/leistungen" },
           { name: service.name, path },
         ]}
-        scene="leistungen"
-        kicker="Leistungen"
-        title={service.name}
-      />
+        eyebrow="IT Consulting"
+        title={service.h1}
+        lead={service.intro}
+      >
+        <ButtonLink href={contactHref} variant="inverse" arrow>
+          {service.cta}
+        </ButtonLink>
+        <ButtonLink href="/leistungen" variant="outline-inverse">
+          IT Consulting im Überblick
+        </ButtonLink>
+      </PageHero>
 
-      <Section labelledBy="einleitung-title">
-        <div className="grid gap-8 lg:grid-cols-12 lg:gap-16">
-          <h2 id="einleitung-title" className="text-h2 text-navy hyphens-manual lg:col-span-6">
-            {service.h1}
-          </h2>
-          <p className="text-lead text-slate lg:col-span-6">{service.intro}</p>
-        </div>
-      </Section>
-
-      <Section tone="cloud" labelledBy="aufgaben-title">
-        {/* Subgrid from md: both headings share the first row, so both lists start at the same height. */}
-        <div className="grid gap-16 md:grid-cols-2 md:grid-rows-[auto_auto] md:gap-x-16 md:gap-y-0 lg:gap-x-24">
-          <div className="md:row-span-2 md:grid md:grid-rows-subgrid">
-            <h2 id="aufgaben-title" className="text-h3 text-navy">
-              {service.tasksTitle}
-            </h2>
-            <div className="mt-8">
-              <Bullets items={service.tasks} />
-            </div>
+      <Section labelledBy="aufgaben-title">
+        <div className="grid gap-14 lg:grid-cols-12 lg:gap-8">
+          <div className="lg:col-span-7">
+            <SectionHeader id="aufgaben-title" title={service.tasksTitle} />
+            <CheckList items={service.tasks} className="mt-10" />
           </div>
-          <div className="md:row-span-2 md:grid md:grid-rows-subgrid">
-            <h2 id="ergebnisse-title" className="text-h3 text-navy">
-              Ergebnisse
-            </h2>
-            <div className="mt-8">
-              <Bullets items={service.deliverables} />
-            </div>
+          <div className="on-dark relative isolate self-start overflow-hidden rounded-2xl bg-night p-8 text-white shadow-[0_30px_60px_-30px_rgb(6_11_24/0.6)] lg:col-span-5">
+            <DarkBackdrop variant="panel" arms={false} />
+            <h3 className="relative font-mono text-xs font-medium uppercase tracking-[0.08em] text-sky">Typische Ergebnisse</h3>
+            <ul className="relative mt-6 space-y-4">
+              {service.deliverables.map((d) => (
+                <li
+                  key={d}
+                  className="flex gap-3 border-b border-white/10 pb-4 leading-snug text-white/90 last:border-0 last:pb-0"
+                >
+                  <Tick />
+                  {d}
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
       </Section>
 
-      <Section labelledBy="faq-title">
-        <SectionHeader id="faq-title" title={service.faqTitle} align="center" />
-        <div className="mx-auto mt-12 max-w-3xl md:mt-14">
-          <Faq items={service.faq} />
+      <Section tone="cloud" labelledBy="ausgangslagen-title">
+        <SectionHeader id="ausgangslagen-title" title="Typische Ausgangslagen" />
+        <ul className="mt-12 grid gap-x-10 md:grid-cols-2">
+          {service.situations.map((situation, i) => (
+            <li
+              key={situation}
+              className="flex gap-4 border-t border-cloud-line py-6 text-lg leading-relaxed text-ink"
+            >
+              <span aria-hidden className="pt-1.5 font-mono text-xs text-blue">
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              {situation}
+            </li>
+          ))}
+        </ul>
+      </Section>
+
+      <Section space="tight" labelledBy="kontext-title">
+        <h2 id="kontext-title" className="sr-only">
+          Branchen und Werkzeuge
+        </h2>
+        <dl className="divide-y divide-line border-y border-line">
+          <div className="grid gap-2 py-6 sm:grid-cols-[14rem_1fr] sm:gap-8">
+            <dt className="font-mono text-xs font-medium uppercase leading-6 tracking-[0.08em] text-blue">Branchen</dt>
+            <dd className="leading-relaxed text-slate">
+              {industries.map((industry, i) => (
+                <Fragment key={industry.id}>
+                  {i > 0 ? ", " : null}
+                  <Link
+                    href={`/branchen#${industry.id}`}
+                    className="text-blue underline decoration-1 underline-offset-[3px] hover:decoration-2"
+                  >
+                    {industry.name}
+                  </Link>
+                  {industry.kind === "target" ? "\u00a0(Zielmarkt)" : null}
+                </Fragment>
+              ))}
+            </dd>
+          </div>
+          <div className="grid gap-2 py-6 sm:grid-cols-[14rem_1fr] sm:gap-8">
+            <dt className="font-mono text-xs font-medium uppercase leading-6 tracking-[0.08em] text-blue">Methoden und Werkzeuge</dt>
+            <dd>
+              <ul className="flex flex-wrap gap-2">
+                {service.methods.map((m) => (
+                  <li key={m} className="rounded-md border border-line bg-cloud px-2.5 py-1 font-mono text-[0.8125rem] text-ink">
+                    {m}
+                  </li>
+                ))}
+              </ul>
+            </dd>
+          </div>
+        </dl>
+      </Section>
+
+      <Section tone="cloud" labelledBy="faq-title">
+        <div className="grid gap-12 lg:grid-cols-12 lg:gap-8">
+          <div className="lg:col-span-4">
+            <SectionHeader id="faq-title" title={service.faqTitle} />
+          </div>
+          <div className="lg:col-span-8">
+            <Faq items={service.faq} />
+          </div>
         </div>
       </Section>
 
-      <Section tone="cloud" space="tight" labelledBy="weitere-title">
-        <div className="grid gap-8 lg:grid-cols-12 lg:items-center lg:gap-8">
-          <h2 id="weitere-title" className="text-h3 text-navy lg:col-span-3">
-            Weitere Leistungen
-          </h2>
-          <ul className="grid gap-6 sm:grid-cols-3 sm:gap-8 lg:col-span-9">
-            {others.map((s) => (
-              <li key={s.slug}>
-                <Link href={serviceHref(s.slug)} className="group flex items-center gap-4 font-medium text-navy hover:text-blue">
-                  <ServiceIcon slug={s.slug} className="size-8 shrink-0" />
-                  <span className="leading-snug underline decoration-transparent underline-offset-4 transition-colors group-hover:decoration-current">
-                    {s.name}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
+      <Section space="tight" labelledBy="weitere-title">
+        <SectionHeader id="weitere-title" title="Weitere Disziplinen im IT Consulting" />
+        <ServiceList only={others} layout="cards" className="mt-10" />
       </Section>
 
       <CtaBand
         title={service.ctaTitle}
-        primary={{ label: service.cta, href: `/kontakt?leistung=${service.slug}` }}
+        text={`Beschreiben Sie Vorhaben, Zeitraum und Pensum. Sie erhalten eine erste Einschätzung von Ferhat Demir${responseClause()}.`}
+        primary={{ label: service.cta, href: contactHref }}
+        secondary={{ label: "Alle Leistungen", href: "/leistungen" }}
       />
 
       <JsonLd data={[serviceJsonLd(service, path), faqJsonLd(service.faq)]} />

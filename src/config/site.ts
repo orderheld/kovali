@@ -32,29 +32,12 @@ export const legalFormLabel: Record<LegalForm, string> = {
   gmbh: "Gesellschaft mit beschränkter Haftung (GmbH)",
 };
 
-/**
- * Brand name shown on the website: header and footer wordmark, page titles, structured data
- * and every sentence that names the company. Change it here and nowhere else when the new
- * name is decided (Ferhat Demir, 24.11.2026: a new name with "Consulting" is being chosen).
- * The legal name in the imprint is `legal.entityName` below.
- */
-const brand = "KOVALI";
-
 export const site = {
-  brand,
-  /** Second line of the wordmark in header and footer, e.g. "KOVALI" over "Consulting". */
-  descriptor: "Consulting",
+  brand: "KOVALI",
   tagline: "Business & Technology Consulting",
-  description: `${brand} bietet IT Consulting in der Schweiz: Business Analysis, Requirements Engineering, Testmanagement und Test Engineering für IT-Projekte.`,
-  /**
-   * What the letters of the name stand for, shown on the company page ("Wofür unser Name
-   * steht"). Set to null when the name changes and the letters no longer fit.
-   */
-  nameMeaning: [
-    { letters: "KO", word: "Konzeption", text: "Klären, was gebaut wird." },
-    { letters: "VA", word: "Value Analysis", text: "Nutzen und Aufwand abwägen." },
-    { letters: "LI", word: "Lösungsintegration", text: "Testen und in den Betrieb begleiten." },
-  ] as readonly { letters: string; word: string; text: string }[] | null,
+  claim: "From Requirements to Value.",
+  description:
+    "KOVALI bietet IT Consulting in der Schweiz: Business Analysis, Requirements Engineering, Testmanagement und Application Management für IT-Projekte.",
   locale: "de-CH",
 
   /** Active logo direction: "signature" | "tech" | "minimal" (see brand/README.md). */
@@ -129,12 +112,22 @@ export const site = {
    * The site shows no prices (Ferhat Demir, 14.10.2026).
    */
   offer: {
-    /** Named in the closing band and on the contact page (responseClause). */
+    /** The sentence about the first call on /unternehmen is built from these values. */
+    firstCall: {
+      value: { minutes: 30, free: true },
+      confirmed: false,
+      note: "Erstgespräch rund 30 Minuten und kostenlos?",
+    } as Confirmable<{ minutes: number; free: boolean }>,
     responseWorkingDays: {
       value: 2,
       confirmed: false,
       note: "Antwort «in der Regel innert zwei Arbeitstagen» versprechen?",
     } as Confirmable<number>,
+    customerProtection: {
+      value: true,
+      confirmed: false,
+      note: "Endkunden von Beratungen nicht auf eigene Rechnung ansprechen?",
+    } as Confirmable<boolean>,
   },
 
   /** Regions in which the services are offered. */
@@ -174,13 +167,15 @@ export function unconfirmedFields(): { field: string; value: unknown; note?: str
     ["Handelsregister (legal.commercialRegister)", site.legal.commercialRegister],
     ["E-Mail (contact.email)", site.contact.email],
     ["Telefon (contact.phone)", site.contact.phone],
+    ["Erstgespräch (offer.firstCall)", site.offer.firstCall],
     ["Antwortzeit in Arbeitstagen (offer.responseWorkingDays)", site.offer.responseWorkingDays],
+    ["Kundenschutz (offer.customerProtection)", site.offer.customerProtection],
   ];
   return entries
     .filter(([, c]) => !c.confirmed)
     .map(([field, c]) => ({
       field,
-      // Object values print readably in the launch check.
+      // Objects such as the first call print readably in the launch check.
       value: c.value !== null && typeof c.value === "object" ? JSON.stringify(c.value) : c.value,
       note: c.note,
     }));

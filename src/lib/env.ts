@@ -10,10 +10,7 @@ export const serverEnv = {
   resendApiKey: process.env.RESEND_API_KEY,
   /** Recipient of contact requests, e.g. info@kovali.ch */
   contactTo: process.env.CONTACT_TO_EMAIL,
-  /**
-   * Verified sender, e.g. "KOVALI Website <website@kovali.ch>". The display name is set in the
-   * environment, not from site.brand: update it in Vercel when the brand name changes.
-   */
+  /** Verified sender, e.g. "KOVALI Website <website@kovali.ch>" */
   contactFrom: process.env.CONTACT_FROM_EMAIL,
   /** Optional: Neon Postgres connection string. Without it, requests are only sent by email. */
   databaseUrl: process.env.DATABASE_URL,
