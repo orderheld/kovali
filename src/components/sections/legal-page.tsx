@@ -1,9 +1,10 @@
-import { DarkBackdrop } from "@/components/brand/motifs";
-import { Breadcrumbs } from "@/components/ui/breadcrumbs";
-import { Container } from "@/components/ui/container";
-import { JsonLd } from "@/components/seo/json-ld";
-import { breadcrumbJsonLd } from "@/lib/seo";
+import { PageBanner } from "@/components/sections/page-banner";
+import { Section } from "@/components/ui/section";
 
+/**
+ * Imprint and privacy policy: image banner with the title, then the text in one centred
+ * reading column on white. The date of the current version sits above the text.
+ */
 export function LegalPage({
   title,
   path,
@@ -21,18 +22,13 @@ export function LegalPage({
   ];
   return (
     <>
-      <div className="on-dark relative isolate overflow-hidden bg-night text-white">
-        <DarkBackdrop variant="band" arms={false} />
-        <Container className="relative pb-14 pt-8 md:pb-16 md:pt-10">
-          <Breadcrumbs items={crumbs} />
-          <h1 className="mt-10 text-h1 font-semibold text-white md:mt-12">{title}</h1>
-          <p className="mt-4 font-mono text-xs uppercase tracking-[0.08em] text-sky">Stand: {updated}</p>
-        </Container>
-      </div>
-      <Container className="py-14 md:py-20">
-        <div className="prose-kovali">{children}</div>
-      </Container>
-      <JsonLd data={breadcrumbJsonLd(crumbs)} />
+      <PageBanner crumbs={crumbs} scene="rechtliches" title={title} />
+      <Section tone="white">
+        <div className="mx-auto max-w-(--container-prose)">
+          <p className="border-b border-line pb-5 text-sm text-slate">Stand: {updated}</p>
+          <div className="prose-kovali mt-10 md:mt-12">{children}</div>
+        </div>
+      </Section>
     </>
   );
 }

@@ -57,13 +57,16 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
-      // "Für Partner" became "Für Unternehmen".
+      // /unternehmen is the company page ("Über uns"). Since 24.11.2026 it replaces "Für Partner",
+      // "Warum KOVALI" and "Branchen". Every old path points straight to it, so there is no
+      // redirect chain. "warum-wir" is Ferhat Demir's own word for the page.
       { source: "/partner", destination: "/unternehmen", permanent: true },
+      { source: "/ueber-uns", destination: "/unternehmen", permanent: true },
+      { source: "/warum-wir", destination: "/unternehmen", permanent: true },
+      { source: "/warum-kovali", destination: "/unternehmen", permanent: true },
+      { source: "/branchen", destination: "/unternehmen", permanent: true },
       // Requirements Engineering is part of the combined service Business Analysis & Requirements Engineering.
       { source: "/leistungen/requirements-engineering", destination: "/leistungen/business-analysis", permanent: true },
-      // "Über uns" became "Warum KOVALI"; "warum-wir" is Ferhat Demir's own word for the page.
-      { source: "/ueber-uns", destination: "/warum-kovali", permanent: true },
-      { source: "/warum-wir", destination: "/warum-kovali", permanent: true },
       // /leistungen is the IT Consulting page: a short URL for cards and LinkedIn, and the
       // reserved slug below it, so it never reaches the [slug] route as a 404.
       { source: "/it-consulting", destination: "/leistungen", permanent: true },

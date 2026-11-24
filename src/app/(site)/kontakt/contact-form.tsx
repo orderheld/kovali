@@ -16,6 +16,7 @@ import {
   SuccessPanel,
   TestModeNotice,
   inputClass,
+  textareaClass,
 } from "@/components/forms/fields";
 import {
   ATTACHMENT_MAX_BYTES,
@@ -35,7 +36,6 @@ import {
   type ContactTextField,
   type ContactValues,
 } from "@/lib/contact/state";
-import { cn } from "@/lib/utils";
 import { requestFormToken, submitContact } from "./actions";
 
 export interface ContactDefaults {
@@ -236,14 +236,14 @@ export function ContactForm({
         {state.status === "error" ? (
           <SubmitError ref={summaryRef} message={state.message} reference={state.reference} fallbackEmail={fallbackEmail} />
         ) : null}
-        <p id="form-hint" className="text-sm text-slate">
+        <p id="form-hint" className="text-sm leading-relaxed text-slate">
           Pflichtfelder sind mit <span aria-hidden className="text-blue">*</span>
           <span className="sr-only">Stern</span> markiert. Alles Weitere ist freiwillig.
         </p>
         <noscript>
           <p className="text-sm text-slate">
             Das Formular braucht JavaScript. Ohne JavaScript erreichen Sie uns per E-Mail an{" "}
-            <a href={`mailto:${fallbackEmail}`} className="text-blue underline underline-offset-[3px]">
+            <a href={`mailto:${fallbackEmail}`} className="text-blue underline decoration-blue/40 underline-offset-[3px] hover:decoration-blue">
               {fallbackEmail}
             </a>
             .
@@ -256,6 +256,7 @@ export function ContactForm({
           name="requestType"
           legend="Art der Anfrage"
           required
+          hint="Personalverleih und Stellenvermittlung bieten wir nicht an."
           options={requestTypes}
           defaultValue={v("requestType", defaults.requestType)}
           error={errors.requestType}
@@ -283,7 +284,7 @@ export function ContactForm({
               rows={5}
               placeholder="Zum Beispiel: Business Analysis für die Ablösung einer Fachapplikation in einem laufenden Kundenmandat."
               defaultValue={v("projectDescription")}
-              className={cn(inputClass, "resize-y")}
+              className={textareaClass}
             />
           )}
         </Field>
@@ -337,7 +338,7 @@ export function ContactForm({
           error={errors.requirements}
         >
           {(p) => (
-            <textarea {...p} name="requirements" rows={4} defaultValue={v("requirements")} className={cn(inputClass, "resize-y")} />
+            <textarea {...p} name="requirements" rows={4} defaultValue={v("requirements")} className={textareaClass} />
           )}
         </Field>
       </FormStep>
@@ -362,7 +363,7 @@ export function ContactForm({
           </Field>
         </div>
         <Field id="message" label="Nachricht" optional hint="Weitere Fragen oder ein Rückrufwunsch." error={errors.message}>
-          {(p) => <textarea {...p} name="message" rows={3} defaultValue={v("message")} className={cn(inputClass, "resize-y")} />}
+          {(p) => <textarea {...p} name="message" rows={3} defaultValue={v("message")} className={textareaClass} />}
         </Field>
       </FormStep>
 
