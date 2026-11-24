@@ -1,4 +1,4 @@
-import { LegalPage } from "@/components/sections/legal-page";
+import { LegalPage, sectionCounter } from "@/components/sections/legal-page";
 import { legalEntityName, site } from "@/config/site";
 import { pageMetadata } from "@/lib/seo";
 
@@ -9,22 +9,6 @@ export const metadata = pageMetadata({
   path: "/datenschutz",
 });
 
-/**
- * Section numbers count up in order, so adding or removing a section needs no renumbering.
- * The number is a mono label in front of the heading text ("05 Aufbewahrung").
- */
-function sectionCounter() {
-  let n = 0;
-  return function section(title: string) {
-    const number = String(++n).padStart(2, "0");
-    return (
-      <>
-        <span className="mr-1 font-mono text-[0.875rem] font-medium tracking-[0.04em] text-blue">{number}</span>{" "}
-        {title}
-      </>
-    );
-  };
-}
 
 export default function DatenschutzPage() {
   const { contact } = site;

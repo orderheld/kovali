@@ -56,7 +56,7 @@ export default function KontaktPage() {
       <Section labelledBy="kontakt-title">
         <div className="grid gap-12 lg:grid-cols-12 lg:gap-16">
           <div className="lg:sticky lg:top-28 lg:col-span-5 lg:self-start">
-            <p className="kicker">Direkter Kontakt</p>
+            <p className="kicker">01 / Direkter Kontakt</p>
             <h2 id="kontakt-title" className="mt-5 text-h2 text-night">
               Sprechen wir über Ihr Vorhaben
             </h2>
@@ -70,7 +70,7 @@ export default function KontaktPage() {
                 <p className="font-mono text-xs uppercase tracking-[0.08em] text-slate">E-Mail</p>
                 <a
                   href={`mailto:${email}`}
-                  className="mt-2 inline-block text-h3 font-medium text-blue underline decoration-blue/30 decoration-1 underline-offset-[6px] transition-colors hover:text-blue-700 hover:decoration-blue-700"
+                  className="mt-1 inline-flex min-h-10 items-center text-h3 font-medium text-blue underline decoration-blue/30 decoration-1 underline-offset-[6px] transition-colors hover:text-blue-700 hover:decoration-blue-700"
                 >
                   {email}
                 </a>

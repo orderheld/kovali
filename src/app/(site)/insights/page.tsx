@@ -89,7 +89,7 @@ export default function InsightsPage() {
         <Section tone="mist" labelledBy="weitere-title" space="loose">
           <div className="grid gap-12 lg:grid-cols-12 lg:gap-16">
             <div className="lg:col-span-4">
-              <SectionHeader id="weitere-title" kicker="Fachartikel" title="Weitere Artikel" titleClassName="text-night" />
+              <SectionHeader id="weitere-title" kicker="01 / Fachartikel" title="Weitere Artikel" titleClassName="text-night" />
             </div>
             <ul className="grid gap-x-8 gap-y-14 md:grid-cols-2 lg:col-span-8">
               {rest.map((a) => (

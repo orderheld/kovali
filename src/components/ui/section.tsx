@@ -4,17 +4,15 @@ import { Container } from "./container";
 /**
  * Section backgrounds of the public site: white and a cool light grey (mist) for reading
  * content, night for the dark bands. Night sets `.on-dark` (electric focus rings, sky labels)
- * and white text. "cloud" and "navy" are the older names of mist and night.
+ * and white text.
  */
-export type SectionTone = "white" | "mist" | "night" | "cloud" | "navy";
+export type SectionTone = "white" | "mist" | "night";
 export type SectionSpace = "tight" | "default" | "loose";
 
 const tones: Record<SectionTone, string> = {
   white: "bg-white",
   mist: "bg-mist",
   night: "on-dark bg-night text-white",
-  cloud: "bg-mist",
-  navy: "on-dark bg-night text-white",
 };
 
 const spaces: Record<SectionSpace, string> = {
@@ -28,8 +26,6 @@ const rules: Record<SectionTone, string> = {
   white: "border-t border-line",
   mist: "border-t border-line",
   night: "border-t border-white/[0.08]",
-  cloud: "border-t border-line",
-  navy: "border-t border-white/[0.08]",
 };
 
 export function Section({
@@ -60,7 +56,7 @@ export function Section({
     <Tag
       id={id}
       aria-labelledby={labelledBy}
-      className={cn(spaces[space], tones[tone], rule && rules[tone], id && "scroll-mt-24", className)}
+      className={cn(spaces[space], tones[tone], rule && rules[tone], id && "-scroll-mt-6", className)}
     >
       <Container className={containerClassName}>{children}</Container>
     </Tag>

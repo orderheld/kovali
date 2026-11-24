@@ -15,7 +15,7 @@ export function ArticleCard({ article, headingLevel = "h3" }: { article: Publish
           src={articleCover(article.slug)}
           alt=""
           fill
-          sizes="(min-width: 1024px) 24rem, (min-width: 640px) 45vw, 92vw"
+          sizes="(min-width: 1024px) 24rem, (min-width: 768px) 45vw, 92vw"
           placeholder="blur"
           className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
         />

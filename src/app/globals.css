@@ -23,9 +23,6 @@
 
   /* Public site surfaces. */
   --color-night: #060b18; /* deepest surface: heroes, CTA, footer */
-  --color-azure: #1f7bea; /* the mid blue of the dark logo, for gradients and rules */
-  --color-cloud: #f4f7fb; /* cool light grey section background */
-  --color-cloud-line: #e2e8f1; /* hairlines on cloud */
 
   /* Admin only (warm surfaces of the previous site design). The public site does not use them. */
   --color-paper: #f7f5f0;
@@ -132,25 +129,10 @@
 }
 
 @layer components {
-  /* Short kicker above a heading (admin and portal use this plain version). */
-  .eyebrow {
-    font-family: var(--font-sans);
-    font-size: 0.875rem;
-    line-height: 1.25rem;
-    font-weight: 500;
-    text-transform: none;
-    letter-spacing: 0;
-    color: var(--color-blue);
-  }
-  .on-dark .eyebrow {
-    color: var(--color-electric);
-  }
-
   /*
    * Public site: technical label above a heading, e.g. "01 / LEISTUNGEN", in Geist Mono.
    * Corporate Blue on light surfaces, sky on dark ones.
    */
-  .site .eyebrow,
   .kicker {
     display: inline-block;
     font-family: var(--font-mono);

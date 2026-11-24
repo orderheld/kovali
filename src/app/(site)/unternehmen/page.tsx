@@ -1,16 +1,9 @@
 import Image from "next/image";
-import {
-  FileCheck2,
-  FlaskConical,
-  Handshake,
-  ListChecks,
-  type LucideIcon,
-  Network,
-  Workflow,
-} from "lucide-react";
+import { FileCheck2, Handshake, type LucideIcon, Network } from "lucide-react";
 import { CtaBand } from "@/components/sections/cta-band";
 import { PageBanner } from "@/components/sections/page-banner";
 import { Portrait } from "@/components/sections/portrait";
+import { RoleIcon } from "@/components/sections/role-icon";
 import { JsonLd } from "@/components/seo/json-ld";
 import { Section, SectionHeader } from "@/components/ui/section";
 import { site } from "@/config/site";
@@ -25,8 +18,6 @@ export const metadata = pageMetadata({
   path: "/unternehmen",
 });
 
-/** One icon per role, in the order of `about.team.roles`. */
-const roleIcons: LucideIcon[] = [Workflow, ListChecks, FlaskConical];
 /** One icon per collaboration model, in the order of `about.collaboration.models`. */
 const modelIcons: LucideIcon[] = [Handshake, Network, FileCheck2];
 
@@ -105,21 +96,18 @@ export default function UnternehmenPage() {
             <SectionHeader id="team-title" kicker={`${nr(1)} / ${team.kicker}`} title={team.title} text={team.text} />
           </div>
           <ul className="grid gap-4 md:grid-cols-3 lg:col-span-8">
-            {team.roles.map((role, i) => {
-              const Icon = roleIcons[i];
-              return (
-                <li key={role.id} className="flex flex-col rounded-2xl border border-line bg-white p-6">
-                  <div className="flex items-start justify-between gap-4">
-                    <Icon aria-hidden strokeWidth={1.25} className="size-8 text-blue" />
-                    <span aria-hidden className="font-mono text-xs text-blue">
-                      {nr(i)}
-                    </span>
-                  </div>
-                  <h3 className="mt-8 text-lg font-medium leading-snug tracking-[-0.01em] text-night">{role.title}</h3>
-                  <p className="mt-3 text-[0.9375rem] leading-relaxed text-slate">{role.text}</p>
-                </li>
-              );
-            })}
+            {team.roles.map((role, i) => (
+              <li key={role.id} className="flex flex-col rounded-2xl border border-line bg-white p-6">
+                <div className="flex items-start justify-between gap-4">
+                  <RoleIcon index={i} />
+                  <span aria-hidden className="font-mono text-xs text-blue">
+                    {nr(i)}
+                  </span>
+                </div>
+                <h3 className="mt-8 text-lg font-medium leading-snug tracking-[-0.01em] text-night">{role.title}</h3>
+                <p className="mt-3 text-[0.9375rem] leading-relaxed text-slate">{role.text}</p>
+              </li>
+            ))}
           </ul>
         </div>
       </Section>
@@ -203,7 +191,7 @@ export default function UnternehmenPage() {
           </div>
           <div className="lg:col-span-7">
             <p className="kicker">{`${nr(4)} / ${contact.kicker}`}</p>
-            <h2 id={contact.headingId} className="mt-5 scroll-mt-28 text-h2 text-night">
+            <h2 id={contact.headingId} className="mt-5 scroll-mt-4 text-h2 text-night">
               {site.contact.person}
             </h2>
             <p className="mt-2 text-lead text-slate">{site.contact.title}</p>

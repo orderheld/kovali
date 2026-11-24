@@ -8,9 +8,16 @@ import { site } from "@/config/site";
 import { mobileNav } from "@/content/navigation";
 import { cn } from "@/lib/utils";
 
+/**
+ * Menu button and full-screen panel below lg. The panel belongs to the page it was opened on:
+ * it is closed as soon as the route changes (links, logo, back and forward), on Escape, on a
+ * click on any link and when the window grows to the desktop navigation.
+ */
 export function MobileNav() {
-  const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const [openedAt, setOpenedAt] = useState<string | null>(null);
+  const open = openedAt === pathname;
+  const setOpen = (value: boolean) => setOpenedAt(value ? pathname : null);
   const panelId = useId();
   const buttonRef = useRef<HTMLButtonElement>(null);
 
@@ -24,22 +31,28 @@ export function MobileNav() {
     behind.forEach((el) => el.setAttribute("inert", ""));
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        setOpen(false);
+        setOpenedAt(null);
         buttonRef.current?.focus();
       }
     };
     window.addEventListener("keydown", onKey);
+    // A click on any link (also the logo or the header button on the current page) closes it.
+    const onLinkClick = (e: MouseEvent) => {
+      if (e.target instanceof Element && e.target.closest("a[href]")) setOpenedAt(null);
+    };
+    document.addEventListener("click", onLinkClick);
     // From the lg breakpoint the desktop navigation takes over: close the panel, so the page is
     // not left inert and unscrollable after the window grows.
     const wide = window.matchMedia("(min-width: 64rem)");
     const onWide = () => {
-      if (wide.matches) setOpen(false);
+      if (wide.matches) setOpenedAt(null);
     };
     wide.addEventListener("change", onWide);
     return () => {
       document.body.style.overflow = previous;
       behind.forEach((el) => el.removeAttribute("inert"));
       window.removeEventListener("keydown", onKey);
+      document.removeEventListener("click", onLinkClick);
       wide.removeEventListener("change", onWide);
     };
   }, [open]);
@@ -54,7 +67,7 @@ export function MobileNav() {
         type="button"
         aria-expanded={open}
         aria-controls={panelId}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => setOpen(!open)}
         className="-mr-2 inline-flex size-11 items-center justify-center rounded-full text-white hover:bg-white/10"
       >
         <span className="sr-only">{open ? "Menü schliessen" : "Menü öffnen"}</span>
@@ -88,7 +101,7 @@ export function MobileNav() {
           </ul>
           <p className="mt-10 kicker">E-Mail</p>
           <p className="mt-2">
-            <a href={`mailto:${email}`} className="text-lg text-white underline decoration-white/30 underline-offset-4">
+            <a href={`mailto:${email}`} className="inline-flex min-h-10 items-center text-lg text-white underline decoration-white/30 underline-offset-4">
               {email}
             </a>
           </p>

@@ -17,7 +17,7 @@ export const home = {
     title: "Beratung für IT-Projekte in der Schweiz",
     paragraphs: [
       `${site.brand} ist ein Beratungsunternehmen für IT-Projekte in der Schweiz. Wir arbeiten in Business Analysis, Requirements Engineering und Softwaretest.`,
-      "Im Team arbeiten Business Analysts, Test Manager und Test Engineers. Wir übernehmen Aufgaben direkt für Unternehmen und öffentliche Organisationen oder als Subunternehmen für Beratungen und IT-Dienstleister.",
+      "Im Team arbeiten Business Analysts, Requirements Engineers, Test Manager und Test Engineers. Wir übernehmen Aufgaben direkt für Unternehmen und öffentliche Organisationen oder als Subunternehmen für Beratungen und IT-Dienstleister.",
     ],
     link: { label: "Über uns", href: "/unternehmen" },
   },

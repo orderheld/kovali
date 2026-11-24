@@ -16,8 +16,9 @@ export const PAGE_TITLE_ID = "seitentitel";
 
 /**
  * Dark page header of every subpage: a mono label, the page title and an optional lead,
- * left-aligned; a 3D image fills the right side and fades into the dark surface. The image
- * is decorative. The breadcrumb trail goes to search engines as structured data (none on the
+ * left-aligned. On wide screens a 3D image fills the right side and fades into the dark
+ * surface; on small screens it is a band at the top with the text below it. The image is
+ * decorative. The breadcrumb trail goes to search engines as structured data (none on the
  * 404 page); the label shows the parent page unless a kicker is given.
  */
 export function PageBanner({
@@ -40,26 +41,33 @@ export function PageBanner({
   const label = kicker ?? (crumbs && crumbs.length > 2 ? crumbs[crumbs.length - 2].name : undefined);
   return (
     <section aria-labelledby={PAGE_TITLE_ID} className="on-dark relative isolate overflow-hidden bg-night text-white">
-      <div aria-hidden className="absolute inset-y-0 right-0 -z-20 w-full md:w-[68%]">
+      <div
+        aria-hidden
+        className="absolute inset-x-0 top-0 -z-20 h-40 sm:h-48 md:inset-y-0 md:left-auto md:h-auto md:w-[68%]"
+      >
         <Image
           src={scenes.banner[scene]}
           alt=""
           fill
           preload
-          sizes="(min-width: 768px) 68vw, 100vw"
+          // object-cover draws these wide images at box height x aspect, wider than the box.
+          sizes="(min-width: 768px) 1500px, 120vw"
           placeholder="blur"
           className="object-cover object-right"
         />
       </div>
-      {/* Fades the image into the dark surface: fully dark behind the text on every width. */}
+      {/* Fades the image into the dark surface: below the band on small screens, from the left on
+          wide ones, so the text always sits on dark. */}
       <div
         aria-hidden
-        className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgb(6_11_24/0.2)_0%,rgb(6_11_24/0.8)_60%,var(--color-night)_100%)] md:bg-[linear-gradient(90deg,var(--color-night)_0%,rgb(6_11_24/0.92)_36%,rgb(6_11_24/0.3)_70%,rgb(6_11_24/0)_100%)]"
+        className="absolute inset-x-0 top-0 -z-10 h-40 bg-[linear-gradient(180deg,rgb(6_11_24/0)_0%,rgb(6_11_24/0.15)_45%,var(--color-night)_100%)] sm:h-48 md:inset-y-0 md:h-auto md:bg-[linear-gradient(90deg,var(--color-night)_0%,rgb(6_11_24/0.92)_46%,rgb(6_11_24/0.3)_74%,rgb(6_11_24/0)_100%)]"
       />
       <Container
         className={cn(
           "flex flex-col justify-end",
-          size === "lg" ? "min-h-[24rem] pb-16 pt-24 md:min-h-[30rem] md:pb-20" : "min-h-[20rem] pb-14 pt-20 md:min-h-[26rem] md:pb-[4.5rem]",
+          size === "lg"
+            ? "pb-16 pt-40 sm:pt-48 md:min-h-[30rem] md:pb-20 md:pt-24"
+            : "pb-14 pt-40 sm:pt-48 md:min-h-[26rem] md:pb-[4.5rem] md:pt-20",
         )}
       >
         {label ? <p className="kicker kv-rise">{label}</p> : null}

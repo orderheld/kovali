@@ -112,7 +112,7 @@ export default function LeistungenPage() {
       <Section labelledBy="zusammenspiel-title">
         <div className="grid gap-10 lg:grid-cols-12 lg:gap-16">
           <div className="lg:col-span-5">
-            <p className="kicker">Arbeitsweise</p>
+            <p className="kicker">01 / Arbeitsweise</p>
             <h2 id="zusammenspiel-title" className="mt-5 text-h2 text-night">
               {together.title}
             </h2>

@@ -156,7 +156,7 @@ function ChoiceGroup({
       id={name}
       tabIndex={-1}
       aria-describedby={[hintId, errorId].filter(Boolean).join(" ") || undefined}
-      className="scroll-mt-28 focus:outline-none"
+      className="scroll-mt-4 focus:outline-none"
     >
       <legend className="mb-3 text-sm font-medium text-night">
         {legend}

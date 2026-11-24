@@ -167,10 +167,10 @@ export default async function ArticlePage({ params }: PageProps<"/insights/[slug
         <Section tone="mist" labelledBy="weitere-title" space="loose">
           <div className="grid gap-12 lg:grid-cols-12 lg:gap-16">
             <div className="lg:col-span-4">
-              <SectionHeader id="weitere-title" kicker="Insights" title="Weitere Artikel" titleClassName="text-night" />
+              <SectionHeader id="weitere-title" kicker="01 / Insights" title="Weitere Artikel" titleClassName="text-night" />
               <Link
                 href="/insights"
-                className="group mt-8 inline-flex items-center gap-2 font-medium text-blue hover:text-blue-700"
+                className="group mt-8 inline-flex min-h-10 items-center gap-2 font-medium text-blue hover:text-blue-700"
               >
                 Alle Artikel
                 <ArrowRight aria-hidden className="size-4 transition-transform group-hover:translate-x-0.5" />

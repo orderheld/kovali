@@ -19,13 +19,13 @@ interface PageMetaInput {
 }
 
 /**
- * Default share image (public/opengraph-image.png), set on every page: by pageMetadata and,
+ * Default share image (public/opengraph-image.jpg), set on every page: by pageMetadata and,
  * for pages without their own metadata (404, admin), by the root layout. It holds no text (a
  * 3D render of glass panes and a light beam, with the K symbol), so a new brand name needs no
  * new image; the alt text takes the name from site.brand.
  */
 export const shareImage = {
-  url: "/opengraph-image.png",
+  url: "/opengraph-image.jpg",
   width: 1200,
   height: 630,
   alt: `${site.brand}: Glasscheiben mit blauem Lichtstrahl und dem Logo-Symbol`,
@@ -86,7 +86,7 @@ export function organizationJsonLd() {
     url: absoluteUrl("/"),
     // The symbol only: the full logo has the name drawn into it.
     logo: absoluteUrl("/brand/kovali-app-icon-512.png"),
-    image: absoluteUrl("/opengraph-image.png"),
+    image: absoluteUrl(shareImage.url),
     email: site.contact.email.value,
     ...(site.contact.phone.value ? { telephone: site.contact.phone.value } : {}),
     // Only the country: the full address belongs in the imprint, not in marketing data.
@@ -184,7 +184,7 @@ export function articleJsonLd(article: Article, path: string) {
     // The organisation until Ferhat Demir approves a personal byline (spec 3.10 and 7.19).
     author: { "@type": "Organization", "@id": ORG_ID, name: site.brand, url: absoluteUrl("/") },
     publisher: { "@id": ORG_ID },
-    image: absoluteUrl("/opengraph-image.png"),
+    image: absoluteUrl(shareImage.url),
   };
 }
 

@@ -41,7 +41,8 @@ export function CtaBand({
               src={scenes.cta}
               alt=""
               fill
-              sizes="(min-width: 768px) 46rem, 100vw"
+              // object-cover draws the wide image at panel height x aspect, wider than the box.
+              sizes="(min-width: 768px) 1150px, 150vw"
               placeholder="blur"
               className="object-cover object-right"
             />
@@ -62,7 +63,7 @@ export function CtaBand({
               {showMail ? (
                 <a
                   href={`mailto:${email}`}
-                  className="text-white/80 underline decoration-white/30 underline-offset-4 transition-colors hover:text-white hover:decoration-white"
+                  className="inline-flex min-h-10 items-center text-white/80 underline decoration-white/30 underline-offset-4 transition-colors hover:text-white hover:decoration-white"
                 >
                   {email}
                 </a>

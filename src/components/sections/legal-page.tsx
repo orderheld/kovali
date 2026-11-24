@@ -39,3 +39,21 @@ export function LegalPage({
     </>
   );
 }
+
+/**
+ * Numbers the H2s of a legal page in render order, so adding or removing a section needs no
+ * renumbering: `const section = sectionCounter();` then `<h2>{section("Anbieter")}</h2>`
+ * renders a mono number in front of the heading text ("01 Anbieter").
+ */
+export function sectionCounter() {
+  let n = 0;
+  return function section(title: string) {
+    const number = String(++n).padStart(2, "0");
+    return (
+      <>
+        <span className="mr-1 font-mono text-[0.875rem] font-medium tracking-[0.04em] text-blue">{number}</span>{" "}
+        {title}
+      </>
+    );
+  };
+}

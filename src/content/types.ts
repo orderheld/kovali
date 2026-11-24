@@ -21,7 +21,7 @@ export interface Service {
   name: string;
   /** Short line for lists and navigation: when the discipline helps and what we do. */
   summary: string;
-  /** H2 beside the intro on the discipline page (SEO phrasing, keep stable). */
+  /** H1 of the discipline page, in the page header (SEO phrasing, keep stable). */
   h1: string;
   metaTitle: string;
   metaDescription: string;

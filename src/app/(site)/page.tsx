@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowRight, ArrowUpRight } from "lucide-react";
 import { ArticleCard } from "@/components/sections/article-card";
 import { CtaBand } from "@/components/sections/cta-band";
+import { RoleIcon } from "@/components/sections/role-icon";
 import { ServiceIcon } from "@/components/sections/service-icon";
 import { ButtonLink } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
@@ -47,7 +48,8 @@ export default function HomePage() {
             alt=""
             fill
             preload
-            sizes="(min-width: 1024px) 72vw, 100vw"
+            // object-cover draws the image at box height x aspect, wider than the box.
+            sizes="(min-width: 1024px) 1420px, 140vw"
             placeholder="blur"
             className="object-cover object-[85%_50%] lg:object-[70%_50%]"
           />
@@ -55,9 +57,9 @@ export default function HomePage() {
         {/* Dark behind the text: from the left on wide screens, below the image band on small ones. */}
         <div
           aria-hidden
-          className="absolute inset-x-0 top-0 -z-10 h-[19rem] bg-[linear-gradient(180deg,rgb(6_11_24/0)_0%,rgb(6_11_24/0.15)_45%,var(--color-night)_100%)] sm:h-[24rem] md:h-[30rem] lg:inset-y-0 lg:h-auto lg:bg-[linear-gradient(90deg,var(--color-night)_0%,rgb(6_11_24/0.9)_32%,rgb(6_11_24/0.2)_62%,rgb(6_11_24/0)_100%)]"
+          className="absolute inset-x-0 top-0 -z-10 h-[19rem] bg-[linear-gradient(180deg,rgb(6_11_24/0)_0%,rgb(6_11_24/0.15)_45%,var(--color-night)_100%)] sm:h-[24rem] md:h-[30rem] lg:inset-y-0 lg:h-auto lg:bg-[linear-gradient(90deg,var(--color-night)_0%,rgb(6_11_24/0.9)_40%,rgb(6_11_24/0.2)_66%,rgb(6_11_24/0)_100%)]"
         />
-        <Container className="flex flex-col justify-end pb-16 pt-[15rem] sm:pt-[19rem] md:pt-[23rem] lg:min-h-[calc(100svh-8rem)] lg:max-h-[50rem] lg:justify-center lg:pb-20 lg:pt-28">
+        <Container className="flex flex-col justify-end pb-16 pt-[15rem] sm:pt-[19rem] md:pt-[23rem] lg:min-h-[min(calc(100svh-8rem),50rem)] lg:justify-center lg:pb-20 lg:pt-28">
           <p className="kicker kv-rise">IT Consulting · Schweiz</p>
           <h1 id="hero-title" className="kv-rise mt-6 max-w-[16ch] text-hero font-semibold text-white [--kv-delay:0.04s]">
             {hero.title}
@@ -76,11 +78,11 @@ export default function HomePage() {
           <Container>
             <ul className="grid grid-cols-1 gap-x-8 gap-y-2 py-5 font-mono text-[0.6875rem] uppercase tracking-[0.08em] text-white/55 sm:grid-cols-2 lg:grid-cols-4">
               {services.map((s, i) => (
-                <li key={s.slug}>
-                  <span aria-hidden className="mr-2 text-sky">
+                <li key={s.slug} className="flex gap-2">
+                  <span aria-hidden className="shrink-0 text-sky">
                     {nr(i)}
                   </span>
-                  {s.name}
+                  <span>{s.name}</span>
                 </li>
               ))}
             </ul>
@@ -180,14 +182,15 @@ export default function HomePage() {
               {strengths.link.label}
             </ButtonLink>
           </div>
-          <ul className="grid gap-4 sm:grid-cols-3 lg:col-span-8">
+          {/* Roles only: what each role does is on the service cards above and on /unternehmen. */}
+          <ul className="border-b border-line lg:col-span-8 lg:self-end">
             {team.roles.map((role, i) => (
-              <li key={role.id} className="flex flex-col rounded-2xl border border-line bg-white p-6">
-                <span aria-hidden className="font-mono text-xs text-blue">
+              <li key={role.id} className="flex items-center gap-5 border-t border-line py-6 sm:gap-8">
+                <span aria-hidden className="w-6 shrink-0 font-mono text-xs text-blue">
                   {nr(i)}
                 </span>
-                <h3 className="mt-6 text-lg font-medium leading-snug tracking-[-0.01em] text-night">{role.title}</h3>
-                <p className="mt-3 text-[0.9375rem] leading-relaxed text-slate">{role.text}</p>
+                <RoleIcon index={i} className="shrink-0" />
+                <h3 className="text-h3 text-night">{role.title}</h3>
               </li>
             ))}
           </ul>
@@ -199,7 +202,7 @@ export default function HomePage() {
           <SectionHeader id="insights-title" kicker={`05 / ${insights.kicker}`} title={insights.title} text={insights.text} />
           <Link
             href={insights.link.href}
-            className="group inline-flex shrink-0 items-center gap-2 font-medium text-blue hover:text-blue-700"
+            className="group inline-flex min-h-10 shrink-0 items-center gap-2 font-medium text-blue hover:text-blue-700"
           >
             {insights.link.label}
             <ArrowRight aria-hidden className="size-4 transition-transform group-hover:translate-x-0.5" />

@@ -17,7 +17,7 @@ export function SiteFooter() {
       <Container className="pb-10 pt-16 md:pt-20">
         <div className="grid gap-x-8 gap-y-12 md:grid-cols-12">
           <div className="md:col-span-12 lg:col-span-4">
-            <Link href="/" className="inline-block rounded">
+            <Link href="/" className="-my-1 inline-block rounded py-1">
               <Wordmark tone="dark" />
               <span className="sr-only">, zur Startseite</span>
             </Link>
@@ -27,12 +27,15 @@ export function SiteFooter() {
           </div>
 
           {footerNav.map((group) => (
-            <div key={group.title} className="md:col-span-5 lg:col-span-3">
+            <div key={group.title} className="md:col-span-4 lg:col-span-3">
               <h2 className={headingClass}>{group.title}</h2>
-              <ul className="mt-5 space-y-3">
+              <ul className="mt-4">
                 {group.items.map((item) => (
                   <li key={item.href}>
-                    <Link href={item.href} className="text-[0.9375rem] text-white/65 transition-colors hover:text-white">
+                    <Link
+                      href={item.href}
+                      className="inline-flex min-h-10 items-center text-[0.9375rem] text-white/65 transition-colors hover:text-white"
+                    >
                       {item.label}
                     </Link>
                   </li>
@@ -41,12 +44,12 @@ export function SiteFooter() {
             </div>
           ))}
 
-          <div className="md:col-span-2 lg:col-span-2">
+          <div className="md:col-span-4 lg:col-span-2">
             <h2 className={headingClass}>Kontakt</h2>
-            <p className="mt-5 text-[0.9375rem]">
+            <p className="mt-4 text-[0.9375rem]">
               <a
                 href={`mailto:${email.value}`}
-                className="text-white/70 underline decoration-white/30 underline-offset-4 transition-colors hover:text-white hover:decoration-white"
+                className="inline-flex min-h-10 items-center text-white/70 underline decoration-white/30 underline-offset-4 transition-colors hover:text-white hover:decoration-white"
               >
                 {email.value}
               </a>
@@ -58,10 +61,10 @@ export function SiteFooter() {
           <p>
             © {year} {site.brand}. Ein Angebot von {site.legal.entityName.value}.
           </p>
-          <ul className="flex flex-wrap gap-x-6 gap-y-2">
+          <ul className="-my-2 flex flex-wrap gap-x-6">
             {legalNav.map((item) => (
               <li key={item.href}>
-                <Link href={item.href} className="transition-colors hover:text-white">
+                <Link href={item.href} className="inline-flex min-h-10 items-center transition-colors hover:text-white">
                   {item.label}
                 </Link>
               </li>

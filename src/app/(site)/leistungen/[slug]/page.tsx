@@ -77,7 +77,8 @@ export default async function ServicePage({ params }: PageProps<"/leistungen/[sl
         ]}
         scene="leistungen"
         kicker="Leistungen"
-        title={service.name}
+        title={service.h1}
+        size="lg"
       />
 
       <Section labelledBy="einleitung-title">
@@ -85,7 +86,7 @@ export default async function ServicePage({ params }: PageProps<"/leistungen/[sl
           <div className="lg:col-span-5">
             <p className="kicker">01 / Überblick</p>
             <h2 id="einleitung-title" className="mt-5 text-h2 text-night">
-              {service.h1}
+              {service.name}
             </h2>
           </div>
           <p className="text-lead text-slate lg:col-span-7 lg:pt-9">{service.intro}</p>
