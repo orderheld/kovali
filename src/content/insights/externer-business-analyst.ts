@@ -11,7 +11,7 @@ export const article: Article = {
   category: "Praxis",
   publishedAt: "2026-10-13",
   excerpt:
-    "Ein externer Business Analyst bringt Zeit, Methodik und eine neutrale Sicht in ein Vorhaben. Der Beitrag zeigt, wann sich das lohnt, worauf Sie achten sollten und wie Sie ein Mandat gut vorbereiten.",
+    "Ein externer Business Analyst bringt freie Kapazität und einen neutralen Blick in ein Vorhaben. Der Beitrag zeigt, wann sich das lohnt und wie Sie das Mandat vorbereiten.",
   relatedServices: ["business-analysis", "test-management"],
   blocks: [
     { type: "h2", id: "wann-sinnvoll", text: "Wann ein externer Business Analyst sinnvoll ist" },
