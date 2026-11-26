@@ -14,8 +14,6 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Temporary git worktrees of coding agents.
     ".claude/**",
-    // Node render scripts for the 3D images (CommonJS, run by hand, not part of the app).
-    "brand/tools/scenes-3d/**/*.js",
   ]),
 ]);
 
