@@ -57,6 +57,14 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
+      // The site's address is www.kovali.ch. The bare domain answered with the same pages, so
+      // every page existed twice. Send it to www with path and query, permanently (308).
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "kovali.ch" }],
+        destination: "https://www.kovali.ch/:path*",
+        permanent: true,
+      },
       // /unternehmen is the company page ("Über uns"). Since 24.11.2026 it replaces "Für Partner",
       // "Warum KOVALI" and "Branchen". Every old path points straight to it, so there is no
       // redirect chain. "warum-wir" is Ferhat Demir's own word for the page.
