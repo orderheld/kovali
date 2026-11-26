@@ -44,5 +44,5 @@ export const founder: {
   role: site.contact.title,
   portrait: portraitImage,
   avatar: avatarImage,
-  experienceLine: "seit über 10 Jahren in der IT, seit 2020 in Business Analysis und Requirements Engineering",
+  experienceLine: "seit über 10 Jahren in der IT, seit über 5 Jahren in Business Analysis und Requirements Engineering",
 };
