@@ -67,9 +67,9 @@ export function FileDrop({
 
   return (
     <div>
-      <p id={`${id}-label`} className="mb-2 block text-sm font-medium text-night">
+      <p id={`${id}-label`} className="mb-2 block text-sm font-medium text-graphite">
         {label}
-        {optional ? <span className="font-normal text-slate"> (optional)</span> : null}
+        {optional ? <span className="font-normal text-muted"> (optional)</span> : null}
       </p>
       <div className="relative">
         <input
@@ -94,9 +94,9 @@ export function FileDrop({
           onDrop={handleDrop}
           className={cn(
             "flex cursor-pointer items-center gap-4 rounded-xl border border-dashed px-5 py-6 transition-colors",
-            "peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-night",
-            dragging ? "border-blue bg-blue/[0.04]" : "border-field bg-white hover:border-night",
-            file && !error && "border-solid border-night bg-white",
+            "peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-blue",
+            dragging ? "border-blue bg-blue/[0.04]" : "border-field bg-white hover:border-blue",
+            file && !error && "border-solid border-blue bg-white",
             error && "border-fail",
           )}
         >
@@ -104,7 +104,7 @@ export function FileDrop({
             aria-hidden
             className={cn(
               "flex size-11 shrink-0 items-center justify-center rounded-lg border text-blue",
-              file && !error ? "border-blue/30 bg-blue/[0.06]" : "border-line bg-mist",
+              file && !error ? "border-blue/30 bg-blue/[0.06]" : "border-hairline bg-canvas",
             )}
           >
             {file && !error ? (
@@ -116,20 +116,20 @@ export function FileDrop({
           <span id={`${id}-zone`} className={cn("min-w-0", file && "pr-10")}>
             {file ? (
               <>
-                <span className="block truncate font-medium text-night">{file.name}</span>
-                <span className="block text-sm text-slate">
+                <span className="block truncate font-medium text-graphite">{file.name}</span>
+                <span className="block text-sm text-muted">
                   {formatSize(file.size)} · <span className="text-blue underline underline-offset-2">Andere Datei wählen</span>
                 </span>
               </>
             ) : (
               <>
-                <span className="block font-medium text-night">
+                <span className="block font-medium text-graphite">
                   {/* Touch devices cannot drag files, so they only see "Datei auswählen". */}
                   <span className="hidden pointer-fine:inline">Datei hierher ziehen oder </span>
                   <span className="pointer-fine:hidden">Datei </span>
                   <span className="text-blue underline underline-offset-2">auswählen</span>
                 </span>
-                <span className="block text-sm text-slate">{formats}</span>
+                <span className="block text-sm text-muted">{formats}</span>
               </>
             )}
           </span>
@@ -138,7 +138,7 @@ export function FileDrop({
           <button
             type="button"
             onClick={remove}
-            className="absolute right-3 top-1/2 flex size-10 -translate-y-1/2 items-center justify-center rounded-lg text-slate hover:bg-mist hover:text-night"
+            className="absolute right-3 top-1/2 flex size-10 -translate-y-1/2 items-center justify-center rounded-lg text-muted hover:bg-canvas hover:text-graphite"
           >
             <X aria-hidden className="size-4" />
             <span className="sr-only">Datei entfernen</span>
@@ -146,7 +146,7 @@ export function FileDrop({
         ) : null}
       </div>
       {hint ? (
-        <p id={hintId} className="mt-2 text-sm leading-relaxed text-slate">
+        <p id={hintId} className="mt-2 text-sm leading-relaxed text-muted">
           {hint}
         </p>
       ) : null}

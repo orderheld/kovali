@@ -2,7 +2,7 @@ import type { Service, ServiceSlug } from "./types";
 
 /**
  * The four disciplines of IT Consulting, in the order shown everywhere (lists,
- * footer, /leistungen): Business Analysis & Requirements Engineering, Testmanagement,
+ * footer, /leistungen): Requirements Engineering & Business Analysis, Testmanagement,
  * Test Engineering, Application Management. Business Analysis and Requirements Engineering
  * form one discipline (Ferhat Demir, 13.10.2026).
  * Each entry feeds the lists, its own page (/leistungen/[slug]), metadata and JSON-LD.
@@ -10,7 +10,7 @@ import type { Service, ServiceSlug } from "./types";
 export const services: Service[] = [
   {
     slug: "business-analysis",
-    name: "Business Analysis & Requirements Engineering",
+    name: "Requirements Engineering & Business Analysis",
     summary:
       "Wenn noch offen ist, was genau gebaut werden soll, oder wenn viele Stellen mitreden. Wir klären Ziele und Abläufe mit Ihren Fachbereichen und schreiben Anforderungen, mit denen Entwicklung und Test arbeiten können.",
     h1: "Business Analyst und Requirements Engineer für IT-Projekte in der Schweiz",
@@ -19,8 +19,8 @@ export const services: Service[] = [
       "Externer Business Analyst und Requirements Engineer für IT-Projekte in der Schweiz: Prozesse analysieren, Anforderungen nach IREB erheben und spezifizieren.",
     keyword: "Business Analyst Schweiz",
     intro:
-      "Ein Business Analyst klärt, was eine Software leisten muss, bevor sie gebaut wird. Wir erheben die Anforderungen bei Ihren Fachbereichen und modellieren die Abläufe in BPMN. Daraus entstehen User Stories mit Akzeptanzkriterien, die Ihr Entwicklungsteam im nächsten Refinement schätzen kann. Schnittstellen beschreiben wir bis auf Feldebene, mit Fehlerfällen.",
-    tasksTitle: "Was unsere Business Analysts übernehmen",
+      "Ein Business Analyst klärt, was eine Software leisten muss, bevor sie gebaut wird. Wir erheben die Anforderungen bei Ihren Fachbereichen und modellieren die Abläufe in BPMN. Daraus entstehen User Stories mit Akzeptanzkriterien, die Ihr Entwicklungsteam im nächsten Refinement schätzen kann. Schnittstellen beschreiben wir bis auf Feldebene, mit Fehlerfällen. Im Anforderungsmanagement führen wir Änderungen über Change Requests und verknüpfen jede Anforderung mit den Testfällen, die sie prüfen.",
+    tasksTitle: "Was unsere Business Analysts und Requirements Engineers übernehmen",
     tasks: [
       "Analyse geschäftlicher Anforderungen",
       "Stakeholder Management und Requirements Workshops",
@@ -42,7 +42,7 @@ export const services: Service[] = [
       "Schnittstellenspezifikationen mit Datenflüssen, Feld-Mappings und Fehlerfällen",
       "Priorisierter Anforderungsbestand",
     ],
-    faqTitle: "Fragen zu Business Analysis",
+    faqTitle: "Fragen zu Requirements Engineering und Business Analysis",
     faq: [
       {
         question: "Was macht ein Business Analyst in einem IT-Projekt?",
@@ -53,6 +53,11 @@ export const services: Service[] = [
         question: "Ist Business Analysis dasselbe wie Requirements Engineering?",
         answer:
           "Nicht ganz. Business Analysis klärt, welches geschäftliche Problem gelöst werden soll und welche Lösung den grössten Nutzen bringt. Requirements Engineering beschreibt die gewählte Lösung in prüfbaren Anforderungen und pflegt sie bis zum Ende des Projekts. In der Praxis greifen beide ineinander, deshalb bieten wir sie als eine Disziplin an. Ausführlich im Artikel [Business Analysis vs. Requirements Engineering](/insights/business-analysis-vs-requirements-engineering).",
+      },
+      {
+        question: "Was gehört zum Anforderungsmanagement?",
+        answer:
+          "Anforderungsmanagement (Requirements Management) verwaltet die Anforderungen über das ganze Projekt. Wir priorisieren sie, führen Änderungen über Change Requests und halten fest, welche Testfälle eine Anforderung prüfen. So ist jederzeit sichtbar, was umgesetzt, getestet und abgenommen ist.",
       },
       {
         question: "Wann lohnt sich ein externer Business Analyst?",

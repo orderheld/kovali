@@ -68,40 +68,37 @@ export function MobileNav() {
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen(!open)}
-        className="-mr-2 inline-flex size-11 items-center justify-center rounded-full text-white hover:bg-white/10"
+        className="-mr-2 inline-flex size-11 items-center justify-center rounded-full text-graphite hover:bg-canvas"
       >
         <span className="sr-only">{open ? "Menü schliessen" : "Menü öffnen"}</span>
-        {open ? <X aria-hidden className="size-6" /> : <Menu aria-hidden className="size-6" />}
+        {open ? <X aria-hidden className="size-6" strokeWidth={1.5} /> : <Menu aria-hidden className="size-6" strokeWidth={1.5} />}
       </button>
       <div
         id={panelId}
         hidden={!open}
-        className="on-dark fixed inset-x-0 bottom-0 top-[4.5rem] z-40 overflow-y-auto border-t border-white/10 bg-night text-white"
+        className="fixed inset-x-0 bottom-0 top-16 z-40 overflow-y-auto bg-white text-graphite"
       >
         <nav aria-label="Hauptnavigation mobil" className="px-5 pb-12 pt-6 sm:px-8">
-          <ul className="border-b border-white/10">
-            {mobileNav.map((item, i) => {
+          <ul>
+            {mobileNav.map((item) => {
               const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
               return (
-                <li key={item.href} className="border-t border-white/10">
+                <li key={item.href} className="border-b border-hairline/70">
                   <Link
                     href={item.href}
                     onClick={close}
                     aria-current={active ? "page" : undefined}
-                    className={cn("flex items-baseline gap-4 py-5 text-2xl font-medium tracking-[-0.02em]", active ? "text-electric" : "text-white")}
+                    className={cn("flex py-4 text-[1.75rem] font-semibold tracking-[-0.025em]", active ? "text-blue" : "text-graphite")}
                   >
-                    <span aria-hidden className="font-mono text-xs text-sky/70">
-                      {String(i + 1).padStart(2, "0")}
-                    </span>
                     {item.label}
                   </Link>
                 </li>
               );
             })}
           </ul>
-          <p className="mt-10 kicker">E-Mail</p>
-          <p className="mt-2">
-            <a href={`mailto:${email}`} className="inline-flex min-h-10 items-center text-lg text-white underline decoration-white/30 underline-offset-4">
+          <p className="mt-10 text-sm text-muted">E-Mail</p>
+          <p className="mt-1">
+            <a href={`mailto:${email}`} className="inline-flex min-h-10 items-center text-lg text-blue hover:underline hover:underline-offset-4">
               {email}
             </a>
           </p>

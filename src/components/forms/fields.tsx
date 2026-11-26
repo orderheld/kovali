@@ -1,16 +1,16 @@
 import Link from "next/link";
 import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
-import { ButtonArrow, buttonClasses } from "@/components/ui/button";
+import { buttonClasses } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 /**
- * Form controls of the contact form (design v2): white fields with rounded-xl corners on the
- * white or mist form card, a 1 px border in the field colour (3.70:1 on white, 3.47:1 on mist,
- * WCAG 1.4.11), a 2 px night focus ring (border plus ring) and error texts in the fail colour.
+ * Form controls of the contact form (design v3): white fields with rounded-xl corners on the
+ * white or canvas form card, a 1 px border in the field colour (3.70:1 on white, 3.4:1 on canvas,
+ * WCAG 1.4.11), a 2 px blue focus ring (border plus ring) and error texts in the fail colour.
  */
 
 const controlBase =
-  "block w-full rounded-xl border border-field bg-white px-4 text-base text-night transition-colors placeholder:text-hint hover:border-slate focus:border-night focus:outline-none focus:ring-1 focus:ring-night aria-[invalid=true]:border-fail aria-[invalid=true]:focus:border-fail aria-[invalid=true]:focus:ring-fail";
+  "block w-full rounded-xl border border-field bg-white px-4 text-base text-graphite transition-colors placeholder:text-hint hover:border-muted focus:border-blue focus:outline-none focus:ring-1 focus:ring-blue aria-[invalid=true]:border-fail aria-[invalid=true]:focus:border-fail aria-[invalid=true]:focus:ring-fail";
 
 /** Single-line inputs. */
 export const inputClass = cn(controlBase, "h-12 py-0");
@@ -18,14 +18,14 @@ export const inputClass = cn(controlBase, "h-12 py-0");
 /** Multi-line inputs: the height comes from `rows`, the visitor can make them taller. */
 export const textareaClass = cn(controlBase, "resize-y py-3 leading-relaxed");
 
-const labelClass = "mb-2 block text-sm font-medium text-night";
+const labelClass = "mb-2 block text-sm font-medium text-graphite";
 
 /** " *" for required fields, " (optional)" for optional ones. */
 function LabelSuffix({ required, optional }: { required?: boolean; optional?: boolean }) {
   return (
     <>
       {required ? <span aria-hidden className="text-blue"> *</span> : null}
-      {optional ? <span className="font-normal text-slate"> (optional)</span> : null}
+      {optional ? <span className="font-normal text-muted"> (optional)</span> : null}
     </>
   );
 }
@@ -35,7 +35,7 @@ function HelpTexts({ hintId, hint, errorId, error }: { hintId?: string; hint?: s
   return (
     <>
       {hint ? (
-        <p id={hintId} className="mt-2 text-sm leading-relaxed text-slate">
+        <p id={hintId} className="mt-2 text-sm leading-relaxed text-muted">
           {hint}
         </p>
       ) : null}
@@ -108,13 +108,13 @@ export function FormStep({
   children: React.ReactNode;
 }) {
   return (
-    <div className="border-t border-line pt-10">
+    <div className="border-t border-hairline pt-10">
       <fieldset className="space-y-7">
         <legend className="mb-8">
           <span aria-hidden className="kicker block">
             Schritt {String(number).padStart(2, "0")}
           </span>
-          <span className="mt-3 block text-h3 font-medium text-night">{title}</span>
+          <span className="mt-3 block text-h3 font-medium text-graphite">{title}</span>
         </legend>
         {children}
       </fieldset>
@@ -158,7 +158,7 @@ function ChoiceGroup({
       aria-describedby={[hintId, errorId].filter(Boolean).join(" ") || undefined}
       className="scroll-mt-4 focus:outline-none"
     >
-      <legend className="mb-3 text-sm font-medium text-night">
+      <legend className="mb-3 text-sm font-medium text-graphite">
         {legend}
         <LabelSuffix required={required} optional={optional} />
       </legend>
@@ -169,7 +169,7 @@ function ChoiceGroup({
 }
 
 /** Night focus ring of a label around a visually hidden or native radio/checkbox, as on the text fields. */
-const focusWithin = "has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-night";
+const focusWithin = "has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-blue";
 
 /** Single choice as bordered tiles with a short explanation each. Native radios, so it works without JavaScript. */
 export function ChoiceTiles({ options, defaultValue, ...group }: ChoiceProps) {
@@ -180,8 +180,8 @@ export function ChoiceTiles({ options, defaultValue, ...group }: ChoiceProps) {
           <label
             key={o.value}
             className={cn(
-              "flex cursor-pointer gap-3 rounded-xl border bg-white p-4 transition-colors hover:border-night",
-              "has-checked:border-night has-checked:shadow-[inset_0_0_0_1px_var(--color-night)]",
+              "flex cursor-pointer gap-3 rounded-xl border bg-white p-4 transition-colors hover:border-muted",
+              "has-checked:border-blue has-checked:shadow-[inset_0_0_0_1px_var(--color-blue)]",
               focusWithin,
               group.error ? "border-fail" : "border-field",
             )}
@@ -192,11 +192,11 @@ export function ChoiceTiles({ options, defaultValue, ...group }: ChoiceProps) {
               value={o.value}
               required={group.required}
               defaultChecked={defaultValue === o.value}
-              className="mt-0.5 size-4 shrink-0 accent-night focus:outline-none"
+              className="mt-0.5 size-4 shrink-0 accent-blue focus:outline-none"
             />
             <span>
-              <span className="block font-medium leading-snug text-night">{o.label}</span>
-              {o.description ? <span className="mt-1 block text-sm leading-snug text-slate">{o.description}</span> : null}
+              <span className="block font-medium leading-snug text-graphite">{o.label}</span>
+              {o.description ? <span className="mt-1 block text-sm leading-snug text-muted">{o.description}</span> : null}
             </span>
           </label>
         ))}
@@ -206,13 +206,13 @@ export function ChoiceTiles({ options, defaultValue, ...group }: ChoiceProps) {
 }
 
 /**
- * Pill-shaped option label around a visually hidden radio or checkbox; night when checked. In
+ * Pill-shaped option label around a visually hidden radio or checkbox; blue when checked. In
  * forced-colors mode (Windows high contrast) the fill is replaced, so a checked option takes
  * the system Highlight colours.
  */
 const chipClass = cn(
-  "inline-flex min-h-11 cursor-pointer items-center rounded-full border bg-white px-5 py-2 text-left text-[0.9375rem] leading-snug text-night transition-colors hover:border-night",
-  "has-checked:border-night has-checked:bg-night has-checked:text-white",
+  "inline-flex min-h-11 cursor-pointer items-center rounded-full border bg-white px-5 py-2 text-left text-[0.9375rem] leading-snug text-graphite transition-colors hover:border-muted",
+  "has-checked:border-blue has-checked:bg-blue has-checked:text-white",
   focusWithin,
   "forced-colors:has-checked:forced-color-adjust-none forced-colors:has-checked:border-[color:Highlight] forced-colors:has-checked:bg-[color:Highlight] forced-colors:has-checked:text-[color:HighlightText]",
 );
@@ -269,13 +269,13 @@ export function MultiChoiceChips({
 /** Shown above a form whose submissions are only checked, not sent (dry run, previews). */
 export function TestModeNotice() {
   return (
-    <p className="rounded-xl border border-open/30 bg-open-bg px-4 py-3 text-sm text-night">
+    <p className="rounded-xl border border-open/30 bg-open-bg px-4 py-3 text-sm text-graphite">
       <strong className="font-semibold">Testmodus:</strong> Dieses Formular prüft Ihre Eingaben, versendet aber nichts.
     </p>
   );
 }
 
-const alertClass = "rounded-xl border border-fail/40 bg-fail-bg p-5 text-night focus:outline-none";
+const alertClass = "rounded-xl border border-fail/40 bg-fail-bg p-5 text-graphite focus:outline-none";
 
 /** Lists every invalid field with a link to it. Receives focus after a failed submit. */
 export function ErrorSummary({
@@ -347,13 +347,13 @@ export function SuccessPanel({
   reference: string;
 }) {
   return (
-    <div role="status" className="rounded-2xl border border-line bg-white p-8 md:p-10">
+    <div role="status" className="rounded-2xl border border-hairline bg-white p-8 md:p-10">
       <CheckCircle2 aria-hidden className="size-10 text-blue" strokeWidth={1.25} />
-      <h2 ref={headingRef} tabIndex={-1} className="mt-6 text-h3 text-night focus:outline-none">
+      <h2 ref={headingRef} tabIndex={-1} className="mt-6 text-h3 text-graphite focus:outline-none">
         {title}
       </h2>
-      <p className="mt-3 leading-relaxed text-slate">{text}</p>
-      <p className="mt-6 text-sm text-night">
+      <p className="mt-3 leading-relaxed text-muted">{text}</p>
+      <p className="mt-6 text-sm text-graphite">
         Referenz: <span className="font-semibold tabular-nums">{reference}</span>
       </p>
       <p className="mt-8">
@@ -378,9 +378,9 @@ export function Consent({ text, defaultChecked, error }: { text: string; default
           defaultChecked={defaultChecked}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? "consent-error" : undefined}
-          className="mt-0.5 size-5 shrink-0 accent-night"
+          className="mt-0.5 size-5 shrink-0 accent-blue"
         />
-        <label htmlFor="consent" className="text-[0.9375rem] leading-relaxed text-night">
+        <label htmlFor="consent" className="text-[0.9375rem] leading-relaxed text-graphite">
           Ich habe die{" "}
           <Link href="/datenschutz" className="text-blue underline decoration-blue/40 underline-offset-[3px] hover:decoration-blue">
             Datenschutzerklärung
@@ -401,13 +401,12 @@ export function Consent({ text, defaultChecked, error }: { text: string; default
 export function SubmitRow({ pending, label, pendingLabel }: { pending: boolean; label: string; pendingLabel: string }) {
   return (
     <>
-      <div className="flex flex-col gap-5 border-t border-line pt-8 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-5 border-t border-hairline pt-8 sm:flex-row sm:items-center sm:justify-between">
         <button type="submit" disabled={pending} className={buttonClasses({ className: "w-full sm:w-auto" })}>
           {pending ? <Loader2 aria-hidden className="size-4 animate-spin" /> : null}
           {pending ? pendingLabel : label}
-          {pending ? null : <ButtonArrow />}
         </button>
-        <p className="text-sm text-slate">Die Übermittlung ist verschlüsselt. Es werden keine Cookies gesetzt.</p>
+        <p className="text-sm text-muted">Die Übermittlung ist verschlüsselt. Es werden keine Cookies gesetzt.</p>
       </div>
       <p aria-live="polite" className="sr-only">
         {pending ? pendingLabel : ""}

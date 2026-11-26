@@ -1,16 +1,17 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowUpRight } from "lucide-react";
+import { ServiceExample } from "@/components/examples/artefacts";
 import { CtaBand } from "@/components/sections/cta-band";
 import { PageBanner } from "@/components/sections/page-banner";
 import { ServiceIcon } from "@/components/sections/service-icon";
 import { JsonLd } from "@/components/seo/json-ld";
-import { ButtonLink } from "@/components/ui/button";
+import { ButtonChevron, ButtonLink } from "@/components/ui/button";
 import { Faq } from "@/components/ui/faq";
-import { Section } from "@/components/ui/section";
+import { Section, SectionHeader } from "@/components/ui/section";
+import { ToolsGrid } from "@/components/sections/tools-grid";
 import { getService, serviceHref, services } from "@/content/services";
+import { toolGroupsFor } from "@/content/tools";
 import { faqJsonLd, pageMetadata, serviceJsonLd } from "@/lib/seo";
-import { cn } from "@/lib/utils";
 
 /**
  * Every service page is prerendered from generateStaticParams. A navigation may wait for the
@@ -33,21 +34,13 @@ export async function generateMetadata({ params }: PageProps<"/leistungen/[slug]
   });
 }
 
-/** "01", "02", … for the mono numbering of sections and services. */
-const nr = (i: number) => String(i + 1).padStart(2, "0");
-
-/** Bullet list of the site; `dark` for the night panel. */
-function Bullets({ items, dark = false }: { items: readonly string[]; dark?: boolean }) {
+/** Bullet list of the site: small grey dots. */
+function Bullets({ items }: { items: readonly string[] }) {
   return (
     <ul className="space-y-3">
       {items.map((item) => (
-        <li
-          key={item}
-          className={cn(
-            "relative pl-6 leading-relaxed before:absolute before:left-0 before:top-[0.7em] before:h-px before:w-3",
-            dark ? "text-white/75 before:bg-electric" : "text-slate before:bg-blue",
-          )}
-        >
+        <li key={item} className="flex gap-3 text-graphite">
+          <span aria-hidden className="mt-[0.65em] size-1 shrink-0 rounded-full bg-muted" />
           {item}
         </li>
       ))}
@@ -56,8 +49,9 @@ function Bullets({ items, dark = false }: { items: readonly string[]; dark?: boo
 }
 
 /**
- * One service: banner, SEO heading with intro, tasks and results as two panels, FAQ, links to
- * the other services, closing panel with the service's own call to action.
+ * One service: page header with an example artefact, intro with tasks and results, the tools
+ * of the discipline, FAQ, links to the other services, closing panel with the service's own
+ * call to action.
  */
 export default async function ServicePage({ params }: PageProps<"/leistungen/[slug]">) {
   const { slug } = await params;
@@ -66,6 +60,7 @@ export default async function ServicePage({ params }: PageProps<"/leistungen/[sl
 
   const path = serviceHref(service.slug);
   const others = services.filter((s) => s.slug !== service.slug);
+  const contactHref = `/kontakt?leistung=${service.slug}`;
 
   return (
     <>
@@ -75,113 +70,91 @@ export default async function ServicePage({ params }: PageProps<"/leistungen/[sl
           { name: "Leistungen", path: "/leistungen" },
           { name: service.name, path },
         ]}
-        scene="leistungen"
-        kicker="Leistungen"
+        kicker={service.name}
         title={service.h1}
-        size="lg"
-      />
-
-      <Section labelledBy="einleitung-title">
-        <div className="grid gap-10 lg:grid-cols-12 lg:gap-16">
-          <div className="lg:col-span-5">
-            <p className="kicker">01 / Überblick</p>
-            <h2 id="einleitung-title" className="mt-5 text-h2 text-night">
-              {service.name}
-            </h2>
-          </div>
-          <p className="text-lead text-slate lg:col-span-7 lg:pt-9">{service.intro}</p>
+        lead={service.summary}
+        aside={<ServiceExample slug={service.slug} />}
+      >
+        <div className="flex flex-wrap items-center gap-x-7 gap-y-4">
+          <ButtonLink href={contactHref}>{service.cta}</ButtonLink>
+          <ButtonLink href="/leistungen" variant="link">
+            Alle Leistungen
+          </ButtonLink>
         </div>
-      </Section>
+      </PageBanner>
 
-      <Section tone="mist">
-        <div className="grid gap-4 lg:grid-cols-2 lg:gap-6">
-          <section
-            aria-labelledby="aufgaben-title"
-            className="rounded-3xl border border-line bg-white p-7 sm:p-10 lg:p-12"
-          >
-            <p className="kicker">02 / Aufgaben</p>
-            <h2 id="aufgaben-title" className="mt-5 text-h3 text-night">
-              {service.tasksTitle}
-            </h2>
-            <div className="mt-8">
+      <Section tone="canvas" labelledBy="ueberblick-title" space="loose">
+        <SectionHeader id="ueberblick-title" kicker="Überblick" title={service.tasksTitle} text={service.intro} />
+        <div className="mt-14 grid gap-4 lg:grid-cols-2">
+          <section aria-labelledby="aufgaben-title" className="rounded-3xl bg-white p-7 sm:p-10">
+            <h3 id="aufgaben-title" className="text-h3 text-graphite">
+              Aufgaben
+            </h3>
+            <div className="mt-6">
               <Bullets items={service.tasks} />
             </div>
           </section>
-          <section
-            aria-labelledby="ergebnisse-title"
-            className="on-dark rounded-3xl bg-night p-7 text-white sm:p-10 lg:p-12"
-          >
-            <p className="kicker">03 / Ergebnisse</p>
-            <h2 id="ergebnisse-title" className="mt-5 text-h3 text-white">
+          <section aria-labelledby="ergebnisse-title" className="rounded-3xl bg-white p-7 sm:p-10">
+            <h3 id="ergebnisse-title" className="text-h3 text-graphite">
               Was Sie von uns erhalten
-            </h2>
-            <div className="mt-8">
-              <Bullets items={service.deliverables} dark />
+            </h3>
+            <div className="mt-6">
+              <Bullets items={service.deliverables} />
             </div>
           </section>
         </div>
       </Section>
 
-      <Section labelledBy="faq-title">
+      <Section labelledBy="werkzeuge-title" space="loose">
+        <SectionHeader
+          id="werkzeuge-title"
+          kicker="Werkzeuge"
+          title="Womit wir arbeiten"
+          text="Wir arbeiten in den Werkzeugen, die in Ihrem Projekt gesetzt sind. Häufig sind es diese:"
+        />
+        <ToolsGrid className="mt-14" groups={toolGroupsFor(service.slug)} showMethods={service.slug === "business-analysis"} />
+      </Section>
+
+      <Section tone="canvas" labelledBy="faq-title" space="loose">
         <div className="grid gap-10 lg:grid-cols-12 lg:gap-16">
-          <div className="lg:col-span-5">
-            <p className="kicker">04 / FAQ</p>
-            <h2 id="faq-title" className="mt-5 text-h2 text-night">
-              {service.faqTitle}
-            </h2>
+          <div className="lg:col-span-4">
+            <SectionHeader id="faq-title" kicker="FAQ" title={service.faqTitle} />
           </div>
-          <div className="lg:col-span-7">
+          <div className="lg:col-span-8">
             <Faq items={service.faq} />
           </div>
         </div>
       </Section>
 
-      <Section tone="mist" labelledBy="weitere-title">
+      <Section labelledBy="weitere-title" space="loose">
         <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-          <div>
-            <p className="kicker">05 / Leistungen</p>
-            <h2 id="weitere-title" className="mt-5 text-h2 text-night">
-              Weitere Leistungen
-            </h2>
-          </div>
-          <ButtonLink href="/leistungen" variant="outline" className="shrink-0 self-start md:self-auto">
+          <SectionHeader id="weitere-title" kicker="Leistungen" title="Weitere Leistungen" />
+          <ButtonLink href="/leistungen" variant="link" className="shrink-0 self-start md:self-auto">
             Alle Leistungen
           </ButtonLink>
         </div>
-        <ul className="mt-12 grid gap-4 md:grid-cols-3">
+        <ul className="mt-14 grid gap-4 md:grid-cols-3">
           {others.map((s) => (
-            // A compact row on small screens, a small card from md.
             <li
               key={s.slug}
-              className="group relative flex items-center gap-4 rounded-2xl border border-line bg-white p-5 transition-colors hover:border-blue/40 md:flex-col md:items-stretch md:gap-0 md:p-7"
+              className="group relative flex flex-col rounded-3xl bg-canvas p-7 transition-colors duration-200 hover:bg-[#ededf0]"
             >
-              <div className="flex shrink-0 items-start justify-between gap-4">
-                <ServiceIcon slug={s.slug} className="size-8" />
-                <span aria-hidden className="hidden font-mono text-xs text-blue md:inline">
-                  {nr(services.indexOf(s))}
-                </span>
-              </div>
-              <h3 className="flex-1 text-lg font-medium leading-snug tracking-[-0.01em] text-night md:mt-10 md:flex-none">
-                <Link href={serviceHref(s.slug)} className="after:absolute after:inset-0 after:rounded-2xl">
+              <ServiceIcon slug={s.slug} className="size-8" />
+              <h3 className="mt-6 text-h3 text-graphite">
+                <Link href={serviceHref(s.slug)} className="after:absolute after:inset-0 after:rounded-3xl">
                   {s.name}
                 </Link>
               </h3>
-              <div className="shrink-0 md:mt-auto md:pt-6">
-                <ArrowUpRight
-                  aria-hidden
-                  strokeWidth={1.5}
-                  className="size-5 text-blue transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
-                />
-              </div>
+              <p aria-hidden className="mt-auto flex items-center gap-1 pt-6 text-[1.0625rem] text-blue">
+                Mehr erfahren
+                <ButtonChevron />
+              </p>
             </li>
           ))}
         </ul>
       </Section>
 
-      <CtaBand
-        title={service.ctaTitle}
-        primary={{ label: service.cta, href: `/kontakt?leistung=${service.slug}` }}
-      />
+      <CtaBand title={service.ctaTitle} primary={{ label: service.cta, href: contactHref }} />
 
       <JsonLd data={[serviceJsonLd(service, path), faqJsonLd(service.faq)]} />
     </>

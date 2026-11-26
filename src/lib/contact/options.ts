@@ -13,7 +13,7 @@ export const requestTypes = [
 
 // Service names are repeated here (instead of importing all service content) to keep the client bundle small.
 const serviceNames = [
-  { value: "business-analysis", label: "Business Analysis & Requirements Engineering" },
+  { value: "business-analysis", label: "Requirements Engineering & Business Analysis" },
   { value: "test-management", label: "Testmanagement" },
   { value: "test-engineering", label: "Test Engineering" },
   { value: "application-management", label: "Application Management" },

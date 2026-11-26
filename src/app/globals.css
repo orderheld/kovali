@@ -21,8 +21,15 @@
   --color-line: #dce4ef;
   --color-ink: #0b1733;
 
-  /* Public site surfaces. */
-  --color-night: #060b18; /* deepest surface: heroes, CTA, footer */
+  /*
+   * Public site (calm, light): white and a neutral light grey (canvas) as surfaces, near-black
+   * text, a neutral grey for secondary text (4.7:1 on canvas, 5.1:1 on white), hairlines in
+   * light grey. Corporate Blue stays the one accent, for links and the primary button.
+   */
+  --color-canvas: #f5f5f7;
+  --color-graphite: #1d1d1f;
+  --color-muted: #6e6e73;
+  --color-hairline: #d2d2d7;
 
   /* Admin only (warm surfaces of the previous site design). The public site does not use them. */
   --color-paper: #f7f5f0;
@@ -42,34 +49,37 @@
 
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, "SFMono-Regular", monospace;
+  /* Public site: Inter, a calm neo-grotesque with optical sizes; set on the .site wrapper. */
+  --font-site: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
 
   /*
-   * Geist throughout, as in the logo. Large, tight, left-aligned headings in semibold, the
-   * Geist Mono labels (.kicker) as the technical counterpoint.
-   *   hero      home hero headline
-   *   display   lead line under the home headline
+   * Public site type scale (Inter). Large, calm headings in semibold with tight tracking;
+   * body text at 17 px.
+   *   hero      home headline
    *   h1        page headers
    *   h2        section headings
+   *   h3        card and row titles
+   *   lead      intro text under headings
    */
-  --text-hero: clamp(2.5rem, 1.6rem + 3.6vw, 4.75rem);
-  --text-hero--line-height: 1.02;
-  --text-hero--letter-spacing: -0.04em;
-  --text-display: clamp(1.25rem, 1.1rem + 0.6vw, 1.5rem);
-  --text-display--line-height: 1.5;
-  --text-display--letter-spacing: -0.01em;
-  --text-h1: clamp(2.375rem, 1.7rem + 2.6vw, 4rem);
-  --text-h1--line-height: 1.04;
-  --text-h1--letter-spacing: -0.035em;
-  --text-h2: clamp(1.875rem, 1.45rem + 1.6vw, 2.875rem);
+  --text-hero: clamp(2.625rem, 1.8rem + 3.6vw, 4.5rem);
+  --text-hero--line-height: 1.04;
+  --text-hero--letter-spacing: -0.035em;
+  --text-h1: clamp(2.5rem, 1.8rem + 2.8vw, 4rem);
+  --text-h1--line-height: 1.06;
+  --text-h1--letter-spacing: -0.032em;
+  --text-h2: clamp(2rem, 1.5rem + 2vw, 3rem);
   --text-h2--line-height: 1.1;
-  --text-h2--letter-spacing: -0.03em;
-  --text-h3: clamp(1.1875rem, 1.1rem + 0.35vw, 1.375rem);
-  --text-h3--line-height: 1.3;
-  --text-h3--letter-spacing: -0.015em;
-  --text-lead: clamp(1.0625rem, 1rem + 0.3vw, 1.1875rem);
-  --text-lead--line-height: 1.65;
+  --text-h2--letter-spacing: -0.028em;
+  --text-h3: clamp(1.25rem, 1.15rem + 0.4vw, 1.5rem);
+  --text-h3--line-height: 1.25;
+  --text-h3--letter-spacing: -0.018em;
+  --text-lead: clamp(1.1875rem, 1.1rem + 0.35vw, 1.3125rem);
+  --text-lead--line-height: 1.5;
+  --text-lead--letter-spacing: -0.01em;
+  --text-body: 1.0625rem;
+  --text-body--line-height: 1.6;
 
-  --container-site: 76rem;
+  --container-site: 70rem;
   --container-prose: 42rem;
 
   --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
@@ -100,12 +110,18 @@
     text-wrap: pretty;
   }
 
-  /* Public site only: semibold, tight headings; card and row titles in medium. The admin area keeps its own type. */
-  .site :where(h1, h2) {
-    font-weight: 600;
+  /*
+   * Public site only (the admin area keeps its own type): Inter with optical sizes, near-black
+   * text, semibold tight headings.
+   */
+  .site {
+    font-family: var(--font-site);
+    font-optical-sizing: auto;
+    color: var(--color-graphite);
+    font-feature-settings: "cv11", "ss03";
   }
-  .site :where(h3) {
-    font-weight: 500;
+  .site :where(h1, h2, h3) {
+    font-weight: 600;
   }
   /* Large, tight headings break only between words; a single over-long word still wraps. */
   .site :where(h1, h2) {
@@ -114,7 +130,7 @@
   }
 
   ::selection {
-    background: color-mix(in srgb, var(--color-electric) 35%, transparent);
+    background: color-mix(in srgb, var(--color-blue) 22%, transparent);
   }
 
   :focus-visible {
@@ -130,29 +146,24 @@
 
 @layer components {
   /*
-   * Public site: technical label above a heading, e.g. "01 / LEISTUNGEN", in Geist Mono.
-   * Corporate Blue on light surfaces, sky on dark ones.
+   * Public site: short label above a heading, e.g. "Requirements Engineering", in sentence case,
+   * semibold, Corporate Blue.
    */
   .kicker {
     display: inline-block;
-    font-family: var(--font-mono);
-    font-size: 0.75rem;
-    line-height: 1rem;
-    font-weight: 500;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    font-size: 1rem;
+    line-height: 1.4;
+    font-weight: 600;
+    letter-spacing: -0.01em;
     color: var(--color-blue);
-  }
-  .on-dark .kicker {
-    color: var(--color-sky);
   }
 
   /* Article and legal text. */
   .prose-kovali {
     max-width: var(--container-prose);
-    color: var(--color-slate);
+    color: var(--color-graphite);
     font-size: 1.0625rem;
-    line-height: 1.75;
+    line-height: 1.7;
   }
   .prose-kovali > * + * {
     margin-top: 1.25em;
@@ -163,7 +174,7 @@
   }
   .prose-kovali h2 {
     margin-top: 2.25em;
-    color: var(--color-ink);
+    color: var(--color-graphite);
     font-size: 1.75rem;
     line-height: 1.2;
     font-weight: 600;
@@ -171,7 +182,7 @@
   }
   .prose-kovali h3 {
     margin-top: 1.75em;
-    color: var(--color-ink);
+    color: var(--color-graphite);
     font-size: 1.1875rem;
     line-height: 1.4;
     font-weight: 600;
@@ -182,7 +193,7 @@
     margin-top: 0.75em;
   }
   .prose-kovali strong {
-    color: var(--color-ink);
+    color: var(--color-graphite);
     font-weight: 600;
   }
   .prose-kovali a {
@@ -207,15 +218,16 @@
     position: relative;
     padding-left: 1.5rem;
   }
-  /* The bullet of the site: a short flat blue line. */
+  /* The bullet of the site: a small round dot in muted grey. */
   .prose-kovali ul > li::before {
     content: "";
     position: absolute;
-    left: 0;
-    top: 0.85em;
-    width: 0.75rem;
-    height: 1px;
-    background: var(--color-blue);
+    left: 0.35rem;
+    top: 0.72em;
+    width: 0.3125rem;
+    height: 0.3125rem;
+    border-radius: 9999px;
+    background: var(--color-muted);
   }
   .prose-kovali ol {
     list-style: decimal;
@@ -225,7 +237,7 @@
     padding-left: 0.25rem;
   }
   .prose-kovali ol > li::marker {
-    color: var(--color-blue);
+    color: var(--color-muted);
     font-weight: 500;
   }
   .prose-kovali li + li {
