@@ -15,7 +15,7 @@ export default function ImpressumPage() {
   const isCompany = legal.form === "gmbh";
   const section = sectionCounter();
   return (
-    <LegalPage title="Impressum" path="/impressum" updated="Oktober 2026">
+    <LegalPage title="Impressum" path="/impressum" updated="November 2026">
       <h2>{section("Anbieter")}</h2>
       <p>
         {site.brand} ist ein Angebot von:
@@ -89,7 +89,8 @@ export default function ImpressumPage() {
       <p>
         Texte, Logo, Grafiken und weitere Inhalte dieser Website sind urheberrechtlich geschützt. Jede Verwendung
         ausserhalb der Grenzen des Urheberrechts bedarf der vorgängigen schriftlichen Zustimmung von{" "}
-        {legalEntityName()}.
+        {legalEntityName()}. Ausgenommen sind Marken und Logos Dritter, etwa von Jira und Confluence; die Rechte daran
+        liegen bei ihren jeweiligen Inhabern.
       </p>
 
       <h2>{section("Datenschutz")}</h2>

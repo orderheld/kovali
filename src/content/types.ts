@@ -4,7 +4,7 @@
  */
 
 export type ServiceSlug =
-  /** Business Analysis & Requirements Engineering (one service; /leistungen/requirements-engineering redirects here). */
+  /** Requirements Engineering & Business Analysis (one service; /leistungen/requirements-engineering redirects here). */
   | "business-analysis"
   | "application-management"
   | "test-management"

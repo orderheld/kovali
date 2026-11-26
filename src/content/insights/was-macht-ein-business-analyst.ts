@@ -124,7 +124,7 @@ export const article: Article = {
     { type: "h2", id: "unterstuetzung", text: `Business Analysis mit ${site.brand}` },
     {
       type: "p",
-      text: "Wir unterstützen Unternehmen in der Schweiz bei der Business Analysis: von der Klärung der Ausgangslage über die Prozessanalyse bis zu Anforderungen, mit denen Entwicklung und Test arbeiten können. Mehr zum Vorgehen finden Sie unter [Business Analysis & Requirements Engineering](/leistungen/business-analysis). Für ein erstes Gespräch über Ihr Vorhaben erreichen Sie uns über die [Kontaktseite](/kontakt).",
+      text: "Wir unterstützen Unternehmen in der Schweiz bei der Business Analysis: von der Klärung der Ausgangslage über die Prozessanalyse bis zu Anforderungen, mit denen Entwicklung und Test arbeiten können. Mehr zum Vorgehen finden Sie unter [Requirements Engineering & Business Analysis](/leistungen/business-analysis). Für ein erstes Gespräch über Ihr Vorhaben erreichen Sie uns über die [Kontaktseite](/kontakt).",
     },
   ],
 };

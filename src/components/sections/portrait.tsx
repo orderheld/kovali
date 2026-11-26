@@ -14,12 +14,12 @@ const square: Record<Exclude<PortraitSize, "lg">, { box: string; sizes: string }
 };
 
 /**
- * Ferhat Demir's portrait: the cutout (white shirt, transparent background) on a calm
- * night-navy tile with a subtle vertical gradient. Rounded corners as the cards, no decoration.
+ * Ferhat Demir's portrait: the cutout (white shirt, transparent background) on a calm light
+ * grey tile with a soft vertical gradient, so the white shirt still stands out. No decoration.
  *
  * - lg: 4:5 tile with rounded-3xl corners (company page). Names the person in its alt text.
- * - md: navy avatar of 4.5 rem with rounded-xl corners (contact page).
- * - avatar: navy avatar of 2.75 rem with rounded-xl corners (bylines).
+ * - md: round avatar of 4.5 rem (contact page).
+ * - avatar: round avatar of 2.75 rem (bylines).
  *
  * md and avatar sit next to the visible name, so they are decorative (alt "").
  */
@@ -44,7 +44,7 @@ export function Portrait({
     return (
       <span
         className={cn(
-          "relative inline-block shrink-0 overflow-hidden rounded-xl bg-navy bg-[linear-gradient(180deg,#1c3a78_0%,#0b1733_100%)]",
+          "relative inline-block shrink-0 overflow-hidden rounded-full bg-[linear-gradient(180deg,#e9ecf0_0%,#cfd5dd_100%)]",
           r.box,
           className,
         )}
@@ -63,8 +63,8 @@ export function Portrait({
 
   return (
     <figure className={cn("w-full max-w-[24rem]", className)}>
-      {/* Lighter navy behind the head, so dark hair stays visible; full navy behind the white shirt. */}
-      <div className="relative isolate aspect-[4/5] overflow-hidden rounded-3xl bg-navy bg-[linear-gradient(180deg,#1c3a78_0%,#13224a_48%,#0b1733_100%)]">
+      {/* Light behind the head, a little darker towards the bottom so the white shirt keeps its edge. */}
+      <div className="relative isolate aspect-[4/5] overflow-hidden rounded-3xl bg-[linear-gradient(180deg,#f1f2f5_0%,#e3e6eb_55%,#d3d8df_100%)]">
         <Image
           src={founder.portrait}
           alt={PHOTO_ALT}
@@ -72,13 +72,13 @@ export function Portrait({
           loading={eager ? "eager" : "lazy"}
           className="absolute inset-x-0 top-[5%] h-auto w-full max-w-none"
         />
-        {/* The white shirt runs to the bottom edge: a soft navy fade keeps the tile's edge visible on white. */}
-        <div aria-hidden className="absolute inset-x-0 bottom-0 h-1/4 bg-[linear-gradient(to_top,rgb(11_23_51/0.9),rgb(11_23_51/0))]" />
+        {/* The white shirt runs to the bottom edge: a soft grey fade keeps the tile's edge visible on white. */}
+        <div aria-hidden className="absolute inset-x-0 bottom-0 h-1/5 bg-[linear-gradient(to_top,rgb(196_202_211/0.85),rgb(196_202_211/0))]" />
       </div>
       {caption ? (
         <figcaption className="mt-4">
-          <span className="block font-medium text-night">{founder.name}</span>
-          <span className="block text-[0.9375rem] text-slate">{founder.role}</span>
+          <span className="block font-semibold text-graphite">{founder.name}</span>
+          <span className="block text-[0.9375rem] text-muted">{founder.role}</span>
         </figcaption>
       ) : null}
     </figure>

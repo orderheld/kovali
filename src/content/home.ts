@@ -1,28 +1,61 @@
 import { responseClause, site } from "@/config/site";
 
 /**
- * Copy for the home page (redesign 2026-11, Ferhat Demir: clean, reduced, targeted, in a
- * look of its own): hero, introduction, services, how we work, team roles, articles,
- * closing panel. No prices on the site (Ferhat Demir, 14.10.2026). The team is named by
- * roles only, never by person.
+ * Copy for the home page (design v3, Ferhat Demir 26.11.2026: calm, plain, to the point, with
+ * the focus on Requirements Engineering, Business Analysis and Testmanagement and the tools of
+ * the trade). No prices on the site (Ferhat Demir, 14.10.2026). The team is named by roles
+ * only, never by person.
  */
 export const home = {
+  meta: {
+    title: `${site.brand} | Requirements Engineering und Test in der Schweiz`,
+    description: `IT Consulting in der Schweiz: ${site.brand} übernimmt Requirements Engineering, Business Analysis, Testmanagement und Test Engineering in IT-Projekten.`,
+  },
   hero: {
+    kicker: "IT Consulting in der Schweiz",
     /** H1 of the hero. */
-    title: "IT Consulting für Business Analysis und Test",
-    lead: "Wir klären, was Ihre Software leisten muss, und prüfen vor dem Go-live, ob sie es tut.",
+    title: "Requirements Engineering, Business Analysis und Testmanagement",
+    lead: "Wir klären mit Ihren Fachbereichen, was eine Software leisten muss, schreiben prüfbare Anforderungen und testen vor dem Go-live, ob sie erfüllt sind.",
     primary: { label: "Projekt besprechen", href: "/kontakt" },
+    secondary: { label: "Leistungen ansehen", href: "/leistungen" },
   },
-  intro: {
-    title: "Beratung für IT-Projekte in der Schweiz",
-    paragraphs: [
-      `${site.brand} ist ein Beratungsunternehmen für IT-Projekte in der Schweiz. Wir arbeiten in Business Analysis, Requirements Engineering und Softwaretest.`,
-      "Im Team arbeiten Business Analysts, Requirements Engineers, Test Manager und Test Engineers. Wir übernehmen Aufgaben direkt für Unternehmen und öffentliche Organisationen oder als Subunternehmen für Beratungen und IT-Dienstleister.",
+  /** The four core activities of Requirements Engineering, with typical results. */
+  requirements: {
+    kicker: "Requirements Engineering",
+    title: "Klare Anforderungen für Entwicklung und Test",
+    text: "Requirements Engineering ist der Kern unserer Arbeit. Wir übernehmen alle vier Tätigkeiten, vom Ermitteln bis zum Anforderungsmanagement, einzeln oder zusammen.",
+    activities: [
+      {
+        title: "Ermitteln",
+        text: "In Interviews und Workshops mit Fachbereichen und Stakeholdern erheben wir Ziele, Abläufe und Rahmenbedingungen.",
+        results: ["Stakeholder-Übersicht", "Ist-Analyse"],
+      },
+      {
+        title: "Dokumentieren",
+        text: "Wir schreiben User Stories mit Akzeptanzkriterien, modellieren Abläufe in BPMN und beschreiben Schnittstellen bis auf Feldebene.",
+        results: ["User Stories", "BPMN-Modelle", "Schnittstellen"],
+      },
+      {
+        title: "Prüfen und Abstimmen",
+        text: "In Reviews mit Fachbereich, Entwicklung und Test finden wir Lücken und Widersprüche vor der Umsetzung.",
+        results: ["Reviews", "Abgestimmte Anforderungen"],
+      },
+      {
+        title: "Verwalten",
+        text: "Im Anforderungsmanagement priorisieren wir den Bestand, führen Änderungen über Change Requests und verknüpfen jede Anforderung mit ihren Testfällen.",
+        results: ["Priorisiertes Backlog", "Nachverfolgbarkeit"],
+      },
     ],
-    link: { label: "Über uns", href: "/unternehmen" },
+    link: { label: "Mehr zu Requirements Engineering", href: "/leistungen/business-analysis" },
   },
-  /** Three numbered strengths ("Arbeitsweise"). */
+  services: {
+    kicker: "Leistungen",
+    title: "Was wir in Ihrem Projekt übernehmen",
+    link: { label: "Alle Leistungen", href: "/leistungen" },
+  },
+  /** Three strengths ("Arbeitsweise"). */
   strengths: {
+    kicker: "Arbeitsweise",
     title: "Worauf Sie sich verlassen können",
     items: [
       {
@@ -38,17 +71,19 @@ export const home = {
         text: "Vom ersten Gespräch bis zur Übergabe sprechen Sie mit derselben Person. Sie erklären Ihr Vorhaben nur einmal.",
       },
     ],
-    link: { label: "Mehr über uns", href: "/unternehmen" },
   },
-  services: {
-    kicker: "Leistungen",
-    title: "Was wir in Ihrem Projekt übernehmen",
-    link: { label: "Alle Leistungen", href: "/leistungen" },
+  tools: {
+    kicker: "Werkzeuge",
+    title: "Wir arbeiten in den Werkzeugen Ihres Projekts",
+    text: "Anforderungen, Modelle und Tests führen wir dort, wo Ihr Team bereits arbeitet. Eine Auswahl:",
+  },
+  team: {
+    link: { label: "Mehr über uns", href: "/unternehmen" },
   },
   insights: {
     kicker: "Insights",
     title: "Fachartikel",
-    text: "Was Business Analysis leistet und wann sich externe Unterstützung lohnt.",
+    text: "Was Business Analysis und Requirements Engineering leisten und wann sich externe Unterstützung lohnt.",
     link: { label: "Alle Artikel", href: "/insights" },
   },
 } as const;

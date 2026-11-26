@@ -2,30 +2,27 @@ import { cn } from "@/lib/utils";
 import { Container } from "./container";
 
 /**
- * Section backgrounds of the public site: white and a cool light grey (mist) for reading
- * content, night for the dark bands. Night sets `.on-dark` (electric focus rings, sky labels)
- * and white text.
+ * Section backgrounds of the public site: white and a neutral light grey (canvas). Sections
+ * alternate between the two; there are no dark sections.
  */
-export type SectionTone = "white" | "mist" | "night";
+export type SectionTone = "white" | "canvas";
 export type SectionSpace = "tight" | "default" | "loose";
 
 const tones: Record<SectionTone, string> = {
   white: "bg-white",
-  mist: "bg-mist",
-  night: "on-dark bg-night text-white",
+  canvas: "bg-canvas",
 };
 
 const spaces: Record<SectionSpace, string> = {
   tight: "py-16 md:py-20",
   default: "py-20 md:py-28",
-  loose: "py-24 md:py-36",
+  loose: "py-24 md:py-32",
 };
 
 /** Hairline at the top, for two consecutive sections with the same tone. */
 const rules: Record<SectionTone, string> = {
-  white: "border-t border-line",
-  mist: "border-t border-line",
-  night: "border-t border-white/[0.08]",
+  white: "border-t border-hairline/70",
+  canvas: "border-t border-hairline/70",
 };
 
 export function Section({
@@ -40,7 +37,7 @@ export function Section({
 }: {
   id?: string;
   tone?: SectionTone;
-  /** Vertical padding: tight `py-16 md:py-20`, default `py-20 md:py-28`, loose `py-24 md:py-36`. */
+  /** Vertical padding: tight `py-16 md:py-20`, default `py-20 md:py-28`, loose `py-24 md:py-32`. */
   space?: SectionSpace;
   /** Top hairline in the colour of the tone. */
   rule?: boolean;
@@ -64,8 +61,9 @@ export function Section({
 }
 
 /**
- * Heading block of a section: optional mono label (`.kicker`, e.g. "02 / Leistungen"), H2 and text,
- * always left-aligned.
+ * Heading block of a section: optional short label (`.kicker`, e.g. "Requirements Engineering"),
+ * H2 and lead text. Left-aligned by default; `align="center"` only for the few calm, centred
+ * statements (home hero area, closing panel), never for a heading above a row of icon columns.
  */
 export function SectionHeader({
   id,
@@ -75,35 +73,29 @@ export function SectionHeader({
   className,
   titleClassName,
   as: Heading = "h2",
+  align = "start",
 }: {
   id?: string;
-  /** Mono label above the heading, e.g. "02 / Leistungen". */
+  /** Short label above the heading, sentence case, e.g. "Werkzeuge". */
   kicker?: string;
   title: React.ReactNode;
   text?: React.ReactNode;
   className?: string;
   titleClassName?: string;
   as?: "h1" | "h2";
+  align?: "start" | "center";
 }) {
+  const center = align === "center";
   return (
-    <div className={cn("max-w-3xl", className)}>
+    <div className={cn("max-w-3xl", center && "mx-auto text-center", className)}>
       {kicker ? <p className="kicker">{kicker}</p> : null}
       <Heading
         id={id}
-        className={cn(
-          "text-night in-[.on-dark]:text-white",
-          Heading === "h1" ? "text-h1" : "text-h2",
-          kicker ? "mt-4" : null,
-          titleClassName,
-        )}
+        className={cn("text-graphite", Heading === "h1" ? "text-h1" : "text-h2", kicker ? "mt-3" : null, titleClassName)}
       >
         {title}
       </Heading>
-      {text ? (
-        <div className="mt-5 text-lead text-slate in-[.on-dark]:text-white/75">
-          {text}
-        </div>
-      ) : null}
+      {text ? <div className={cn("mt-5 text-lead text-muted", center && "mx-auto max-w-2xl")}>{text}</div> : null}
     </div>
   );
 }

@@ -1,20 +1,19 @@
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowRight, ArrowUpRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { ArticleBody } from "@/components/article/article-body";
 import { ArticleCard } from "@/components/sections/article-card";
 import { CtaBand } from "@/components/sections/cta-band";
 import { PageBanner } from "@/components/sections/page-banner";
 import { ServiceIcon } from "@/components/sections/service-icon";
 import { JsonLd } from "@/components/seo/json-ld";
+import { ButtonLink } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { Section, SectionHeader } from "@/components/ui/section";
 import { articleHref, articles, getArticle } from "@/content/insights";
-import { articleCover } from "@/content/scenes";
 import { getService, serviceHref } from "@/content/services";
 import { articleJsonLd, pageMetadata } from "@/lib/seo";
-import { formatDate } from "@/lib/utils";
+import { cardFocus, cn, formatDate } from "@/lib/utils";
 
 /**
  * Every article is prerendered from generateStaticParams. A navigation may wait for the page
@@ -40,13 +39,10 @@ export async function generateMetadata({ params }: PageProps<"/insights/[slug]">
   });
 }
 
-/** "01", "02", … for the mono numbering of the table of contents. */
-const nr = (i: number) => String(i + 1).padStart(2, "0");
-
 /**
- * Article page: banner with category, title, excerpt and date; the 3D cover and the text in a
+ * Article page: light page header with category, title, excerpt and date; the text in a
  * reading column with a sticky table of contents beside it on large screens; the matching
- * services, further articles and the closing band. The banner also carries the breadcrumb
+ * services, further articles and the closing panel. The header also carries the breadcrumb
  * structured data.
  */
 export default async function ArticlePage({ params }: PageProps<"/insights/[slug]">) {
@@ -57,7 +53,7 @@ export default async function ArticlePage({ params }: PageProps<"/insights/[slug
   const path = articleHref(article.slug);
   const toc = article.blocks.flatMap((b) => (b.type === "h2" ? [b] : []));
   const related = article.relatedServices.flatMap((s) => getService(s) ?? []);
-  const more = articles.filter((a) => a.slug !== article.slug).slice(0, 2);
+  const more = articles.filter((a) => a.slug !== article.slug).slice(0, 3);
 
   return (
     <>
@@ -68,46 +64,41 @@ export default async function ArticlePage({ params }: PageProps<"/insights/[slug
             { name: "Insights", path: "/insights" },
             { name: article.title, path },
           ]}
-          scene="insights"
           kicker={article.category}
           title={article.title}
           lead={
             <>
               <p>{article.excerpt}</p>
-              <p className="mt-8 flex flex-wrap gap-x-2 gap-y-1 font-mono text-xs uppercase tracking-[0.06em] text-white/60">
+              <p className="mt-8 flex flex-wrap gap-x-2 gap-y-1 text-[0.9375rem] text-muted">
                 <time dateTime={article.publishedAt}>{formatDate(article.publishedAt)}</time>
                 {article.updatedAt ? (
                   <>
-                    <span aria-hidden>/</span>
+                    <span aria-hidden>·</span>
                     <span>
                       Aktualisiert am <time dateTime={article.updatedAt}>{formatDate(article.updatedAt)}</time>
                     </span>
                   </>
                 ) : null}
-                <span aria-hidden>/</span>
+                <span aria-hidden>·</span>
                 <span>{article.readingMinutes} Min. Lesezeit</span>
               </p>
             </>
           }
-          size="lg"
         />
 
-        <Container className="grid gap-12 py-16 md:py-24 lg:grid-cols-12 lg:gap-8">
+        <Container className="grid gap-12 pb-16 md:pb-24 lg:grid-cols-12 lg:gap-8">
           {toc.length > 1 ? (
             <nav aria-labelledby="toc-title" className="hidden self-start lg:sticky lg:top-28 lg:col-span-3 lg:block">
-              <p id="toc-title" className="kicker">
+              <p id="toc-title" className="text-[0.9375rem] font-semibold text-graphite">
                 Inhalt
               </p>
-              <ol className="mt-5 border-t border-line">
-                {toc.map((h, i) => (
-                  <li key={h.id} className="border-b border-line">
+              <ol className="mt-4 border-t border-hairline">
+                {toc.map((h) => (
+                  <li key={h.id} className="border-b border-hairline">
                     <a
                       href={`#${h.id}`}
-                      className="flex gap-3 py-3 text-[0.9375rem] leading-snug text-slate transition-colors hover:text-night"
+                      className="block py-3 text-[0.9375rem] leading-snug text-muted transition-colors hover:text-blue"
                     >
-                      <span aria-hidden className="pt-[0.2em] font-mono text-xs text-blue">
-                        {nr(i)}
-                      </span>
                       {h.text}
                     </a>
                   </li>
@@ -117,43 +108,30 @@ export default async function ArticlePage({ params }: PageProps<"/insights/[slug
           ) : null}
 
           <div className="min-w-0 max-w-(--container-prose) lg:col-span-8 lg:col-start-5">
-            <div className="relative aspect-[16/10] overflow-hidden rounded-3xl bg-night">
-              <Image
-                src={articleCover(article.slug)}
-                alt=""
-                fill
-                sizes="(min-width: 1024px) 42rem, 92vw"
-                placeholder="blur"
-                className="object-cover"
-              />
-            </div>
-
-            <div className="mt-12 md:mt-16">
-              <ArticleBody blocks={article.blocks} />
-            </div>
+            <ArticleBody blocks={article.blocks} />
 
             {related.length ? (
-              <aside aria-labelledby="passend-title" className="mt-16 border-t border-line pt-12">
-                <h2 id="passend-title" className="text-h3 text-night">
+              <aside aria-labelledby="passend-title" className="mt-16 border-t border-hairline pt-12">
+                <h2 id="passend-title" className="text-h3 text-graphite">
                   Passende Leistungen
                 </h2>
                 <ul className="mt-6 grid gap-4 sm:grid-cols-2">
                   {related.map((s) => (
                     <li
                       key={s.slug}
-                      className="group relative flex items-center gap-4 rounded-2xl border border-line bg-white p-5 transition-colors hover:border-blue/40"
+                      className={cn(
+                        "group relative flex items-center gap-4 rounded-2xl bg-canvas p-5 transition-colors duration-200 hover:bg-canvas-hover",
+                        cardFocus,
+                      )}
                     >
                       <ServiceIcon slug={s.slug} className="size-8 shrink-0" />
                       <Link
                         href={serviceHref(s.slug)}
-                        className="min-w-0 flex-1 font-medium leading-snug text-night after:absolute after:inset-0 after:rounded-2xl group-hover:text-blue"
+                        className="min-w-0 flex-1 font-semibold leading-snug text-graphite after:absolute after:inset-0 after:rounded-2xl"
                       >
                         {s.name}
                       </Link>
-                      <ArrowUpRight
-                        aria-hidden
-                        className="size-5 shrink-0 text-slate transition-[color,transform] duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-blue"
-                      />
+                      <ChevronRight aria-hidden strokeWidth={2} className="size-5 shrink-0 text-blue" />
                     </li>
                   ))}
                 </ul>
@@ -164,26 +142,20 @@ export default async function ArticlePage({ params }: PageProps<"/insights/[slug
       </article>
 
       {more.length ? (
-        <Section tone="mist" labelledBy="weitere-title" space="loose">
-          <div className="grid gap-12 lg:grid-cols-12 lg:gap-16">
-            <div className="lg:col-span-4">
-              <SectionHeader id="weitere-title" kicker="01 / Insights" title="Weitere Artikel" titleClassName="text-night" />
-              <Link
-                href="/insights"
-                className="group mt-8 inline-flex min-h-10 items-center gap-2 font-medium text-blue hover:text-blue-700"
-              >
-                Alle Artikel
-                <ArrowRight aria-hidden className="size-4 transition-transform group-hover:translate-x-0.5" />
-              </Link>
-            </div>
-            <ul className="grid gap-x-8 gap-y-14 md:grid-cols-2 lg:col-span-8">
-              {more.map((a) => (
-                <li key={a.slug}>
-                  <ArticleCard article={a} />
-                </li>
-              ))}
-            </ul>
+        <Section tone="canvas" labelledBy="weitere-title" space="loose">
+          <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+            <SectionHeader id="weitere-title" kicker="Insights" title="Weitere Artikel" />
+            <ButtonLink href="/insights" variant="link" className="shrink-0 self-start md:self-auto">
+              Alle Artikel
+            </ButtonLink>
           </div>
+          <ul className={cn("mt-12 grid gap-4 md:grid-cols-2", more.length > 2 && "lg:grid-cols-3")}>
+            {more.map((a) => (
+              <li key={a.slug}>
+                <ArticleCard article={a} tone="white" />
+              </li>
+            ))}
+          </ul>
         </Section>
       ) : null}
 

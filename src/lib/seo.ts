@@ -20,15 +20,15 @@ interface PageMetaInput {
 
 /**
  * Default share image (public/opengraph-image.jpg), set on every page: by pageMetadata and,
- * for pages without their own metadata (404, admin), by the root layout. It holds no text (a
- * 3D render of glass panes and a light beam, with the K symbol), so a new brand name needs no
- * new image; the alt text takes the name from site.brand.
+ * for pages without their own metadata (404, admin), by the root layout. It holds no text (the
+ * K symbol on a white tile on a light surface, rendered by brand/tools/og-image/render.mjs), so
+ * a new brand name needs no new image; the alt text takes the name from site.brand.
  */
 export const shareImage = {
   url: "/opengraph-image.jpg",
   width: 1200,
   height: 630,
-  alt: `${site.brand}: Glasscheiben mit blauem Lichtstrahl und dem Logo-Symbol`,
+  alt: `${site.brand}: das Logo-Symbol auf hellem Grund`,
 };
 
 /** Metadata for a page: canonical URL, Open Graph and Twitter. */

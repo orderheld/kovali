@@ -1,196 +1,170 @@
-import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, ArrowUpRight } from "lucide-react";
+import { TraceabilityExample } from "@/components/examples/artefacts";
 import { ArticleCard } from "@/components/sections/article-card";
 import { CtaBand } from "@/components/sections/cta-band";
+import { Portrait } from "@/components/sections/portrait";
 import { RoleIcon } from "@/components/sections/role-icon";
 import { ServiceIcon } from "@/components/sections/service-icon";
-import { ButtonLink } from "@/components/ui/button";
+import { ToolsGrid } from "@/components/sections/tools-grid";
+import { ButtonChevron, ButtonLink } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { Section, SectionHeader } from "@/components/ui/section";
-import { site } from "@/config/site";
 import { about } from "@/content/about";
+import { certifications, founder } from "@/content/company";
 import { home } from "@/content/home";
 import { articles } from "@/content/insights";
-import { scenes } from "@/content/scenes";
 import { serviceHref, services } from "@/content/services";
 import { pageMetadata } from "@/lib/seo";
+import { cardFocus, cn } from "@/lib/utils";
 
 export const metadata = pageMetadata({
-  title: `${site.brand} | IT Consulting Schweiz für Business Analysis und Test`,
+  title: home.meta.title,
   absoluteTitle: true,
-  description: `IT Consulting in der Schweiz: ${site.brand} übernimmt Business Analysis, Requirements Engineering, Testmanagement und Test Engineering in IT-Projekten.`,
+  description: home.meta.description,
   path: "/",
 });
 
-/** "01", "02", … for the mono numbering of sections and cards. */
-const nr = (i: number) => String(i + 1).padStart(2, "0");
+/** How many tasks each service card lists (the most important come first). */
+const TASKS_SHOWN = 4;
 
 /**
- * Home: dark hero with the 3D image, introduction, the four services on dark, how we work,
- * the team roles, the latest articles and the closing panel.
+ * Home (design v3): centred hero on white with an example artefact, the four activities of
+ * Requirements Engineering, the services, how we work, the tools, the team, the latest
+ * articles and the closing panel. White and canvas sections alternate.
  */
 export default function HomePage() {
-  const { hero, intro, strengths, services: servicesBlock, insights } = home;
+  const { hero, requirements, services: servicesBlock, strengths, tools, insights } = home;
   const { team } = about;
 
   return (
     <>
-      <section aria-labelledby="hero-title" className="on-dark relative isolate overflow-hidden bg-night text-white">
-        {/* Small screens: the image as a band at the top, the text below it. Wide screens: the image
-            on the right behind the text. */}
-        <div
-          aria-hidden
-          className="absolute inset-x-0 top-0 -z-20 h-[19rem] sm:h-[24rem] md:h-[30rem] lg:inset-y-0 lg:left-auto lg:h-auto lg:w-[72%]"
-        >
-          <Image
-            src={scenes.hero}
-            alt=""
-            fill
-            preload
-            // object-cover draws the image at box height x aspect, wider than the box.
-            sizes="(min-width: 1024px) 1420px, 140vw"
-            placeholder="blur"
-            className="object-cover object-[85%_50%] lg:object-[70%_50%]"
-          />
-        </div>
-        {/* Dark behind the text: from the left on wide screens, below the image band on small ones. */}
-        <div
-          aria-hidden
-          className="absolute inset-x-0 top-0 -z-10 h-[19rem] bg-[linear-gradient(180deg,rgb(6_11_24/0)_0%,rgb(6_11_24/0.15)_45%,var(--color-night)_100%)] sm:h-[24rem] md:h-[30rem] lg:inset-y-0 lg:h-auto lg:bg-[linear-gradient(90deg,var(--color-night)_0%,rgb(6_11_24/0.9)_40%,rgb(6_11_24/0.2)_66%,rgb(6_11_24/0)_100%)]"
-        />
-        <Container className="flex flex-col justify-end pb-16 pt-[15rem] sm:pt-[19rem] md:pt-[23rem] lg:min-h-[min(calc(100svh-8rem),50rem)] lg:justify-center lg:pb-20 lg:pt-28">
-          <p className="kicker kv-rise">IT Consulting · Schweiz</p>
-          <h1 id="hero-title" className="kv-rise mt-6 max-w-[16ch] text-hero font-semibold text-white [--kv-delay:0.04s]">
+      <section aria-labelledby="hero-title" className="overflow-hidden bg-white">
+        <Container className="pb-20 pt-16 text-center sm:pt-20 md:pb-28 md:pt-28">
+          <p className="kicker kv-rise">{hero.kicker}</p>
+          <h1
+            id="hero-title"
+            className="kv-rise mx-auto mt-5 max-w-5xl text-balance text-hero text-graphite [--kv-delay:0.04s]"
+          >
             {hero.title}
           </h1>
-          <p className="kv-rise mt-7 max-w-xl text-display text-white/75 [--kv-delay:0.08s]">{hero.lead}</p>
-          <div className="kv-rise mt-10 flex flex-wrap gap-3 [--kv-delay:0.12s]">
-            <ButtonLink href={hero.primary.href} variant="light">
-              {hero.primary.label}
-            </ButtonLink>
-            <ButtonLink href={servicesBlock.link.href} variant="ghost" arrow={false}>
-              {servicesBlock.kicker}
+          <p className="kv-rise mx-auto mt-7 max-w-2xl text-lead text-muted [--kv-delay:0.08s]">{hero.lead}</p>
+          <div className="kv-rise mt-10 flex flex-wrap items-center justify-center gap-x-7 gap-y-4 [--kv-delay:0.12s]">
+            <ButtonLink href={hero.primary.href}>{hero.primary.label}</ButtonLink>
+            <ButtonLink href={hero.secondary.href} variant="link">
+              {hero.secondary.label}
             </ButtonLink>
           </div>
+          <TraceabilityExample className="kv-rise mt-16 [--kv-delay:0.18s] md:mt-20" />
         </Container>
-        <div className="border-t border-white/[0.08]">
-          <Container>
-            <ul className="grid grid-cols-1 gap-x-8 gap-y-2 py-5 font-mono text-[0.6875rem] uppercase tracking-[0.08em] text-white/55 sm:grid-cols-2 lg:grid-cols-4">
-              {services.map((s, i) => (
-                <li key={s.slug} className="flex gap-2">
-                  <span aria-hidden className="shrink-0 text-sky">
-                    {nr(i)}
-                  </span>
-                  <span>{s.name}</span>
-                </li>
-              ))}
-            </ul>
-          </Container>
-        </div>
       </section>
 
-      <Section labelledBy="intro-title" space="loose">
-        <div className="grid gap-10 lg:grid-cols-12 lg:gap-16">
-          <div className="lg:col-span-5">
-            <p className="kicker">01 / Unternehmen</p>
-            <h2 id="intro-title" className="mt-5 text-h2 text-night">
-              {intro.title}
-            </h2>
-          </div>
-          <div className="lg:col-span-7">
-            {intro.paragraphs.map((p) => (
-              <p key={p} className="mt-6 text-lead text-slate first:mt-0">
-                {p}
-              </p>
-            ))}
-            <ButtonLink href={intro.link.href} variant="outline" className="mt-10">
-              {intro.link.label}
-            </ButtonLink>
-          </div>
-        </div>
-      </Section>
-
-      <Section tone="night" labelledBy="leistungen-title" space="loose">
-        <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-          <SectionHeader id="leistungen-title" kicker={`02 / ${servicesBlock.kicker}`} title={servicesBlock.title} />
-          <ButtonLink href={servicesBlock.link.href} variant="ghost" className="shrink-0 self-start md:self-auto">
-            {servicesBlock.link.label}
-          </ButtonLink>
-        </div>
-        <div className="mt-14 grid gap-4 lg:grid-cols-3">
-          <div className="relative min-h-[18rem] overflow-hidden rounded-2xl border border-white/[0.08] lg:min-h-0">
-            <Image
-              src={scenes.intro}
-              alt=""
-              fill
-              sizes="(min-width: 1024px) 24rem, 92vw"
-              placeholder="blur"
-              className="object-cover"
-            />
-          </div>
-          <ul className="grid gap-4 sm:grid-cols-2 lg:col-span-2">
-            {services.map((s, i) => (
-              <li
-                key={s.slug}
-                className="group relative flex flex-col rounded-2xl border border-white/[0.08] bg-white/[0.03] p-7 transition-colors hover:border-electric/40 hover:bg-white/[0.05]"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <ServiceIcon slug={s.slug} className="text-electric" />
-                  <span aria-hidden className="font-mono text-xs text-white/55">
-                    {nr(i)}
-                  </span>
-                </div>
-                <h3 className="mt-8 text-h3 text-white">
-                  <Link href={serviceHref(s.slug)} className="after:absolute after:inset-0 after:rounded-2xl">
-                    {s.name}
-                  </Link>
-                </h3>
-                <p className="mt-3 leading-relaxed text-white/65">{s.summary}</p>
-                <div className="mt-auto pt-6">
-                  <ArrowUpRight
-                    aria-hidden
-                    className="size-5 text-white/55 transition-[color,transform] duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-electric"
-                  />
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </Section>
-
-      <Section labelledBy="staerken-title" space="loose">
-        <SectionHeader id="staerken-title" kicker="03 / Arbeitsweise" title={strengths.title} />
-        <ol className="mt-14 grid gap-10 md:grid-cols-3 md:gap-8">
-          {strengths.items.map((item, i) => (
-            <li key={item.title} className="border-t border-night pt-6">
-              <span aria-hidden className="font-mono text-sm text-blue">
-                {nr(i)}
+      <Section tone="canvas" labelledBy="re-title" space="loose">
+        <SectionHeader id="re-title" kicker={requirements.kicker} title={requirements.title} text={requirements.text} />
+        <ol className="mt-14 grid gap-4 md:grid-cols-2">
+          {requirements.activities.map((a, i) => (
+            <li key={a.title} className="flex flex-col rounded-3xl bg-white p-7 sm:p-9">
+              <span aria-hidden className="text-[0.875rem] font-semibold tabular-nums text-blue">
+                {i + 1}
               </span>
-              <h3 className="mt-4 text-h3 text-night">{item.title}</h3>
-              <p className="mt-3 leading-relaxed text-slate">{item.text}</p>
+              <h3 className="mt-3 text-h3 text-graphite">{a.title}</h3>
+              <p className="mt-3 text-muted">{a.text}</p>
+              <ul className="mt-auto flex flex-wrap gap-2 pt-6" aria-label="Ergebnisse">
+                {a.results.map((r) => (
+                  <li key={r} className="rounded-full bg-canvas px-3 py-1 text-[0.8125rem] text-graphite">
+                    {r}
+                  </li>
+                ))}
+              </ul>
             </li>
           ))}
         </ol>
+        <ButtonLink href={requirements.link.href} variant="link" className="mt-10">
+          {requirements.link.label}
+        </ButtonLink>
       </Section>
 
-      <Section tone="mist" labelledBy="team-title" space="loose">
-        <div className="grid gap-10 lg:grid-cols-12 lg:gap-16">
-          <div className="lg:col-span-4">
-            <SectionHeader id="team-title" kicker={`04 / ${team.kicker}`} title={team.title} text={team.text} />
-            <ButtonLink href={strengths.link.href} variant="outline" className="mt-8">
-              {strengths.link.label}
-            </ButtonLink>
+      <Section labelledBy="leistungen-title" space="loose">
+        <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+          <SectionHeader id="leistungen-title" kicker={servicesBlock.kicker} title={servicesBlock.title} />
+          <ButtonLink href={servicesBlock.link.href} variant="link" className="shrink-0 self-start md:self-auto">
+            {servicesBlock.link.label}
+          </ButtonLink>
+        </div>
+        <ul className="mt-14 grid gap-4 md:grid-cols-2">
+          {services.map((s) => (
+            <li
+              key={s.slug}
+              className={cn(
+                // From md the two cards of a row share their row lines (subgrid), so summaries, lists and links line up.
+                "group relative flex flex-col rounded-3xl bg-canvas p-7 transition-colors duration-200 hover:bg-canvas-hover sm:p-9 md:row-span-5 md:grid md:grid-rows-subgrid md:gap-y-0",
+                cardFocus,
+              )}
+            >
+              <ServiceIcon slug={s.slug} className="size-9" />
+              <h3 className="mt-7 text-[1.5rem] font-semibold leading-tight tracking-[-0.022em] text-graphite">
+                <Link href={serviceHref(s.slug)} className="after:absolute after:inset-0 after:rounded-3xl">
+                  {s.name}
+                </Link>
+              </h3>
+              <p className="mt-3 text-muted">{s.summary}</p>
+              <ul className="mt-6 grid gap-y-2 border-t border-hairline pt-6 text-[0.9375rem] text-graphite">
+                {s.tasks.slice(0, TASKS_SHOWN).map((t) => (
+                  <li key={t} className="flex gap-2.5">
+                    <span aria-hidden className="mt-[0.6em] size-1 shrink-0 rounded-full bg-muted" />
+                    {t}
+                  </li>
+                ))}
+              </ul>
+              <p aria-hidden className="mt-auto flex items-center gap-1 pt-7 text-[1.0625rem] text-blue">
+                Mehr erfahren
+                <ButtonChevron />
+              </p>
+            </li>
+          ))}
+        </ul>
+      </Section>
+
+      <Section tone="canvas" labelledBy="staerken-title" space="loose">
+        <SectionHeader id="staerken-title" kicker={strengths.kicker} title={strengths.title} />
+        <ul className="mt-14 grid gap-4 lg:grid-cols-3">
+          {strengths.items.map((item) => (
+            <li key={item.title} className="rounded-3xl bg-white p-7 sm:p-8">
+              <h3 className="text-h3 text-graphite">{item.title}</h3>
+              <p className="mt-3 text-muted">{item.text}</p>
+            </li>
+          ))}
+        </ul>
+      </Section>
+
+      <Section labelledBy="werkzeuge-title" space="loose">
+        <SectionHeader id="werkzeuge-title" kicker={tools.kicker} title={tools.title} text={tools.text} />
+        <ToolsGrid className="mt-14" />
+      </Section>
+
+      <Section tone="canvas" labelledBy="team-title" space="loose">
+        <SectionHeader id="team-title" kicker={team.kicker} title={team.title} text={team.text} />
+        <div className="mt-14 grid gap-4">
+          <div className="grid gap-8 rounded-3xl bg-white p-7 sm:grid-cols-[14rem_1fr] sm:items-center sm:p-8 lg:grid-cols-[18rem_1fr] lg:gap-12">
+            <Portrait size="lg" caption={false} sizes="(min-width: 1024px) 18rem, (min-width: 640px) 14rem, 90vw" />
+            <div>
+              <p className="kicker">Geschäftsführung</p>
+              <p className="mt-2 text-h3 font-semibold text-graphite">{founder.name}</p>
+              <p className="text-muted">{founder.role}</p>
+              <p className="mt-5 max-w-xl text-muted">
+                {founder.name} arbeitet {founder.experienceLine}. Er ist nach{" "}
+                {certifications.map((c) => c.short).join(" und ")} zertifiziert.
+              </p>
+              <ButtonLink href={home.team.link.href} variant="link" className="mt-5">
+                {home.team.link.label}
+              </ButtonLink>
+            </div>
           </div>
-          {/* Roles only: what each role does is on the service cards above and on /unternehmen. */}
-          <ul className="border-b border-line lg:col-span-8 lg:self-end">
+          <ul className="grid gap-4 lg:grid-cols-3">
             {team.roles.map((role, i) => (
-              <li key={role.id} className="flex items-center gap-5 border-t border-line py-6 sm:gap-8">
-                <span aria-hidden className="w-6 shrink-0 font-mono text-xs text-blue">
-                  {nr(i)}
-                </span>
-                <RoleIcon index={i} className="shrink-0" />
-                <h3 className="text-h3 text-night">{role.title}</h3>
+              <li key={role.id} className="rounded-3xl bg-white p-7">
+                <RoleIcon index={i} />
+                <h3 className="mt-6 text-h3 text-graphite">{role.title}</h3>
+                <p className="mt-3 text-muted">{role.text}</p>
               </li>
             ))}
           </ul>
@@ -199,16 +173,12 @@ export default function HomePage() {
 
       <Section labelledBy="insights-title" space="loose">
         <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-          <SectionHeader id="insights-title" kicker={`05 / ${insights.kicker}`} title={insights.title} text={insights.text} />
-          <Link
-            href={insights.link.href}
-            className="group inline-flex min-h-10 shrink-0 items-center gap-2 font-medium text-blue hover:text-blue-700"
-          >
+          <SectionHeader id="insights-title" kicker={insights.kicker} title={insights.title} text={insights.text} />
+          <ButtonLink href={insights.link.href} variant="link" className="shrink-0 self-start md:self-auto">
             {insights.link.label}
-            <ArrowRight aria-hidden className="size-4 transition-transform group-hover:translate-x-0.5" />
-          </Link>
+          </ButtonLink>
         </div>
-        <ul className="mt-14 grid gap-x-8 gap-y-14 md:grid-cols-2 lg:grid-cols-3">
+        <ul className="mt-14 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {articles.slice(0, 3).map((a) => (
             <li key={a.slug}>
               <ArticleCard article={a} />

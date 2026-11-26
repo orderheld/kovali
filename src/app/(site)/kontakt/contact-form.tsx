@@ -236,12 +236,12 @@ export function ContactForm({
         {state.status === "error" ? (
           <SubmitError ref={summaryRef} message={state.message} reference={state.reference} fallbackEmail={fallbackEmail} />
         ) : null}
-        <p id="form-hint" className="text-sm leading-relaxed text-slate">
+        <p id="form-hint" className="text-sm leading-relaxed text-muted">
           Pflichtfelder sind mit <span aria-hidden className="text-blue">*</span>
           <span className="sr-only">Stern</span> markiert. Alles Weitere ist freiwillig.
         </p>
         <noscript>
-          <p className="text-sm text-slate">
+          <p className="text-sm text-muted">
             Das Formular braucht JavaScript. Ohne JavaScript erreichen Sie uns per E-Mail an{" "}
             <a href={`mailto:${fallbackEmail}`} className="text-blue underline decoration-blue/40 underline-offset-[3px] hover:decoration-blue">
               {fallbackEmail}
