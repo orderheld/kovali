@@ -7,12 +7,12 @@ import { Section, SectionHeader } from "@/components/ui/section";
 import { articleHref, articles } from "@/content/insights";
 import type { PublishedArticle } from "@/content/types";
 import { pageMetadata } from "@/lib/seo";
-import { formatDate } from "@/lib/utils";
+import { cardFocus, cn, formatDate } from "@/lib/utils";
 
 export const metadata = pageMetadata({
   title: "Insights – Ratgeber Business Analysis",
   description:
-    "Ratgeber Business Analysis: Fachartikel zu Business Analysis und Requirements Engineering in IT-Projekten in der Schweiz.",
+    "Ratgeber Business Analysis: Fachartikel zu Business Analysis und Requirements Engineering, zu Aufgaben, Abgrenzung und externer Unterstützung in IT-Projekten.",
   path: "/insights",
 });
 
@@ -22,7 +22,12 @@ export const metadata = pageMetadata({
  */
 function FeaturedArticle({ article }: { article: PublishedArticle }) {
   return (
-    <article className="group relative grid gap-8 rounded-[2rem] bg-canvas p-8 transition-colors duration-200 hover:bg-[#ededf0] sm:p-12 lg:grid-cols-12 lg:gap-16 lg:p-16">
+    <article
+      className={cn(
+        "group relative grid gap-8 rounded-[2rem] bg-canvas p-8 transition-colors duration-200 hover:bg-canvas-hover sm:p-12 lg:grid-cols-12 lg:gap-16 lg:p-16",
+        cardFocus,
+      )}
+    >
       <div className="lg:col-span-7">
         <p className="text-[0.9375rem] font-semibold text-blue">{article.category}</p>
         <h2 className="mt-4 text-h2 text-graphite">

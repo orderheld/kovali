@@ -20,14 +20,13 @@ export const about = {
 
   banner: {
     title: "Über uns",
-    lead: "Wer wir sind, wie wir arbeiten und wie Sie mit uns zusammenarbeiten können.",
   },
 
   intro: {
     kicker: "Unternehmen",
     title: "Wer wir sind",
     paragraphs: [
-      `${site.brand} ist ein Beratungsunternehmen für IT-Projekte in der Schweiz. Wir übernehmen Requirements Engineering, Business Analysis, Testmanagement und Test Engineering. Wir arbeiten vor Ort, remote oder hybrid in der ganzen Schweiz.`,
+      `${site.brand} ist ein Beratungsunternehmen für IT-Projekte in der Schweiz. Wir übernehmen Requirements Engineering, Business Analysis, Testmanagement, Test Engineering und fachliches Application Management. Wir arbeiten vor Ort, remote oder hybrid in der ganzen Schweiz.`,
       `Wir arbeiten direkt für Unternehmen und öffentliche Organisationen. Für Beratungen und IT-Dienstleister arbeiten wir als Subunternehmen in deren Kundenmandat. Unsere Arbeitssprachen sind ${listJoin(site.languages)}.`,
     ],
     /** Label of the name meaning below the paragraphs; shown only while `site.nameMeaning` is set. */

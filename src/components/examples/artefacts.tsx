@@ -46,7 +46,7 @@ export function UserStoryCard({ className }: { className?: string }) {
       <div className={cn(small, "mt-5 grid gap-2 border-t border-hairline/70 pt-4 text-muted")}>
         <p className="flex items-center gap-2">
           <GitBranch strokeWidth={1.75} className="size-3.5 text-muted" />
-          Prozessschritt «Antrag prüfen»
+          Prozessschritt «Antrag zurückweisen»
         </p>
         <p className="flex items-center gap-2">
           <ListChecks strokeWidth={1.75} className="size-3.5 text-muted" />
@@ -60,50 +60,71 @@ export function UserStoryCard({ className }: { className?: string }) {
   );
 }
 
-/** A small BPMN process: start, two tasks, a gateway, end. The current step is blue. */
-export function ProcessCard({ className, title = "Prozess «Antrag bearbeiten» · BPMN 2.0" }: { className?: string; title?: string }) {
-  const task = "fill-white stroke-[#86868b]";
+/**
+ * A small BPMN process: the application is checked, a gateway asks whether it is complete;
+ * yes leads on to processing, no to the rejection step of the user story (blue).
+ */
+export function ProcessCard({ className, title = "Prozess «Antragseingang» · BPMN 2.0" }: { className?: string; title?: string }) {
+  const line = "#86868b";
+  const label = { fontSize: 11, fill: "#6a6a6f" } as const;
+  const taskText = { fontSize: 12, fill: "#1d1d1f", textAnchor: "middle" } as const;
   return (
     <ExampleCard label={title} className={className}>
-      <svg viewBox="0 0 330 132" className="h-auto w-full" fontFamily="inherit">
+      {/* Drawn at 268 units for a card of about 250 to 320 px, so the labels stay at 11 px or more. */}
+      <svg viewBox="0 0 268 122" className="mx-auto h-auto w-full max-w-[20rem]" fontFamily="inherit">
         <defs>
-          <marker id="pfeil" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto">
-            <path d="M0 0 8 4 0 8z" fill="#86868b" />
+          <marker id="pfeil" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0 0 8 4 0 8z" fill={line} />
           </marker>
         </defs>
-        <g stroke="#86868b" strokeWidth="1.25" fill="none">
-          <path d="M28 54h16" markerEnd="url(#pfeil)" />
-          <path d="M124 54h12" markerEnd="url(#pfeil)" />
-          <path d="M168 54h14" markerEnd="url(#pfeil)" />
-          <path d="M262 54h22" markerEnd="url(#pfeil)" />
-          <path d="M152 70v34h-62V76" markerEnd="url(#pfeil)" />
+        <g stroke={line} strokeWidth="1.25" fill="none">
+          <path d="M20 34h10" markerEnd="url(#pfeil)" />
+          <path d="M104 34h10" markerEnd="url(#pfeil)" />
+          <path d="M144 34h16" markerEnd="url(#pfeil)" />
+          <path d="M236 34h8" markerEnd="url(#pfeil)" />
+          <path d="M130 48v28" markerEnd="url(#pfeil)" />
+          <path d="M174 97h70" markerEnd="url(#pfeil)" />
         </g>
-        <circle cx="16" cy="54" r="11" className="fill-white" stroke="#86868b" strokeWidth="1.25" />
-        <rect x="46" y="34" width="78" height="40" rx="8" className={task} strokeWidth="1.25" />
-        <text x="85" y="51" textAnchor="middle" fontSize="10" fill="#1d1d1f">
+        {/* Start event */}
+        <circle cx="11" cy="34" r="9" fill="#fff" stroke={line} strokeWidth="1.25" />
+        {/* Antrag prüfen */}
+        <rect x="32" y="15" width="72" height="38" rx="8" fill="#fff" stroke={line} strokeWidth="1.25" />
+        <text x="68" y="31" {...taskText}>
           Antrag
         </text>
-        <text x="85" y="64" textAnchor="middle" fontSize="10" fill="#1d1d1f">
-          erfassen
-        </text>
-        <path d="M152 38 168 54 152 70 136 54z" className="fill-white" stroke="#86868b" strokeWidth="1.25" />
-        <text x="152" y="27" textAnchor="middle" fontSize="9" fill="#6e6e73">
-          vollständig?
-        </text>
-        <text x="158" y="118" fontSize="9" fill="#6e6e73">
-          nein
-        </text>
-        <text x="171" y="48" fontSize="9" fill="#6e6e73">
-          ja
-        </text>
-        <rect x="184" y="34" width="78" height="40" rx="8" fill="#145bce" fillOpacity="0.08" stroke="#145bce" strokeWidth="1.5" />
-        <text x="223" y="51" textAnchor="middle" fontSize="10" fill="#145bce" fontWeight="600">
-          Antrag
-        </text>
-        <text x="223" y="64" textAnchor="middle" fontSize="10" fill="#145bce" fontWeight="600">
+        <text x="68" y="45" {...taskText}>
           prüfen
         </text>
-        <circle cx="300" cy="54" r="11" className="fill-white" stroke="#1d1d1f" strokeWidth="3" />
+        {/* Gateway */}
+        <path d="M130 20 144 34 130 48 116 34z" fill="#fff" stroke={line} strokeWidth="1.25" />
+        <text x="130" y="11" textAnchor="middle" {...label}>
+          vollständig?
+        </text>
+        <text x="148" y="28" {...label}>
+          ja
+        </text>
+        <text x="136" y="67" {...label}>
+          nein
+        </text>
+        {/* Antrag bearbeiten */}
+        <rect x="162" y="15" width="74" height="38" rx="8" fill="#fff" stroke={line} strokeWidth="1.25" />
+        <text x="199" y="31" {...taskText}>
+          Antrag
+        </text>
+        <text x="199" y="45" {...taskText}>
+          bearbeiten
+        </text>
+        {/* Antrag zurückweisen: the step of the user story */}
+        <rect x="86" y="78" width="88" height="38" rx="8" fill="#145bce" fillOpacity="0.08" stroke="#145bce" strokeWidth="1.5" />
+        <text x="130" y="94" {...taskText} fill="#145bce" fontWeight="600">
+          Antrag
+        </text>
+        <text x="130" y="108" {...taskText} fill="#145bce" fontWeight="600">
+          zurückweisen
+        </text>
+        {/* End events */}
+        <circle cx="255" cy="34" r="9" fill="#fff" stroke="#1d1d1f" strokeWidth="2.5" />
+        <circle cx="255" cy="97" r="9" fill="#fff" stroke="#1d1d1f" strokeWidth="2.5" />
       </svg>
     </ExampleCard>
   );
@@ -116,8 +137,9 @@ export function TestCaseCard({ className, sql = true }: { className?: string; sq
       <p className="text-[0.9375rem] font-semibold leading-snug text-graphite">Antrag zurückweisen</p>
       <p className={cn(small, "mt-1 text-muted")}>Prüft ANF-142, Kriterien 1 bis 3</p>
       <ol className={cn(small, "mt-4 space-y-2 text-graphite")}>
-        <CheckRow>Antrag 4711 im Status «In Prüfung» öffnen</CheckRow>
-        <CheckRow>Zurückweisen mit Begründung</CheckRow>
+        <CheckRow>Antrag im Status «Neu»: Zurückweisen gesperrt</CheckRow>
+        <CheckRow>Ohne Begründung: Meldung «Pflichtfeld»</CheckRow>
+        <CheckRow>Antrag 4711 mit Begründung zurückweisen, E-Mail erhalten</CheckRow>
         <CheckRow>Status in der Datenbank prüfen</CheckRow>
       </ol>
       {sql ? (
@@ -155,8 +177,10 @@ export function TestRunCard({ className }: { className?: string }) {
       <dl className={cn(small, "mt-4 grid grid-cols-2 gap-x-6 gap-y-2")}>
         {runSegments.map((s) => (
           <div key={s.label} className="flex items-center gap-2">
-            <span className={cn("size-2 rounded-full", s.bar)} />
-            <dt className="text-muted">{s.label}</dt>
+            <dt className="flex items-center gap-2 text-muted">
+              <span aria-hidden className={cn("size-2 rounded-full", s.bar)} />
+              {s.label}
+            </dt>
             <dd className="ml-auto font-medium tabular-nums text-graphite">{s.value}</dd>
           </div>
         ))}
@@ -170,7 +194,7 @@ export function TestRunCard({ className }: { className?: string }) {
           ["Tief", 9],
         ].map(([label, value]) => (
           <div key={label} className="flex flex-col-reverse rounded-lg bg-canvas px-1 py-2">
-            <dt className="text-[0.6875rem] text-muted">{label}</dt>
+            <dt className="text-[0.75rem] text-muted">{label}</dt>
             <dd className="text-[1.0625rem] font-semibold tabular-nums text-graphite">{value}</dd>
           </div>
         ))}
@@ -215,9 +239,9 @@ export function TraceabilityExample({ className }: { className?: string }) {
       captionClassName="text-center"
       caption="Beispiel: eine User Story mit Akzeptanzkriterien, verknüpft mit dem Prozessschritt und dem Testfall, der sie prüft."
     >
-      <div className="relative mx-auto grid max-w-5xl items-center gap-6 lg:grid-cols-[1fr_1.15fr_1fr]">
+      <div className="relative grid items-center gap-6 lg:grid-cols-[1fr_1.1fr_1fr]">
         <ProcessCard className="hidden lg:block lg:translate-y-8" title="Prozess · BPMN 2.0" />
-        <UserStoryCard className="mx-auto w-full max-w-md" />
+        <UserStoryCard className="mx-auto w-full max-w-md lg:max-w-none" />
         <TestCaseCard className="hidden lg:block lg:translate-y-8" />
       </div>
     </ExampleFigure>

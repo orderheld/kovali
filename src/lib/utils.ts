@@ -7,9 +7,16 @@ import { extendTailwindMerge } from "tailwind-merge";
  */
 const twMerge = extendTailwindMerge({
   extend: {
-    theme: { text: ["hero", "display", "h1", "h2", "h3", "lead"] },
+    theme: { text: ["hero", "h1", "title", "h2", "h3", "lead", "body"] },
   },
 });
+
+/**
+ * A card whose heading link covers the whole card (`after:absolute after:inset-0`): the focus
+ * ring is drawn around the card instead of around the link text.
+ */
+export const cardFocus =
+  "has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-offset-2 has-[a:focus-visible]:outline-blue [&_a:focus-visible]:outline-none";
 
 export function cn(...inputs: ClassValue[]): string {
   return twMerge(clsx(inputs));

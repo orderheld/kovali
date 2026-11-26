@@ -51,7 +51,7 @@ export default function KontaktPage() {
         lead="Für Beratungen, IT-Dienstleister und Unternehmen mit einem IT-Projekt."
       />
 
-      <Section labelledBy="kontakt-title" rule>
+      <Section labelledBy="kontakt-title" className="pt-0 md:pt-0">
         <div className="grid gap-12 lg:grid-cols-12 lg:gap-16">
           <div className="lg:sticky lg:top-28 lg:col-span-5 lg:self-start">
             <p className="kicker">Direkter Kontakt</p>

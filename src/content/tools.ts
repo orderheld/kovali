@@ -1,9 +1,11 @@
 import type { ServiceSlug } from "./types";
 
 /**
- * Tools we work in, grouped by task (Ferhat Demir, 26.11.2026: "Toolnamen mit den
- * entsprechenden Logos"). Shown on the home page and, filtered by `services`, on the
- * discipline pages.
+ * Tools we work in, grouped by task. Ferhat Demir, 26.11.2026: "Toolnamen mit den
+ * entsprechenden Logos, Atlassian, Jira, Confluence, SQL Developer und dann einfach so die
+ * wichtigsten Tools" in RE, BA and test management; the rest of the list is our selection of
+ * those, sent to him for confirmation. Shown on the home page and, filtered by `services`,
+ * on the discipline pages.
  *
  * Logos only where the owner's published trademark rules allow it without a licence, taken
  * unmodified from the owner's official source (checked 26.11.2026):
@@ -12,8 +14,9 @@ import type { ServiceSlug } from "./types";
  *   public/tools/. Never the Atlassian company logo (reads as partner status), never a lockup
  *   of our own.
  * - Every other tool by name only: its owner allows logos only with written permission or a
- *   partner licence (SAP, Sparx, Miro, Lucid, draw.io, Idera/Xray, SmartBear, Oracle,
- *   Microsoft and others).
+ *   partner licence, or publishes no terms (SAP, Sparx, Miro, Lucid, draw.io, Camunda,
+ *   Idera/Xray/TestRail, SmartBear, Tricentis, Oracle, Microsoft, Postman, DBeaver).
+ *   Oracle grants logos to non-partners on written request (trademar_us@oracle.com).
  * Never call any vendor a partner, never imply a certification. The notice below the grid
  * says the names are trademarks of their owners and imply no partnership.
  */
@@ -70,14 +73,14 @@ export const toolGroups: ToolGroup[] = [
       { name: "Xray", use: "Testfälle und Testläufe in Jira" },
       { name: "Zephyr", vendor: "SmartBear", use: "Testfälle und Testläufe in Jira" },
       { name: "TestRail", use: "Testfallverwaltung" },
-      { name: "Tricentis Tosca", use: "Testfälle und Automatisierung" },
+      { name: "Tricentis Tosca", use: "Testfälle und Testläufe" },
     ],
   },
   {
     title: "Daten und Schnittstellen",
     services: ["business-analysis", "test-engineering", "application-management"],
     tools: [
-      { name: "SQL Developer", vendor: "Oracle", use: "SQL-Abfragen und Datenprüfung" },
+      { name: "Oracle SQL Developer", use: "SQL-Abfragen und Datenprüfung" },
       { name: "DBeaver", use: "Datenbanken prüfen" },
       { name: "Postman", use: "REST-Schnittstellen testen" },
       { name: "SoapUI", use: "SOAP- und REST-Schnittstellen" },
@@ -88,8 +91,9 @@ export const toolGroups: ToolGroup[] = [
 /** Methods and notations: plain text, no logos. */
 export const methods = ["BPMN 2.0", "UML", "User Stories", "Use Cases", "Scrum", "Kanban", "SAFe"];
 
+/** Trademark notice below every tools grid; Atlassian and SAP ask for an attribution of their marks. */
 export const toolsNotice =
-  "Die genannten Produktnamen und Logos sind Marken ihrer jeweiligen Inhaber. Ihre Nennung beschreibt die Werkzeuge, mit denen wir in Projekten arbeiten, und bedeutet keine Partnerschaft.";
+  "Jira und Confluence sind Marken von Atlassian, SAP und SAP Signavio Marken der SAP SE, Oracle ist eine eingetragene Marke von Oracle und/oder seinen verbundenen Unternehmen. Alle weiteren genannten Produktnamen sind Marken ihrer jeweiligen Inhaber. Die Nennung beschreibt die Werkzeuge, mit denen wir in Projekten arbeiten, und bedeutet keine Partnerschaft.";
 
 export function toolGroupsFor(slug: ServiceSlug): ToolGroup[] {
   return toolGroups.filter((g) => g.services.includes(slug));

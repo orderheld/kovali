@@ -28,7 +28,7 @@ export function LegalPage({
     <>
       <PageBanner crumbs={crumbs} title={heading ?? title} />
       <Section tone="white" className="pt-0 md:pt-0">
-        <div className="grid gap-10 border-t border-hairline/70 pt-12 md:pt-16 lg:grid-cols-12 lg:gap-8">
+        <div className="grid gap-10 lg:grid-cols-12 lg:gap-8">
           <p className="text-[0.875rem] text-muted lg:col-span-3">Stand: {updated}</p>
           <div className="prose-kovali min-w-0 lg:col-span-8 lg:col-start-5">{children}</div>
         </div>

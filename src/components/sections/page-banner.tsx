@@ -25,6 +25,7 @@ export function PageBanner({
   title,
   lead,
   aside,
+  size = "h1",
   children,
   className,
 }: {
@@ -35,6 +36,8 @@ export function PageBanner({
   lead?: React.ReactNode;
   /** Right column from lg, vertically centred next to the text. */
   aside?: React.ReactNode;
+  /** Title size: h1, or the smaller title size for long titles next to an aside. */
+  size?: "h1" | "title";
   children?: React.ReactNode;
   className?: string;
 }) {
@@ -44,7 +47,11 @@ export function PageBanner({
       {label ? <p className="kicker kv-rise">{label}</p> : null}
       <h1
         id={PAGE_TITLE_ID}
-        className={cn("kv-rise max-w-4xl text-h1 text-graphite [--kv-delay:0.04s]", label && "mt-4")}
+        className={cn(
+          "kv-rise max-w-4xl text-graphite [--kv-delay:0.04s]",
+          size === "title" ? "text-title" : "text-h1",
+          label && "mt-4",
+        )}
       >
         {title}
       </h1>

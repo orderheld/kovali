@@ -10,9 +10,10 @@ import { site } from "@/config/site";
 import { home } from "@/content/home";
 import { serviceHref, services } from "@/content/services";
 import { pageMetadata } from "@/lib/seo";
+import { cardFocus, cn } from "@/lib/utils";
 
 export const metadata = pageMetadata({
-  title: "Leistungen – Requirements Engineering, Business Analysis und Test",
+  title: "Leistungen – Requirements Engineering und Test",
   description: `IT Consulting von ${site.brand}: Requirements Engineering, Business Analysis, Testmanagement, Test Engineering und Application Management in der ganzen Schweiz.`,
   path: "/leistungen",
 });
@@ -48,7 +49,10 @@ export default function LeistungenPage() {
           {services.map((s) => (
             <li
               key={s.slug}
-              className="group relative grid gap-8 rounded-3xl bg-canvas p-7 transition-colors duration-200 hover:bg-[#ededf0] sm:p-10 lg:grid-cols-12 lg:gap-12 lg:p-12"
+              className={cn(
+                "group relative grid gap-8 rounded-3xl bg-canvas p-7 transition-colors duration-200 hover:bg-canvas-hover sm:p-10 lg:grid-cols-12 lg:gap-12 lg:p-12",
+                cardFocus,
+              )}
             >
               <div className="flex flex-col lg:col-span-5">
                 <ServiceIcon slug={s.slug} />
@@ -66,7 +70,7 @@ export default function LeistungenPage() {
               </div>
               <div className="border-t border-hairline pt-8 lg:col-span-7 lg:border-l lg:border-t-0 lg:pl-12 lg:pt-0">
                 <p className="text-[0.9375rem] font-semibold text-graphite">Aufgaben</p>
-                <ul className="mt-5 grid gap-x-8 gap-y-3 md:grid-cols-2">
+                <ul className="mt-5 grid gap-x-8 gap-y-3 md:grid-cols-2 lg:grid-cols-1">
                   {s.tasks.slice(0, TASKS_SHOWN).map((task) => (
                     <li key={task} className="flex gap-3 text-graphite">
                       <span aria-hidden className="mt-[0.65em] size-1 shrink-0 rounded-full bg-muted" />
@@ -81,27 +85,30 @@ export default function LeistungenPage() {
       </Section>
 
       <Section tone="canvas" labelledBy="zusammenspiel-title" space="loose">
-        <div className="grid gap-12 lg:grid-cols-12 lg:gap-16">
-          <div className="lg:col-span-6">
-            <SectionHeader id="zusammenspiel-title" kicker="Arbeitsweise" title={together.title} text={together.text} />
-            <ButtonLink href="/unternehmen#zusammenarbeit" variant="link" className="mt-8">
-              Formen der Zusammenarbeit
-            </ButtonLink>
-          </div>
-          <ol className="flex flex-col gap-3 self-center lg:col-span-6" aria-label="Von der Anforderung bis zur Abnahme">
-            {chain.map((step, i) => (
-              <li key={step} className="flex items-center gap-4 rounded-2xl bg-white px-6 py-5">
-                <span aria-hidden className="w-5 text-[0.9375rem] font-semibold tabular-nums text-blue">
-                  {i + 1}
-                </span>
-                <span className="text-[1.0625rem] font-semibold text-graphite">{step}</span>
-                {i < chain.length - 1 ? (
-                  <ChevronRight aria-hidden strokeWidth={1.75} className="ml-auto size-5 rotate-90 text-muted" />
-                ) : null}
-              </li>
-            ))}
-          </ol>
+        <div className="flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
+          <SectionHeader id="zusammenspiel-title" kicker="Arbeitsweise" title={together.title} text={together.text} />
+          <ButtonLink href="/unternehmen#zusammenarbeit" variant="link" className="shrink-0 self-start md:self-auto">
+            Formen der Zusammenarbeit
+          </ButtonLink>
         </div>
+        <ol className="mt-14 grid gap-8 sm:grid-cols-4 sm:gap-6" aria-label="Von der Anforderung bis zur Abnahme">
+          {chain.map((step, i) => (
+            <li key={step} className="relative rounded-2xl bg-white px-6 py-6">
+              <span aria-hidden className="block text-[0.9375rem] font-semibold tabular-nums text-blue">
+                {i + 1}
+              </span>
+              <span className="mt-3 block text-[1.0625rem] font-semibold text-graphite">{step}</span>
+              {i < chain.length - 1 ? (
+                // Arrow in the gap to the next step: below the box on phones, to the right from sm.
+                <ChevronRight
+                  aria-hidden
+                  strokeWidth={1.75}
+                  className="absolute -bottom-[1.625rem] left-1/2 size-5 -translate-x-1/2 rotate-90 text-muted sm:-right-[1.375rem] sm:bottom-auto sm:left-auto sm:top-1/2 sm:-translate-y-1/2 sm:translate-x-0 sm:rotate-0"
+                />
+              ) : null}
+            </li>
+          ))}
+        </ol>
       </Section>
 
       <Section labelledBy="werkzeuge-title" space="loose">

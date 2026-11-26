@@ -38,10 +38,9 @@ export default function UnternehmenPage() {
           { name: about.banner.title, path: "/unternehmen" },
         ]}
         title={about.banner.title}
-        lead={about.banner.lead}
       />
 
-      <Section labelledBy="wer-wir-sind-title" rule space="loose">
+      <Section labelledBy="wer-wir-sind-title" space="loose" className="pt-0 md:pt-0">
         <div className="grid gap-12 lg:grid-cols-12 lg:gap-16">
           <div className="lg:col-span-5">
             <SectionHeader id="wer-wir-sind-title" kicker={intro.kicker} title={intro.title} />
@@ -74,7 +73,7 @@ export default function UnternehmenPage() {
 
       <Section tone="canvas" labelledBy="team-title" space="loose">
         <SectionHeader id="team-title" kicker={team.kicker} title={team.title} text={team.text} />
-        <ul className="mt-14 grid gap-4 md:grid-cols-3">
+        <ul className="mt-14 grid gap-4 lg:grid-cols-3">
           {team.roles.map((role, i) => (
             <li key={role.id} className="rounded-3xl bg-white p-7 sm:p-8">
               <RoleIcon index={i} />
@@ -102,7 +101,7 @@ export default function UnternehmenPage() {
 
       <Section id={collaboration.id} tone="canvas" labelledBy="zusammenarbeit-title" space="loose">
         <SectionHeader id="zusammenarbeit-title" kicker={collaboration.kicker} title={collaboration.title} />
-        <ul className="mt-14 grid gap-4 md:grid-cols-3">
+        <ul className="mt-14 grid gap-4 lg:grid-cols-3">
           {collaboration.models.map((model, i) => {
             const Icon = modelIcons[i];
             return (

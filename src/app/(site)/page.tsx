@@ -15,7 +15,7 @@ import { home } from "@/content/home";
 import { articles } from "@/content/insights";
 import { serviceHref, services } from "@/content/services";
 import { pageMetadata } from "@/lib/seo";
-import { cn } from "@/lib/utils";
+import { cardFocus, cn } from "@/lib/utils";
 
 export const metadata = pageMetadata({
   title: home.meta.title,
@@ -24,8 +24,8 @@ export const metadata = pageMetadata({
   path: "/",
 });
 
-/** The two disciplines the site leads with get the large cards; the others follow smaller. */
-const LEAD_SERVICES = 2;
+/** How many tasks each service card lists (the most important come first). */
+const TASKS_SHOWN = 4;
 
 /**
  * Home (design v3): centred hero on white with an example artefact, the four activities of
@@ -60,9 +60,9 @@ export default function HomePage() {
 
       <Section tone="canvas" labelledBy="re-title" space="loose">
         <SectionHeader id="re-title" kicker={requirements.kicker} title={requirements.title} text={requirements.text} />
-        <ol className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <ol className="mt-14 grid gap-4 md:grid-cols-2">
           {requirements.activities.map((a, i) => (
-            <li key={a.title} className="flex flex-col rounded-3xl bg-white p-7">
+            <li key={a.title} className="flex flex-col rounded-3xl bg-white p-7 sm:p-9">
               <span aria-hidden className="text-[0.875rem] font-semibold tabular-nums text-blue">
                 {i + 1}
               </span>
@@ -91,43 +91,42 @@ export default function HomePage() {
           </ButtonLink>
         </div>
         <ul className="mt-14 grid gap-4 md:grid-cols-2">
-          {services.map((s, i) => {
-            const lead = i < LEAD_SERVICES;
-            return (
-              <li
-                key={s.slug}
-                className="group relative flex flex-col rounded-3xl bg-canvas p-7 transition-colors duration-200 hover:bg-[#ededf0] sm:p-9"
-              >
-                <ServiceIcon slug={s.slug} className={cn(lead ? "size-10" : "size-8")} />
-                <h3 className={cn("text-graphite", lead ? "mt-8 text-[1.75rem] font-semibold leading-tight tracking-[-0.025em]" : "mt-6 text-h3")}>
-                  <Link href={serviceHref(s.slug)} className="after:absolute after:inset-0 after:rounded-3xl">
-                    {s.name}
-                  </Link>
-                </h3>
-                <p className="mt-3 text-muted">{s.summary}</p>
-                {lead ? (
-                  <ul className="mt-6 grid gap-x-6 gap-y-2 border-t border-hairline pt-6 text-[0.9375rem] text-graphite sm:grid-cols-2">
-                    {s.tasks.slice(0, 6).map((t) => (
-                      <li key={t} className="flex gap-2.5">
-                        <span aria-hidden className="mt-[0.6em] size-1 shrink-0 rounded-full bg-muted" />
-                        {t}
-                      </li>
-                    ))}
-                  </ul>
-                ) : null}
-                <p aria-hidden className="mt-auto flex items-center gap-1 pt-7 text-[1.0625rem] text-blue">
-                  Mehr erfahren
-                  <ButtonChevron />
-                </p>
-              </li>
-            );
-          })}
+          {services.map((s) => (
+            <li
+              key={s.slug}
+              className={cn(
+                // From md the two cards of a row share their row lines (subgrid), so summaries, lists and links line up.
+                "group relative flex flex-col rounded-3xl bg-canvas p-7 transition-colors duration-200 hover:bg-canvas-hover sm:p-9 md:row-span-5 md:grid md:grid-rows-subgrid md:gap-y-0",
+                cardFocus,
+              )}
+            >
+              <ServiceIcon slug={s.slug} className="size-9" />
+              <h3 className="mt-7 text-[1.5rem] font-semibold leading-tight tracking-[-0.022em] text-graphite">
+                <Link href={serviceHref(s.slug)} className="after:absolute after:inset-0 after:rounded-3xl">
+                  {s.name}
+                </Link>
+              </h3>
+              <p className="mt-3 text-muted">{s.summary}</p>
+              <ul className="mt-6 grid gap-y-2 border-t border-hairline pt-6 text-[0.9375rem] text-graphite">
+                {s.tasks.slice(0, TASKS_SHOWN).map((t) => (
+                  <li key={t} className="flex gap-2.5">
+                    <span aria-hidden className="mt-[0.6em] size-1 shrink-0 rounded-full bg-muted" />
+                    {t}
+                  </li>
+                ))}
+              </ul>
+              <p aria-hidden className="mt-auto flex items-center gap-1 pt-7 text-[1.0625rem] text-blue">
+                Mehr erfahren
+                <ButtonChevron />
+              </p>
+            </li>
+          ))}
         </ul>
       </Section>
 
       <Section tone="canvas" labelledBy="staerken-title" space="loose">
         <SectionHeader id="staerken-title" kicker={strengths.kicker} title={strengths.title} />
-        <ul className="mt-14 grid gap-4 md:grid-cols-3">
+        <ul className="mt-14 grid gap-4 lg:grid-cols-3">
           {strengths.items.map((item) => (
             <li key={item.title} className="rounded-3xl bg-white p-7 sm:p-8">
               <h3 className="text-h3 text-graphite">{item.title}</h3>
@@ -152,15 +151,15 @@ export default function HomePage() {
               <p className="mt-2 text-h3 font-semibold text-graphite">{founder.name}</p>
               <p className="text-muted">{founder.role}</p>
               <p className="mt-5 max-w-xl text-muted">
-                {founder.name} arbeitet {founder.experienceLine}. Zertifiziert nach{" "}
-                {certifications.map((c) => c.short).join(" und ")}.
+                {founder.name} arbeitet {founder.experienceLine}. Er ist nach{" "}
+                {certifications.map((c) => c.short).join(" und ")} zertifiziert.
               </p>
               <ButtonLink href={home.team.link.href} variant="link" className="mt-5">
                 {home.team.link.label}
               </ButtonLink>
             </div>
           </div>
-          <ul className="grid gap-4 md:grid-cols-3">
+          <ul className="grid gap-4 lg:grid-cols-3">
             {team.roles.map((role, i) => (
               <li key={role.id} className="rounded-3xl bg-white p-7">
                 <RoleIcon index={i} />

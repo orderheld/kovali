@@ -9,7 +9,7 @@ const year = process.env.NEXT_PUBLIC_BUILD_YEAR;
 
 /** Column headings are h2 for the outline. */
 const headingClass = "text-[0.8125rem] font-semibold text-graphite";
-const linkClass = "inline-flex min-h-10 items-center text-[0.875rem] text-muted transition-colors hover:text-graphite";
+const linkClass = "inline-block py-2.5 text-[0.875rem] leading-5 text-muted transition-colors hover:text-graphite";
 
 /** Calm light-grey footer: wordmark, link columns, contact, legal line. */
 export function SiteFooter() {
@@ -24,7 +24,7 @@ export function SiteFooter() {
               <span className="sr-only">, zur Startseite</span>
             </Link>
             <p className="mt-5 max-w-xs text-[0.875rem] leading-relaxed text-muted">
-              IT Consulting für Requirements Engineering, Business Analysis und Softwaretest in der ganzen Schweiz.
+              IT Consulting für Requirements Engineering, Business Analysis, Test und Application Management in der ganzen Schweiz.
             </p>
           </div>
 

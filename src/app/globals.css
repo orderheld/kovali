@@ -23,12 +23,14 @@
 
   /*
    * Public site (calm, light): white and a neutral light grey (canvas) as surfaces, near-black
-   * text, a neutral grey for secondary text (4.7:1 on canvas, 5.1:1 on white), hairlines in
+   * text, a neutral grey for secondary text (4.9:1 on canvas, 5.4:1 on white), hairlines in
    * light grey. Corporate Blue stays the one accent, for links and the primary button.
+   * canvas-hover is the hover state of a canvas card; muted keeps 4.6:1 even there.
    */
   --color-canvas: #f5f5f7;
+  --color-canvas-hover: #ededf0;
   --color-graphite: #1d1d1f;
-  --color-muted: #6e6e73;
+  --color-muted: #6a6a6f;
   --color-hairline: #d2d2d7;
 
   /* Admin only (warm surfaces of the previous site design). The public site does not use them. */
@@ -49,24 +51,26 @@
 
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, "SFMono-Regular", monospace;
-  /* Public site: Inter, a calm neo-grotesque with optical sizes; set on the .site wrapper. */
-  --font-site: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
 
   /*
    * Public site type scale (Inter). Large, calm headings in semibold with tight tracking;
    * body text at 17 px.
    *   hero      home headline
    *   h1        page headers
+   *   title     service page headers (long names)
    *   h2        section headings
    *   h3        card and row titles
    *   lead      intro text under headings
    */
-  --text-hero: clamp(2.625rem, 1.8rem + 3.6vw, 4.5rem);
+  --text-hero: clamp(2.25rem, 1.6rem + 3.4vw, 4.5rem);
   --text-hero--line-height: 1.04;
   --text-hero--letter-spacing: -0.035em;
   --text-h1: clamp(2.5rem, 1.8rem + 2.8vw, 4rem);
   --text-h1--line-height: 1.06;
   --text-h1--letter-spacing: -0.032em;
+  --text-title: clamp(2.25rem, 1.6rem + 2.2vw, 3.25rem);
+  --text-title--line-height: 1.1;
+  --text-title--letter-spacing: -0.03em;
   --text-h2: clamp(2rem, 1.5rem + 2vw, 3rem);
   --text-h2--line-height: 1.1;
   --text-h2--letter-spacing: -0.028em;
@@ -114,8 +118,14 @@
    * Public site only (the admin area keeps its own type): Inter with optical sizes, near-black
    * text, semibold tight headings.
    */
+  /*
+   * The Inter variable (--font-inter) exists only on the .site wrapper, so it is read here and
+   * not through a theme token (theme tokens resolve on :root, where it is undefined).
+   */
   .site {
-    font-family: var(--font-site);
+    font-family: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
     font-optical-sizing: auto;
     color: var(--color-graphite);
     font-feature-settings: "cv11", "ss03";
@@ -137,10 +147,6 @@
     outline: 2px solid var(--color-blue);
     outline-offset: 3px;
     border-radius: 2px;
-  }
-
-  .on-dark :focus-visible {
-    outline-color: var(--color-electric);
   }
 }
 

@@ -16,7 +16,7 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-hairline/60 before:absolute before:inset-0 before:-z-10 before:bg-white/95 supports-[backdrop-filter]:before:bg-white/80 supports-[backdrop-filter]:before:backdrop-blur-xl supports-[backdrop-filter]:before:backdrop-saturate-150">
       <Container className="flex h-16 items-center justify-between gap-6">
-        <Link href="/" className="-m-1 shrink-0 rounded p-1">
+        <Link href="/" className="-m-1 flex shrink-0 items-center rounded p-1">
           <Wordmark />
           <span className="sr-only">, zur Startseite</span>
         </Link>

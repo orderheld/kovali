@@ -13,7 +13,7 @@ import { Section, SectionHeader } from "@/components/ui/section";
 import { articleHref, articles, getArticle } from "@/content/insights";
 import { getService, serviceHref } from "@/content/services";
 import { articleJsonLd, pageMetadata } from "@/lib/seo";
-import { formatDate } from "@/lib/utils";
+import { cardFocus, cn, formatDate } from "@/lib/utils";
 
 /**
  * Every article is prerendered from generateStaticParams. A navigation may wait for the page
@@ -86,7 +86,7 @@ export default async function ArticlePage({ params }: PageProps<"/insights/[slug
           }
         />
 
-        <Container className="grid gap-12 border-t border-hairline/70 py-16 md:py-24 lg:grid-cols-12 lg:gap-8">
+        <Container className="grid gap-12 pb-16 md:pb-24 lg:grid-cols-12 lg:gap-8">
           {toc.length > 1 ? (
             <nav aria-labelledby="toc-title" className="hidden self-start lg:sticky lg:top-28 lg:col-span-3 lg:block">
               <p id="toc-title" className="text-[0.9375rem] font-semibold text-graphite">
@@ -119,7 +119,10 @@ export default async function ArticlePage({ params }: PageProps<"/insights/[slug
                   {related.map((s) => (
                     <li
                       key={s.slug}
-                      className="group relative flex items-center gap-4 rounded-2xl bg-canvas p-5 transition-colors duration-200 hover:bg-[#ededf0]"
+                      className={cn(
+                        "group relative flex items-center gap-4 rounded-2xl bg-canvas p-5 transition-colors duration-200 hover:bg-canvas-hover",
+                        cardFocus,
+                      )}
                     >
                       <ServiceIcon slug={s.slug} className="size-8 shrink-0" />
                       <Link
@@ -146,7 +149,7 @@ export default async function ArticlePage({ params }: PageProps<"/insights/[slug
               Alle Artikel
             </ButtonLink>
           </div>
-          <ul className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <ul className={cn("mt-12 grid gap-4 md:grid-cols-2", more.length > 2 && "lg:grid-cols-3")}>
             {more.map((a) => (
               <li key={a.slug}>
                 <ArticleCard article={a} tone="white" />

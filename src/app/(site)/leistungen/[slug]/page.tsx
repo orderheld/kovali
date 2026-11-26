@@ -12,6 +12,7 @@ import { ToolsGrid } from "@/components/sections/tools-grid";
 import { getService, serviceHref, services } from "@/content/services";
 import { toolGroupsFor } from "@/content/tools";
 import { faqJsonLd, pageMetadata, serviceJsonLd } from "@/lib/seo";
+import { cardFocus, cn } from "@/lib/utils";
 
 /**
  * Every service page is prerendered from generateStaticParams. A navigation may wait for the
@@ -74,6 +75,7 @@ export default async function ServicePage({ params }: PageProps<"/leistungen/[sl
         title={service.h1}
         lead={service.summary}
         aside={<ServiceExample slug={service.slug} />}
+        size="title"
       >
         <div className="flex flex-wrap items-center gap-x-7 gap-y-4">
           <ButtonLink href={contactHref}>{service.cta}</ButtonLink>
@@ -86,22 +88,22 @@ export default async function ServicePage({ params }: PageProps<"/leistungen/[sl
       <Section tone="canvas" labelledBy="ueberblick-title" space="loose">
         <SectionHeader id="ueberblick-title" kicker="Überblick" title={service.tasksTitle} text={service.intro} />
         <div className="mt-14 grid gap-4 lg:grid-cols-2">
-          <section aria-labelledby="aufgaben-title" className="rounded-3xl bg-white p-7 sm:p-10">
-            <h3 id="aufgaben-title" className="text-h3 text-graphite">
+          <div className="rounded-3xl bg-white p-7 sm:p-10">
+            <h3 className="text-h3 text-graphite">
               Aufgaben
             </h3>
             <div className="mt-6">
               <Bullets items={service.tasks} />
             </div>
-          </section>
-          <section aria-labelledby="ergebnisse-title" className="rounded-3xl bg-white p-7 sm:p-10">
-            <h3 id="ergebnisse-title" className="text-h3 text-graphite">
+          </div>
+          <div className="rounded-3xl bg-white p-7 sm:p-10">
+            <h3 className="text-h3 text-graphite">
               Was Sie von uns erhalten
             </h3>
             <div className="mt-6">
               <Bullets items={service.deliverables} />
             </div>
-          </section>
+          </div>
         </div>
       </Section>
 
@@ -110,19 +112,15 @@ export default async function ServicePage({ params }: PageProps<"/leistungen/[sl
           id="werkzeuge-title"
           kicker="Werkzeuge"
           title="Womit wir arbeiten"
-          text="Wir arbeiten in den Werkzeugen, die in Ihrem Projekt gesetzt sind. Häufig sind es diese:"
+          text="Wir arbeiten in den Werkzeugen, die in Ihrem Projekt im Einsatz sind, zum Beispiel:"
         />
         <ToolsGrid className="mt-14" groups={toolGroupsFor(service.slug)} showMethods={service.slug === "business-analysis"} />
       </Section>
 
       <Section tone="canvas" labelledBy="faq-title" space="loose">
-        <div className="grid gap-10 lg:grid-cols-12 lg:gap-16">
-          <div className="lg:col-span-4">
-            <SectionHeader id="faq-title" kicker="FAQ" title={service.faqTitle} />
-          </div>
-          <div className="lg:col-span-8">
-            <Faq items={service.faq} />
-          </div>
+        <SectionHeader id="faq-title" kicker="FAQ" title={service.faqTitle} />
+        <div className="mt-12 max-w-4xl">
+          <Faq items={service.faq} />
         </div>
       </Section>
 
@@ -137,7 +135,10 @@ export default async function ServicePage({ params }: PageProps<"/leistungen/[sl
           {others.map((s) => (
             <li
               key={s.slug}
-              className="group relative flex flex-col rounded-3xl bg-canvas p-7 transition-colors duration-200 hover:bg-[#ededf0]"
+              className={cn(
+                "group relative flex flex-col rounded-3xl bg-canvas p-7 transition-colors duration-200 hover:bg-canvas-hover",
+                cardFocus,
+              )}
             >
               <ServiceIcon slug={s.slug} className="size-8" />
               <h3 className="mt-6 text-h3 text-graphite">

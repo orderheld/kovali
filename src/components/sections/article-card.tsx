@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ButtonChevron } from "@/components/ui/button";
 import { articleHref } from "@/content/insights";
 import type { PublishedArticle } from "@/content/types";
-import { cn, formatDate } from "@/lib/utils";
+import { cardFocus, cn, formatDate } from "@/lib/utils";
 
 /**
  * Article teaser on a light grey card, without an image: category, title, excerpt, then date
@@ -23,7 +23,8 @@ export function ArticleCard({
     <article
       className={cn(
         "group relative flex h-full flex-col rounded-3xl p-7 transition-colors duration-200 sm:p-8",
-        tone === "canvas" ? "bg-canvas hover:bg-[#ededf0]" : "bg-white hover:bg-white/70",
+        tone === "canvas" ? "bg-canvas hover:bg-canvas-hover" : "bg-white hover:bg-white/70",
+        cardFocus,
       )}
     >
       <p className="text-[0.875rem] font-semibold text-blue">{article.category}</p>

@@ -5,7 +5,8 @@ import { cn } from "@/lib/utils";
 /**
  * The tools we work in, as canvas cards per task. A tool shows its official logo where the
  * owner allows it (unmodified, full colour on white) and its name in text everywhere else.
- * The trademark notice always sits below the grid.
+ * The trademark notice always sits below the grid. Two groups per row from lg; an odd last
+ * group spans the row and lays its tools out in one line.
  */
 export function ToolsGrid({
   groups = toolGroups,
@@ -21,48 +22,50 @@ export function ToolsGrid({
 }) {
   return (
     <div className={className}>
-      <div className={cn("grid gap-4", groups.length > 1 && "md:grid-cols-2")}>
-        {groups.map((group) => (
-          <section
-            key={group.title}
-            aria-label={group.title}
-            className={cn("rounded-3xl p-7 sm:p-8", tone === "canvas" ? "bg-canvas" : "bg-white")}
-          >
-            <h3 className="text-[0.9375rem] font-semibold text-graphite">{group.title}</h3>
-            <ul className="mt-5 grid gap-3 sm:grid-cols-2">
-              {group.tools.map((tool) => {
-                const logo = tool.logo ? toolLogos[tool.logo] : undefined;
-                return (
-                  <li
-                    key={tool.name}
-                    className={cn(
-                      "flex min-h-[5.5rem] flex-col justify-center rounded-2xl px-5 py-4",
-                      tone === "canvas" ? "bg-white" : "bg-canvas",
-                    )}
-                  >
-                    {logo ? (
-                      // Official artwork, unmodified, at a fixed height of 24 px; the alt text is the product name.
-                      <Image
-                        src={logo.src}
-                        alt={tool.name}
-                        width={logo.width}
-                        height={logo.height}
-                        unoptimized
-                        className="h-6 w-auto self-start"
-                      />
-                    ) : (
-                      <p className="text-[1.0625rem] font-semibold leading-tight tracking-[-0.01em] text-graphite">{tool.name}</p>
-                    )}
-                    <p className="mt-1.5 text-[0.8125rem] leading-snug text-muted">
-                      {tool.vendor ? `${tool.vendor} · ` : null}
-                      {tool.use}
-                    </p>
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
-        ))}
+      <div className={cn("grid gap-4", groups.length > 1 && "lg:grid-cols-2")}>
+        {groups.map((group, i) => {
+          const wide = groups.length > 1 && groups.length % 2 === 1 && i === groups.length - 1;
+          return (
+            <div
+              key={group.title}
+              className={cn("rounded-3xl p-7 sm:p-8", tone === "canvas" ? "bg-canvas" : "bg-white", wide && "lg:col-span-2")}
+            >
+              <h3 className="text-[0.9375rem] font-semibold text-graphite">{group.title}</h3>
+              <ul className={cn("mt-5 grid gap-3 sm:grid-cols-2", wide && "lg:grid-cols-4")}>
+                {group.tools.map((tool) => {
+                  const logo = tool.logo ? toolLogos[tool.logo] : undefined;
+                  return (
+                    <li
+                      key={tool.name}
+                      className={cn(
+                        "flex min-h-[5.5rem] flex-col justify-start rounded-2xl px-5 py-4",
+                        tone === "canvas" ? "bg-white" : "bg-canvas",
+                      )}
+                    >
+                      {logo ? (
+                        // Official artwork, unmodified, at a fixed height of 24 px; the alt text is the product name.
+                        <Image
+                          src={logo.src}
+                          alt={tool.name}
+                          width={logo.width}
+                          height={logo.height}
+                          unoptimized
+                          className="h-6 w-auto max-w-none self-start"
+                        />
+                      ) : (
+                        <p className="text-[1.0625rem] font-semibold leading-tight tracking-[-0.01em] text-graphite">{tool.name}</p>
+                      )}
+                      <p className="mt-1.5 text-[0.8125rem] leading-snug text-muted">
+                        {tool.vendor ? `${tool.vendor} · ` : null}
+                        {tool.use}
+                      </p>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          );
+        })}
       </div>
       {showMethods ? (
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-5">

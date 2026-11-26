@@ -8,7 +8,7 @@ import { responseClause, site } from "@/config/site";
  */
 export const home = {
   meta: {
-    title: `${site.brand} | Requirements Engineering, Business Analysis und Test`,
+    title: `${site.brand} | Requirements Engineering und Test in der Schweiz`,
     description: `IT Consulting in der Schweiz: ${site.brand} übernimmt Requirements Engineering, Business Analysis, Testmanagement und Test Engineering in IT-Projekten.`,
   },
   hero: {
@@ -22,8 +22,8 @@ export const home = {
   /** The four core activities of Requirements Engineering, with typical results. */
   requirements: {
     kicker: "Requirements Engineering",
-    title: "Anforderungen, mit denen Entwicklung und Test arbeiten können",
-    text: "Anforderungsmanagement ist der Kern unserer Arbeit. Wir übernehmen alle vier Tätigkeiten des Requirements Engineering, einzeln oder zusammen.",
+    title: "Klare Anforderungen für Entwicklung und Test",
+    text: "Requirements Engineering ist der Kern unserer Arbeit. Wir übernehmen alle vier Tätigkeiten, vom Ermitteln bis zum Anforderungsmanagement, einzeln oder zusammen.",
     activities: [
       {
         title: "Ermitteln",
@@ -36,13 +36,13 @@ export const home = {
         results: ["User Stories", "BPMN-Modelle", "Schnittstellen"],
       },
       {
-        title: "Prüfen und abstimmen",
-        text: "In Reviews mit Fachbereich, Entwicklung und Test finden wir Lücken und Widersprüche, bevor programmiert wird.",
+        title: "Prüfen und Abstimmen",
+        text: "In Reviews mit Fachbereich, Entwicklung und Test finden wir Lücken und Widersprüche vor der Umsetzung.",
         results: ["Reviews", "Abgestimmte Anforderungen"],
       },
       {
         title: "Verwalten",
-        text: "Wir priorisieren den Anforderungsbestand, führen Änderungen über Change Requests und verknüpfen jede Anforderung mit ihren Testfällen.",
+        text: "Im Anforderungsmanagement priorisieren wir den Bestand, führen Änderungen über Change Requests und verknüpfen jede Anforderung mit ihren Testfällen.",
         results: ["Priorisiertes Backlog", "Nachverfolgbarkeit"],
       },
     ],
