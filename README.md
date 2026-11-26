@@ -57,7 +57,7 @@ docs/                     Go-live-Anleitung, Redaktionsplan
 
 ## Inhalte pflegen
 
-- **Firmendaten** (Name, Rechtsform, UID, Adresse, E-Mail, Telefon, Domain): nur in `src/config/site.ts`. Impressum, Footer, Kontaktseite und strukturierte Daten lesen von dort. Werte mit `confirmed: false` meldet `npm run check:launch`.
+- **Firmendaten** (Name, Rechtsform, UID, MWST-Nummer, Adresse, E-Mail, Telefon, Domain): nur in `src/config/site.ts`. Impressum, Footer, Kontaktseite und strukturierte Daten lesen von dort. Werte mit `confirmed: false` meldet `npm run check:launch`.
 - **Markenname**: nur `site.brand` in `src/config/site.ts`. Seiten, Metadaten und strukturierte Daten lesen ihn von dort. Logo-Dateien, Favicon und Teilen-Bild (`public/opengraph-image.jpg`) zeigen den Namen als Grafik und müssen bei einem neuen Namen neu erzeugt werden (siehe `brand/README.md`).
 - **Leistungen**: `src/content/services.ts`. Jede Leistung hat H1, Meta-Titel, Beschreibung, Aufgaben, Ergebnisse und FAQ.
 - **Startseite und Über uns**: `src/content/home.ts` und `src/content/about.ts`.

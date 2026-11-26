@@ -92,6 +92,9 @@ export function organizationJsonLd() {
     ...(site.contact.phone.value ? { telephone: site.contact.phone.value } : {}),
     // Only the country: the full address belongs in the imprint, not in marketing data.
     address: { "@type": "PostalAddress", addressCountry: site.contact.address.countryCode },
+    // Public register numbers (UID and MWST register), the same as in the imprint.
+    ...(site.legal.uid.confirmed && site.legal.uid.value ? { taxID: site.legal.uid.value } : {}),
+    ...(site.legal.vatNumber.confirmed && site.legal.vatNumber.value ? { vatID: site.legal.vatNumber.value } : {}),
     areaServed: site.areaServed.map((name) => ({ "@type": "Country", name })),
     knowsLanguage: ["de", "fr", "en"],
     knowsAbout: company.knowsAbout,

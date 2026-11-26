@@ -83,7 +83,7 @@ Datenmodell (Migration `0004_personal_admin`): `assignments` (Aufträge), `manda
 - **Auswahllisten**: nur aus `options.ts`; Werte mit `legacy` gibt es noch in alten Zeilen, angeboten wird `offered(list)`.
 - **Datenbank**: neue Spalten nur über eine neue Migration, nie eine ausgelieferte ändern. `npm test` mit `TEST_DATABASE_URL` prüft, dass Schema und Migrationen übereinstimmen.
 - **Texte**: Deutsch für die Schweiz, «ss» statt «ß», Ferhat wird geduzt.
-- **Keine Angaben** zu Handelsregister, UID, MWST-Nummer oder Bewilligungen (Personalverleih, Arbeitsvermittlung) von KOVALI.
+- **Keine erfundenen Angaben** zu Handelsregister oder Bewilligungen (Personalverleih, Arbeitsvermittlung) von KOVALI. UID und MWST-Nummer kommen nur aus `src/config/site.ts` (über `kovaliParty()`), nie als Text im Code.
 
 ### Prüfen
 

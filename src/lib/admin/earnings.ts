@@ -165,7 +165,7 @@ export const EARNINGS_SECTIONS: readonly { id: EarningsSection; title: string; d
   { id: "vorsorge", title: "Rechnung: Vorsorge", description: "Was du selbst für das Alter zur Seite legst." },
   { id: "versicherung", title: "Rechnung: Versicherungen", description: "Als Selbständiger bist du weder gegen Unfall noch für Krankentaggeld obligatorisch versichert." },
   { id: "kosten", title: "Rechnung: Kosten und Steuern", description: "Fixkosten der Einzelfirma. Die Spesen erfasst du pro Auftrag." },
-  { id: "mwst", title: "MWST", description: "Die MWST stellst du zusätzlich in Rechnung und lieferst sie ab. Sie ist kein Einkommen." },
+  { id: "mwst", title: "MWST", description: "Die MWST stellst du zusätzlich in Rechnung und rechnest sie mit der ESTV ab." },
   {
     id: "lohn",
     title: "Lohn: Abzüge",
@@ -714,7 +714,7 @@ function invoiceEarnings(b: InvoiceBase, s: EarningsSettings, { pensionFund = fa
   if (s.vatRegistered) {
     lines.push(
       line("mwst", `MWST ${formatPercent(s.vatRate)} auf deinen Rechnungen`, "info", s.vatRate, b.revenueYear * p(s.vatRate), {
-        note: "kommt dazu und geht an die ESTV, kein Einkommen",
+        note: "kommt auf die Rechnung dazu, abgerechnet mit der ESTV",
       }),
     );
   } else if (b.revenueYear > VAT_THRESHOLD) {

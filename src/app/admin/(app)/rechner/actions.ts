@@ -7,7 +7,8 @@ import { requireAdmin } from "@/lib/admin/auth/session";
 import { getDb } from "@/lib/admin/db/client";
 import { settings } from "@/lib/admin/db/schema";
 import { earningsFallback } from "@/lib/admin/data/earnings";
-import { EARNINGS_SETTINGS_KEY, earningsFormSchema, settingsFromForm } from "@/lib/admin/earnings-settings";
+import { EARNINGS_SETTINGS_KEY, earningsFormSchema, settingsFromForm, withFirmVat } from "@/lib/admin/earnings-settings";
+import { kovaliVatRegistered } from "@/lib/admin/party";
 import { ok, parseForm, type ActionState } from "@/lib/admin/forms";
 import { redirectAfterChange } from "@/lib/admin/redirect";
 
@@ -16,7 +17,7 @@ export async function saveEarningsSettings(_prev: ActionState, formData: FormDat
   await requireAdmin();
   const parsed = parseForm(earningsFormSchema, formData);
   if (!parsed.ok) return parsed.state;
-  const value = { ...settingsFromForm(parsed.data, earningsFallback()), savedAt: new Date().toISOString() };
+  const value = { ...withFirmVat(settingsFromForm(parsed.data, earningsFallback()), kovaliVatRegistered()), savedAt: new Date().toISOString() };
   const db = await getDb();
   await db
     .insert(settings)

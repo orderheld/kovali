@@ -16,7 +16,7 @@ import {
   type EarningsInput,
   type EarningsSettings,
 } from "./earnings";
-import { earningsFormSchema, parseEarningsSettings, settingsFromForm } from "./earnings-settings";
+import { earningsFormSchema, parseEarningsSettings, settingsFromForm, withFirmVat } from "./earnings-settings";
 
 /**
  * Expected values were worked out by hand (calculator), step by step in the comments, with the
@@ -373,6 +373,19 @@ describe("settings", () => {
     expect(parseEarningsSettings("text", { ...S, vatRegistered: true }).vatRegistered).toBe(true);
     // A missing boolean keeps the fallback instead of becoming false.
     expect(parseEarningsSettings({}, { ...S, vatRegistered: true }).vatRegistered).toBe(true);
+  });
+
+  it("lets a confirmed MWST number win over older saved assumptions", () => {
+    const savedBefore = parseEarningsSettings({ ...S, vatRegistered: false }, { ...S, vatRegistered: true });
+    expect(savedBefore.vatRegistered).toBe(false);
+    expect(withFirmVat(savedBefore, true).vatRegistered).toBe(true);
+    // Without a number in site.ts, the saved checkbox decides either way.
+    expect(withFirmVat(savedBefore, false).vatRegistered).toBe(false);
+    expect(withFirmVat({ ...S, vatRegistered: true }, false).vatRegistered).toBe(true);
+    // The MWST line appears once registered; the notice about registering does not.
+    const e = run(at({}), withFirmVat(savedBefore, true));
+    expect(e.lines.some((l) => l.key === "mwst")).toBe(true);
+    expect(e.notices.join(" ")).not.toContain("MWST-pflichtig");
   });
 
   it("validates the settings form", () => {
