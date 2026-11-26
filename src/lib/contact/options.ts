@@ -42,8 +42,8 @@ export const startOptions = [
 
 export const durationOptions = [
   { value: "bis-3-monate", label: "Bis 3 Monate" },
-  { value: "3-6-monate", label: "3 bis 6 Monate" },
-  { value: "6-12-monate", label: "6 bis 12 Monate" },
+  { value: "3-6-monate", label: "4 bis 6 Monate" },
+  { value: "6-12-monate", label: "7 bis 12 Monate" },
   { value: "ueber-12-monate", label: "Länger als 12 Monate" },
   { value: "offen", label: "Noch offen" },
 ] as const;
@@ -64,7 +64,7 @@ export const workModes = [
 
 /** Optional requirement profile in the contact form (PDF or Word). Stays below Vercel's 4.5 MB request limit. */
 export const ATTACHMENT_MAX_BYTES = 4 * 1024 * 1024;
-export const ATTACHMENT_MAX_LABEL = "4 MB";
+export const ATTACHMENT_MAX_LABEL = "4\u00a0MB";
 
 type Values<T extends readonly { value: string }[]> = T[number]["value"];
 export type RequestType = Values<typeof requestTypes>;

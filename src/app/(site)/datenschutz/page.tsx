@@ -34,7 +34,7 @@ export default function DatenschutzPage() {
         <br />
         {contact.person}
         <br />
-        {address.street}, {address.postalCode} {address.city}, {address.country}
+        {address.street}, {address.postalCode}&nbsp;{address.city}, {address.country}
         <br />
         E-Mail: <a href={`mailto:${email}`}>{email}</a>
       </p>

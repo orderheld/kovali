@@ -334,7 +334,7 @@ export function ContactForm({
           id="requirements"
           label="Voraussetzungen"
           optional
-          hint="Zum Beispiel Erfahrung, Methoden, Tools, Sprachen, Zertifikate oder Sicherheitsprüfung."
+          hint="Zum Beispiel Erfahrung, Methoden, Werkzeuge, Sprachen, Zertifikate oder Sicherheitsprüfung."
           error={errors.requirements}
         >
           {(p) => (

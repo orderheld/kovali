@@ -159,7 +159,7 @@ export default async function ArticlePage({ params }: PageProps<"/insights/[slug
         </Section>
       ) : null}
 
-      <CtaBand />
+      <CtaBand afterCanvas />
       <JsonLd data={articleJsonLd(article, path)} />
     </>
   );

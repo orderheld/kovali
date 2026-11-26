@@ -16,7 +16,7 @@ export const article: Article = {
     { type: "h2", id: "gemeinsamer-kern", text: "Zwei Disziplinen mit gemeinsamem Kern" },
     {
       type: "p",
-      text: "Business Analysis und Requirements Engineering werden in Stellenausschreibungen und Projektplänen oft synonym verwendet. Beide befassen sich mit Anforderungen, beide verlangen Gesprächsführung, Modellierung und präzises Formulieren. Trotzdem setzen sie unterschiedliche Schwerpunkte. Wer diese kennt, kann Aufgaben im Projekt gezielter vergeben und Lücken vermeiden.",
+      text: "Business Analysis und Requirements Engineering werden in Stellenausschreibungen und Projektplänen oft synonym verwendet. Beide befassen sich mit Anforderungen und verlangen Gesprächsführung und präzises Formulieren. Trotzdem setzen sie unterschiedliche Schwerpunkte. Wer diese kennt, kann Aufgaben im Projekt gezielter vergeben und Lücken vermeiden.",
     },
     {
       type: "p",

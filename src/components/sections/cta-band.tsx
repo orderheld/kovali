@@ -16,6 +16,11 @@ interface CtaBandProps {
   showMail?: boolean;
   /** Id of the H2 (the section is labelled by it). Change it if a page has two bands. */
   headingId?: string;
+  /**
+   * The section above is grey (canvas). Its padding is then grey too, so the band brings its own
+   * white space above the panel; otherwise the two grey blocks would almost touch.
+   */
+  afterCanvas?: boolean;
 }
 
 /**
@@ -28,10 +33,11 @@ export function CtaBand({
   primary = contactCta.primary,
   showMail = true,
   headingId = "cta-title",
+  afterCanvas = false,
 }: CtaBandProps) {
   const email = site.contact.email.value;
   return (
-    <section aria-labelledby={headingId} className="bg-white pb-20 pt-4 md:pb-28">
+    <section aria-labelledby={headingId} className={`bg-white pb-20 md:pb-28 ${afterCanvas ? "pt-20 md:pt-28" : "pt-4"}`}>
       <Container>
         <div className="grid gap-x-12 gap-y-10 rounded-[2rem] bg-canvas px-7 py-12 sm:px-12 md:grid-cols-12 md:items-end md:py-16 lg:px-16">
           <div className="md:col-span-7">

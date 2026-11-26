@@ -70,7 +70,7 @@ describe("stored copy (contact_requests, store.ts)", () => {
     expect(stored.company).toBe("Beispiel Consulting AG");
     expect(stored.projectDescription).toBe(input.projectDescription);
     expect(stored.message).toBe(
-      "Leistungen: Requirements Engineering & Business Analysis, Testmanagement\nLaufzeit: 6 bis 12 Monate\nPensum: 80 bis 100\u00a0%\n\nVoraussetzungen:\nIREB CPRE, Jira, Deutsch und Französisch\n\nNachricht:\nBitte um Rückruf.",
+      "Leistungen: Requirements Engineering & Business Analysis, Testmanagement\nLaufzeit: 7 bis 12 Monate\nPensum: 80 bis 100\u00a0%\n\nVoraussetzungen:\nIREB CPRE, Jira, Deutsch und Französisch\n\nNachricht:\nBitte um Rückruf.",
     );
   });
 
@@ -86,7 +86,7 @@ describe("contact e-mail", () => {
     const text = renderText(input, "KOV-20261014-TEST");
     expect(text).toContain("Leistungen: Requirements Engineering & Business Analysis, Testmanagement");
     expect(text).toContain("Unternehmen: Beispiel Consulting AG");
-    expect(text).toContain("Laufzeit: 6 bis 12 Monate");
+    expect(text).toContain("Laufzeit: 7 bis 12 Monate");
     expect(text).toContain("Pensum: 80 bis 100 %");
     expect(text).toContain("Voraussetzungen:\nIREB CPRE, Jira, Deutsch und Französisch");
     const html = renderHtml(input, "KOV-20261014-TEST");

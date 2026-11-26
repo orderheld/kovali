@@ -93,7 +93,7 @@ export const methods = ["BPMN 2.0", "UML", "User Stories", "Use Cases", "Scrum",
 
 /** Trademark notice below every tools grid; Atlassian and SAP ask for an attribution of their marks. */
 export const toolsNotice =
-  "Jira und Confluence sind Marken von Atlassian, SAP und SAP Signavio Marken der SAP SE, Oracle ist eine eingetragene Marke von Oracle und/oder seinen verbundenen Unternehmen. Alle weiteren genannten Produktnamen sind Marken ihrer jeweiligen Inhaber. Die Nennung beschreibt die Werkzeuge, mit denen wir in Projekten arbeiten, und bedeutet keine Partnerschaft.";
+  "Jira und Confluence sind Marken von Atlassian. SAP und SAP Signavio sind Marken der SAP SE. Oracle ist eine eingetragene Marke von Oracle und/oder seinen verbundenen Unternehmen. Alle weiteren genannten Produktnamen sind Marken ihrer jeweiligen Inhaber. Die Nennung beschreibt die Werkzeuge, mit denen wir in Projekten arbeiten, und bedeutet keine Partnerschaft.";
 
 export function toolGroupsFor(slug: ServiceSlug): ToolGroup[] {
   return toolGroups.filter((g) => g.services.includes(slug));

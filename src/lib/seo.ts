@@ -25,7 +25,8 @@ interface PageMetaInput {
  * a new brand name needs no new image; the alt text takes the name from site.brand.
  */
 export const shareImage = {
-  url: "/opengraph-image.jpg",
+  // ?v=3: the image changed with design v3; a new URL makes LinkedIn, WhatsApp and others load it again.
+  url: "/opengraph-image.jpg?v=3",
   width: 1200,
   height: 630,
   alt: `${site.brand}: das Logo-Symbol auf hellem Grund`,

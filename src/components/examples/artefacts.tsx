@@ -83,7 +83,7 @@ export function ProcessCard({ className, title = "Prozess «Antragseingang» · 
           <path d="M144 34h16" markerEnd="url(#pfeil)" />
           <path d="M236 34h8" markerEnd="url(#pfeil)" />
           <path d="M130 48v28" markerEnd="url(#pfeil)" />
-          <path d="M174 97h70" markerEnd="url(#pfeil)" />
+          <path d="M182 97h62" markerEnd="url(#pfeil)" />
         </g>
         {/* Start event */}
         <circle cx="11" cy="34" r="9" fill="#fff" stroke={line} strokeWidth="1.25" />
@@ -115,7 +115,7 @@ export function ProcessCard({ className, title = "Prozess «Antragseingang» · 
           bearbeiten
         </text>
         {/* Antrag zurückweisen: the step of the user story */}
-        <rect x="86" y="78" width="88" height="38" rx="8" fill="#145bce" fillOpacity="0.08" stroke="#145bce" strokeWidth="1.5" />
+        <rect x="80" y="78" width="100" height="38" rx="8" fill="#145bce" fillOpacity="0.08" stroke="#145bce" strokeWidth="1.5" />
         <text x="130" y="94" {...taskText} fill="#145bce" fontWeight="600">
           Antrag
         </text>
