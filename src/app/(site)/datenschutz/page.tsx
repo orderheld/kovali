@@ -43,7 +43,7 @@ export default function DatenschutzPage() {
       <h2>{section("Besuch der Website")}</h2>
       <p>
         Die Website wird bei Vercel Inc. (USA) betrieben. Beim Aufruf einer Seite werden technisch notwendige Daten
-        verarbeitet und in Server-Protokollen kurzzeitig gespeichert: IP-Adresse, Datum und Uhrzeit, aufgerufene
+        bearbeitet und in Server-Protokollen kurzzeitig gespeichert: IP-Adresse, Datum und Uhrzeit, aufgerufene
         Adresse, Referrer sowie Browser und Betriebssystem. Diese Daten dienen dem sicheren und stabilen Betrieb der
         Website und werden nicht mit anderen Daten zusammengeführt.
       </p>
@@ -72,8 +72,8 @@ export default function DatenschutzPage() {
           übermittelt, ein Anforderungsprofil als Anhang.
         </li>
         <li>
-          Je nach Konfiguration wird die Anfrage zusätzlich in einer Datenbank des Anbieters Neon (Neon, Inc., USA) mit
-          Speicherort in Frankfurt am Main (Deutschland) abgelegt, damit keine Anfrage verloren geht. Ein
+          Die Anfrage wird zusätzlich in einer Datenbank des Anbieters Neon (Neon, Inc., USA) mit Speicherort in
+          Frankfurt am Main (Deutschland) abgelegt, damit keine Anfrage verloren geht. Ein
           Anforderungsprofil wird dort nicht gespeichert.
         </li>
         <li>
@@ -121,10 +121,10 @@ export default function DatenschutzPage() {
       <h2>{section("Datensicherheit")}</h2>
       <ul>
         <li>Die Übertragung zwischen Ihrem Browser und dieser Website ist mit TLS verschlüsselt.</li>
-        <li>Dokumente werden vor dem Speichern verschlüsselt (AES-256). Das Passwort wird nur als Hashwert gespeichert.</li>
+        <li>Dokumente werden vor dem Speichern verschlüsselt (AES-256).</li>
         <li>
           Auf die interne Datenbank hat nur {site.brand} Zugriff. Die Anmeldung erfordert ein Passwort und einen Code aus
-          einer Authenticator-App, die Zahl der Fehlversuche ist begrenzt.
+          einer Authenticator-App, die Zahl der Fehlversuche ist begrenzt. Das Passwort wird nur als Hashwert gespeichert.
         </li>
         <li>
           Anmeldungen, Änderungen und Abrufe von Dokumenten werden in einem Zugriffsprotokoll festgehalten, das selbst

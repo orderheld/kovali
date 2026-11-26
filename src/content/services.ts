@@ -52,7 +52,7 @@ export const services: Service[] = [
       {
         question: "Ist Business Analysis dasselbe wie Requirements Engineering?",
         answer:
-          "Nicht ganz. Business Analysis klärt, welches geschäftliche Problem gelöst werden soll und welche Lösung den grössten Nutzen bringt. Requirements Engineering beschreibt die gewählte Lösung in prüfbaren Anforderungen und pflegt sie bis zum Ende des Projekts. In der Praxis greifen beide ineinander, deshalb bieten wir sie als eine Disziplin an. Ausführlich im Artikel [Business Analysis vs. Requirements Engineering](/insights/business-analysis-vs-requirements-engineering).",
+          "Nicht ganz. Business Analysis klärt, welches geschäftliche Problem gelöst werden soll und welche Lösung den grössten Nutzen bringt. Requirements Engineering beschreibt die gewählte Lösung in prüfbaren Anforderungen und pflegt sie bis zum Ende des Projekts. In der Praxis greifen beide ineinander, deshalb bieten wir sie als eine Leistung an. Ausführlich im Artikel [Business Analysis vs. Requirements Engineering](/insights/business-analysis-vs-requirements-engineering).",
       },
       {
         question: "Wann lohnt sich ein externer Business Analyst?",
@@ -130,7 +130,7 @@ export const services: Service[] = [
     slug: "test-engineering",
     name: "Test Engineering",
     summary:
-      "Wenn Ihrem Team Testkapazität fehlt. Unsere Test Engineers leiten Testfälle aus den Anforderungen ab und führen sie durch. Jeder gefundene Fehler lässt sich anhand des Berichts nachstellen.",
+      "Wenn Ihrem Team Testkapazität fehlt. Unsere Test Engineers leiten Testfälle aus den Anforderungen ab und führen sie durch. Jeder gefundene Fehler lässt sich anhand des Fehlerberichts nachstellen.",
     h1: "Test Engineering für zuverlässige IT-Systeme",
     metaTitle: "Test Engineering Schweiz – System- und Regressionstests",
     metaDescription:
