@@ -84,9 +84,17 @@ export const site = {
     } satisfies Confirmable<string>,
     owner: "Ferhat Demir",
     /** e.g. "CHE-123.456.789". If there is none, keep null and set confirmed: true. */
-    uid: { value: null, confirmed: false, note: "UID eintragen oder bestätigen, dass keine besteht." } as Confirmable<string | null>,
-    /** e.g. "CHE-123.456.789 MWST", only if VAT-registered */
-    vatNumber: { value: null, confirmed: false, note: "Nur bei MWST-Pflicht eintragen." } as Confirmable<string | null>,
+    uid: {
+      value: "CHE-439.891.660",
+      confirmed: true,
+      note: "Laut ESTV-Portal (Unternehmensprofil), von Ferhat Demir am 26.11.2026 geschickt.",
+    } as Confirmable<string | null>,
+    /** UID plus " MWST", e.g. "CHE-123.456.789 MWST", only if VAT-registered. */
+    vatNumber: {
+      value: "CHE-439.891.660 MWST",
+      confirmed: true,
+      note: "Im MWST-Register laut ESTV-Portal, von Ferhat Demir am 26.11.2026 geschickt.",
+    } as Confirmable<string | null>,
     /** e.g. "Handelsregister des Kantons Solothurn", only if registered */
     commercialRegister: {
       value: null,

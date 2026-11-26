@@ -51,13 +51,13 @@ export default function ImpressumPage() {
           <p>
             {legal.uid.value ? (
               <>
-                Unternehmens-Identifikationsnummer (UID): {legal.uid.value}
+                Unternehmens-Identifikationsnummer (UID): <span className="whitespace-nowrap">{legal.uid.value}</span>
                 <br />
               </>
             ) : null}
             {legal.vatNumber.value ? (
               <>
-                Mehrwertsteuernummer: {legal.vatNumber.value}
+                MWST-Nummer: <span className="whitespace-nowrap">{legal.vatNumber.value}</span>
                 <br />
               </>
             ) : null}

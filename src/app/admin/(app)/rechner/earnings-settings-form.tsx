@@ -136,6 +136,22 @@ function Field({ field, settings, defaults }: { field: EarningsField; settings: 
       </span>
     ) : undefined;
 
+  // With an MWST number in the firm data, "MWST-pflichtig" is a fact, not an assumption: shown
+  // ticked and locked, sent as a hidden field (disabled inputs are not submitted).
+  if (field.key === "vatRegistered" && defaults.vatRegistered) {
+    return (
+      <div className="sm:col-span-full">
+        <input type="hidden" name={field.key} value="on" />
+        <CheckboxField
+          name={`${field.key}-fest`}
+          label={field.label}
+          defaultChecked
+          disabled
+          hint="Fest, weil in den Firmendaten deine MWST-Nummer steht (Einstellungen → Firma)."
+        />
+      </div>
+    );
+  }
   if (field.type === "boolean") return <CheckboxField name={field.key} label={field.label} defaultChecked={value === true} hint={hint} className="sm:col-span-full" />;
   if (field.type === "choice") return <SelectField name={field.key} label={field.label} options={field.choices ?? []} defaultValue={String(value)} hint={hint} />;
   return <TextField name={field.key} label={field.label} inputMode={field.integer ? "numeric" : "decimal"} suffix={field.suffix} defaultValue={String(value)} hint={hint} />;

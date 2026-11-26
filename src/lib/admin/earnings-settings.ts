@@ -70,6 +70,15 @@ export function parseEarningsSettings(value: unknown, fallback: EarningsSettings
   return settingsFromFlat(flat, fallback);
 }
 
+/**
+ * A confirmed MWST number in the firm data (src/config/site.ts) wins over the saved checkbox:
+ * assumptions saved before KOVALI was registered still say false and must not hide the MWST.
+ * Without a number in site.ts, the checkbox decides (e.g. to try out a registration).
+ */
+export function withFirmVat(settings: EarningsSettings, firmVatRegistered: boolean): EarningsSettings {
+  return firmVatRegistered && !settings.vatRegistered ? { ...settings, vatRegistered: true } : settings;
+}
+
 /** When the settings were last saved, if the stored value says so. */
 export function savedAtOf(value: unknown): string | null {
   if (!value || typeof value !== "object") return null;
