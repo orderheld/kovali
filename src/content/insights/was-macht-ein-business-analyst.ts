@@ -36,7 +36,7 @@ export const article: Article = {
     { type: "h3", text: "Stakeholder identifizieren und einbinden" },
     {
       type: "p",
-      text: "Eine Stakeholder-Analyse zeigt, wer betroffen ist, wer entscheidet und wer die fachlichen Details kennt. Sie macht sichtbar, wessen Sicht noch fehlt und wo Interessen kollidieren. Der Business Analyst plant Interviews, Workshops und Reviews so, dass die richtigen Personen zur richtigen Zeit beteiligt sind.",
+      text: "Eine Stakeholder-Analyse zeigt, wer betroffen ist und wer entscheidet. Sie zeigt auch, wer die fachlichen Details kennt. Sie macht sichtbar, wessen Sicht noch fehlt und wo Interessen kollidieren. Der Business Analyst plant Interviews, Workshops und Reviews so, dass die richtigen Personen zur richtigen Zeit beteiligt sind.",
     },
     { type: "h3", text: "Prozesse und Daten analysieren" },
     {
@@ -110,7 +110,7 @@ export const article: Article = {
     {
       type: "ul",
       items: [
-        "Analytisches Denken: Zusammenhänge erkennen, Widersprüche aufdecken, Annahmen von Fakten trennen.",
+        "Analytisches Denken: Widersprüche aufdecken und Annahmen von Fakten trennen.",
         "Moderation: Workshops leiten und zu Ergebnissen führen, auch wenn Interessen auseinandergehen.",
         "Präzises Schreiben: Anforderungen so formulieren, dass Fachbereich, Entwicklung und Test sie gleich verstehen.",
         "Domänenwissen: die Fachsprache und die Regeln der Branche kennen, etwa im Versicherungs- oder Bankenumfeld.",

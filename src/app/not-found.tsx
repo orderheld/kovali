@@ -8,7 +8,7 @@ import { Section } from "@/components/ui/section";
 import { mainNav, primaryCta } from "@/content/navigation";
 
 /** Tab title of the 404 page; the root layout's default title would show the logo tagline. */
-export const metadata: Metadata = { title: "Seite nicht gefunden" };
+export const metadata: Metadata = { title: "Seite nicht gefunden", robots: { index: false, follow: true } };
 
 const links = [...mainNav, primaryCta];
 

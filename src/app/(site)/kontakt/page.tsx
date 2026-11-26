@@ -48,7 +48,7 @@ export default function KontaktPage() {
           { name: "Kontakt", path: "/kontakt" },
         ]}
         title="Kontakt"
-        lead="Für Beratungen, IT-Dienstleister und Unternehmen mit einem IT-Projekt."
+        lead="Für Beratungen, IT-Dienstleister und Unternehmen mit einem IT‑Projekt."
       />
 
       <Section labelledBy="kontakt-title" className="pt-0 md:pt-0">

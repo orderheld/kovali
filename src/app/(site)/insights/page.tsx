@@ -79,7 +79,7 @@ export default function InsightsPage() {
       {rest.length ? (
         <Section labelledBy="weitere-title" className="pt-0 md:pt-0" space="loose">
           <SectionHeader id="weitere-title" kicker="Fachartikel" title="Weitere Artikel" />
-          <ul className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <ul className={cn("mt-12 grid gap-4 md:grid-cols-2", rest.length > 2 && "lg:grid-cols-3")}>
             {rest.map((a) => (
               <li key={a.slug}>
                 <ArticleCard article={a} />

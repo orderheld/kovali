@@ -83,7 +83,7 @@ export const services: Service[] = [
     name: "Testmanagement",
     summary:
       "Wenn ein Go-live ansteht oder mehrere Lieferanten beteiligt sind. Wir legen fest, was wann getestet wird, und führen den Fehlerprozess bis zur Abnahme.",
-    h1: "Test Manager für IT-Projekte in der Schweiz",
+    h1: "Test Manager für IT‑Projekte in der Schweiz",
     metaTitle: "Test Manager Schweiz – Testmanagement für IT-Projekte",
     metaDescription:
       "Testmanagement nach ISTQB: Testkonzept, Testplanung, Koordination, Defect Management und fachliche Abnahme für Integrations- und End-to-End-Tests.",

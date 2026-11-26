@@ -61,7 +61,7 @@ export const article: Article = {
       items: [
         "Wissenstransfer planen: Ergebnisse, Modelle und Entscheidungsgrundlagen gehören dem Unternehmen und müssen nachvollziehbar abgelegt sein. Legen Sie früh fest, wer das Wissen nach Ende des Mandats übernimmt.",
         "Einbindung sicherstellen: Ohne Zugang zu Fachpersonen, Systemen und Dokumenten bleibt die Analyse oberflächlich. Reservieren Sie die Zeit der Schlüsselpersonen verbindlich.",
-        "Rollen klar abgrenzen: Klären Sie, wer entscheidet, wer priorisiert und wer Anforderungen freigibt. Der externe Business Analyst bereitet vor, entscheidet aber nicht anstelle des Auftraggebers.",
+        "Rollen klar abgrenzen: Klären Sie, wer Anforderungen priorisiert und freigibt. Der externe Business Analyst bereitet vor, entscheidet aber nicht anstelle des Auftraggebers.",
         "Einarbeitung einrechnen: Auch ein erfahrener Business Analyst braucht Zeit, um Fachgebiet, Systemlandschaft und Organisation kennenzulernen.",
         "Kontinuität sichern: Ein Personenwechsel mitten im Vorhaben kostet Zeit. Vereinbaren Sie, wie Stellvertretung und Übergaben geregelt sind.",
       ],
