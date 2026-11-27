@@ -61,7 +61,7 @@ export default function ImpressumPage() {
                 <br />
               </>
             ) : null}
-            {legal.commercialRegister.value ? <>Eintrag: {legal.commercialRegister.value}</> : null}
+            {legal.commercialRegister.value ? <>Eingetragen im {legal.commercialRegister.value}</> : null}
           </p>
         </>
       ) : null}
