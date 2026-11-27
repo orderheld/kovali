@@ -76,11 +76,14 @@ export const site = {
 
   legal: {
     form: "einzelunternehmen" as LegalForm,
-    /** Exact name as registered (Handelsregister / Zefix). */
+    /**
+     * Exact name as registered (Handelsregister / Zefix), including lower case: the Firma must
+     * appear unchanged (Art. 954a OR), also mid-sentence.
+     */
     entityName: {
-      value: "Webnova Solutions F. Demir",
+      value: "webnova solutions F. Demir",
       confirmed: true,
-      note: "Von Ferhat Demir bestätigt (13.10.2026). Gross- und Kleinschreibung mit Zefix abgleichen.",
+      note: "Schreibweise wie im Handelsregister (Zefix, geprüft am 27.11.2026), von Ferhat Demir bestätigt.",
     } satisfies Confirmable<string>,
     owner: "Ferhat Demir",
     /** e.g. "CHE-123.456.789". If there is none, keep null and set confirmed: true. */
@@ -95,11 +98,11 @@ export const site = {
       confirmed: true,
       note: "Im MWST-Register laut ESTV-Portal, von Ferhat Demir am 26.11.2026 geschickt.",
     } as Confirmable<string | null>,
-    /** e.g. "Handelsregister des Kantons Solothurn", only if registered */
+    /** e.g. "Handelsregister des Kantons Solothurn", only if registered; the imprint reads "Eingetragen im …". */
     commercialRegister: {
-      value: null,
-      confirmed: false,
-      note: "Nur bei Eintrag im Handelsregister angeben.",
+      value: "Handelsregister des Kantons Solothurn",
+      confirmed: true,
+      note: "Laut Zefix eingetragen (Einzelunternehmen, Sitz Grenchen, geprüft am 27.11.2026), von Ferhat Demir bestätigt.",
     } as Confirmable<string | null>,
   },
 

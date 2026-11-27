@@ -23,13 +23,11 @@ npm run check:launch
 ```
 
 Das Skript listet alle Werte in `src/config/site.ts`, die noch `confirmed: false` haben, und fehlende Umgebungsvariablen.
-Bestätigt sind bereits Firmenname (Webnova Solutions F. Demir), E-Mail (info@kovali.ch) sowie UID und MWST-Nummer (`legal.uid`, `legal.vatNumber`, laut ESTV-Portal am 26.11.2026).
+Bestätigt sind bereits Firmenname in der Schreibweise des Handelsregisters (webnova solutions F. Demir), Handelsregister (Kanton Solothurn, laut Zefix am 27.11.2026), E-Mail (info@kovali.ch) sowie UID und MWST-Nummer (`legal.uid`, `legal.vatNumber`, laut ESTV-Portal am 26.11.2026).
 
 Noch offen:
 
 - **Domain**: `kovali.ch` registriert? Falls ja, `url.confirmed` auf `true` setzen.
-- **Firmenname**: Gross- und Kleinschreibung mit dem Eintrag auf [zefix.ch](https://www.zefix.ch) abgleichen.
-- **Handelsregister**: eintragen, falls vorhanden. Gibt es keinen Eintrag, `value: null` lassen und `confirmed: true` setzen. Leere Felder erscheinen nicht im Impressum.
 - **Telefon**: nur eintragen, wenn die Nummer öffentlich sein soll.
 
 Beim Wechsel zur GmbH: `legal.form` auf `"gmbh"` setzen, Firmenname, UID, MWST-Nummer und Handelsregister anpassen. Impressum, Footer und strukturierte Daten übernehmen die Werte automatisch. Die E-Mail-Signatur (Projektdateien, `kovali-brand/email-signatur/`) muss von Hand nachgeführt werden.
@@ -123,7 +121,7 @@ Das Formular sendet jede Anfrage über [Resend](https://resend.com) an `info@kov
 
 ## 7. Rechtliche Schlusskontrolle
 
-- [ ] Impressum: Firmenname, Adresse, E-Mail, UID und MWST-Nummer (wie in `src/config/site.ts`) und gegebenenfalls Handelsregister korrekt.
+- [ ] Impressum: Firmenname, Adresse, E-Mail, UID, MWST-Nummer und Handelsregister (wie in `src/config/site.ts`) korrekt.
 - [ ] Datenschutzerklärung: Regionen der Anbieter bestätigen (Vercel Funktionen Frankfurt, Resend EU, Neon Frankfurt) und prüfen, ob Vercel, Resend und Neon unter dem Swiss-U.S. Data Privacy Framework zertifiziert sind ([dataprivacyframework.gov](https://www.dataprivacyframework.gov)). Andernfalls bleibt der Hinweis auf Standardvertragsklauseln massgebend.
 - [ ] Auftragsverarbeitungsverträge (DPA) von Vercel, Resend und gegebenenfalls Neon in den jeweiligen Konten akzeptieren bzw. herunterladen.
 - [ ] Wird Neon **nicht** verwendet: den Absatz zur Datenbank in `src/app/(site)/datenschutz/page.tsx` entfernen.

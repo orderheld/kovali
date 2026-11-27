@@ -43,7 +43,7 @@ export function kovaliVatRegistered(): boolean {
   return Boolean(kovaliParty().vatNumber);
 }
 
-/** One line for document headers and party blocks, e.g. "Webnova Solutions F. Demir (KOVALI), Bettlachstrasse 45, 2540 Grenchen". */
+/** One line for document headers and party blocks, e.g. "webnova solutions F. Demir (KOVALI), Bettlachstrasse 45, 2540 Grenchen". */
 export function partyLine(p: Party = kovaliParty()): string {
   return `${p.name} (${site.brand}), ${p.street}, ${p.postalCode} ${p.city}`;
 }
