@@ -10,12 +10,12 @@ import { site } from "@/config/site";
 export const certifications = [
   {
     id: "ireb-cpre-fl",
-    short: "IREB CPRE",
+    short: "IREB\u00a0CPRE",
     credential: "Certified Professional for Requirements Engineering, Foundation Level",
   },
   {
     id: "istqb-ctfl",
-    short: "ISTQB CTFL",
+    short: "ISTQB\u00a0CTFL",
     credential: "Certified Tester, Foundation Level",
   },
 ] as const;
@@ -44,5 +44,5 @@ export const founder: {
   role: site.contact.title,
   portrait: portraitImage,
   avatar: avatarImage,
-  experienceLine: "seit über 10 Jahren in der IT, seit über 5 Jahren in Business Analysis und Requirements Engineering",
+  experienceLine: "seit über 10\u00a0Jahren in der IT, seit über 5\u00a0Jahren in Business Analysis und Requirements Engineering",
 };

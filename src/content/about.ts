@@ -104,7 +104,7 @@ export const about = {
     /** No amounts: the hourly rate is named in the written offer only (Ferhat Demir, 14.10.2026). */
     terms: [
       "Aufgaben, Ergebnisse und Verantwortlichkeiten halten wir vor dem Start schriftlich fest. Wir rechnen monatlich nach Aufwand ab. Den Stundensatz nennen wir in der schriftlichen Offerte.",
-      "Wir erbringen Leistungen in eigener Verantwortung, im Auftrag oder Werkvertrag. Personalverleih und Stellenvermittlung bieten wir nicht an.",
+      "Wir erbringen Leistungen in eigener Verantwortung, als Auftrag oder als Werkvertrag. Personalverleih und Stellenvermittlung bieten wir nicht an.",
     ],
   },
 
