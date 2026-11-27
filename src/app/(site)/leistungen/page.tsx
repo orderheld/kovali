@@ -41,7 +41,7 @@ export default function LeistungenPage() {
           { name: "Leistungen", path: "/leistungen" },
         ]}
         title="Leistungen"
-        lead="Wir übernehmen in Ihrem IT-Projekt eine einzelne Aufgabe. Auf Wunsch übernehmen wir Analyse und Test im selben Mandat."
+        lead="Wir übernehmen in Ihrem IT-Projekt eine klar umrissene Aufgabe, auf Wunsch auch Analyse und Test im selben Mandat."
       />
 
       <Section className="pt-0 md:pt-0">

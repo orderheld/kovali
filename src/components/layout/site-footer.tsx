@@ -55,7 +55,8 @@ export function SiteFooter() {
 
         <div className="mt-12 flex flex-col gap-3 border-t border-hairline pt-6 text-[0.8125rem] text-muted md:flex-row md:items-center md:justify-between">
           <p>
-            © {year} {site.brand}. Ein Angebot von {site.legal.entityName.value}.
+            © {year} {site.brand}. Ein Angebot von{" "}
+            <span className="whitespace-nowrap">{site.legal.entityName.value}.</span>
           </p>
           <ul className="-my-2 flex flex-wrap gap-x-6">
             {legalNav.map((item) => (
